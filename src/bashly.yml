@@ -1,0 +1,14 @@
+name: risk 
+help: RISKS Dom0 management application
+version: 0.1.0
+
+commands:
+  # Drives/partitions
+- import: src/hush_commands.yml
+- import: src/backup_commands.yml
+  # Identities
+- import: src/identity_commands.yml
+  # Infrastructure
+- import: src/vpn_commands.yml
+- import: src/config_commands.yml
+

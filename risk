@@ -29,6 +29,7 @@ risk_usage() {
   echo "  hush       Manage the hush partition attach/detach from qubes"
   echo "  backup     Manage backup devices attach/detach from qubes"
   echo "  identity   Create, manage and use identities and/or use their machines"
+  echo "  slam       Close identity, infrastructure and detach hush/backup at once"
   echo "  vpn        Create, configure, manage and use VPN gateways for an identity."
   echo "  config     Manage the risk global configuration"
   echo
@@ -644,6 +645,41 @@ risk_identity_current_usage() {
     # :command.usage_fixed_flags
     echo "  --help, -h"
     printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_slam_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk slam - Close identity, infrastructure and detach hush/backup at once\n"
+    echo
+
+  else
+    printf "risk slam - Close identity, infrastructure and detach hush/backup at once\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  risk slam [options]\n"
+  printf "  risk slam --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_flags
+    # :flag.usage
+    echo "  --verbose, -v"
+    printf "    Show verbose logging\n"
     echo
 
   fi
@@ -2421,7 +2457,7 @@ risk_hush_detach_command() {
   _qrun "$vm" risks hush umount
   _catch "Failed to unmount hush device ($block)"
 
-  # finally attach the sdcard encrypted partition to the qube
+  # detach the sdcard encrypted partition to the qube
   qvm-block detach "${vm}" "${block}"
   if [[ $? -eq 0 ]]; then
   	_success "Block ${block} has been detached from ${vm}"
@@ -2476,16 +2512,20 @@ risk_backup_attach_command() {
 # :command.function
 risk_backup_detach_command() {
   # src/backup_detach_command.sh
-  local block="${args[device]:-$(config_get BACKUP_BLOCK)}"
-  local vm="$(config_get VAULT_VM)"
+  local block vm
 
-  local sdcard_block="$(config_get SDCARD_BLOCK)"
+  block="${args[device]:-$(config_get BACKUP_BLOCK)}"
 
-  qvm-block detach "${vm}" "${block}"
+  # Always umount first
+  _qrun "$VAULT_VM" risks backup umount
+  _catch "Failed to unmount backup device ($block)"
+
+  # detach the backup device
+  qvm-block detach "${VAULT_VM}" "${block}"
   if [[ $? -eq 0 ]]; then
-  	_success "Block ${sdcard_block} has been detached from to ${vm}"
+  	_success "Block ${block} has been detached from to ${VAULT_VM}"
   else
-  	_success "Block ${sdcard_block} can not be detached from ${vm}"
+  	_success "Block ${block} can not be detached from ${VAULT_VM}"
   fi
 
 }
@@ -2663,6 +2703,20 @@ risk_identity_delete_command() {
 
   _set_identity "${args[identity]}"
 
+  # First check the identity is valid
+
+  # Check access to hush device in vault
+
+  # Close all machines belonging to the identity
+
+  # Delete these machines
+
+  # Delete the identity data in the vault
+
+  # And delete the identity directory in dom0.
+
+  _success "Successfully deleted identity $IDENTITY"
+
 }
 
 # :command.function
@@ -2729,10 +2783,28 @@ risk_identity_start_command() {
 # :command.function
 risk_identity_stop_command() {
   # src/identity_stop_command.sh
-  echo "# this file is located in 'src/identity_stop_command.sh'"
-  echo "# code for 'risk identity stop' goes here"
-  echo "# you can edit it freely and regenerate (it will not be overwritten)"
-  inspect_args
+
+  # Else get the active identity
+  local active_identity
+  active_identity=$(_identity_active_or_specified)
+
+  _message "Stopping machines and identity $active_identity"
+
+  # First shut down all client VMs
+  read -ra client_vms "$(identity_client_vms)"
+  for vm in "${client_vms[@]}" ; do
+      _message "Shutting down $vm"
+      shutdown_vm "$vm"
+  done
+
+  # Do the same for proxyVMs
+  read -ra proxy_vms "$(identity_proxies)"
+  for vm in "${proxy_vms[@]}" ; do
+      _message "Shutting down $vm"
+      shutdown_vm "$vm"
+  done
+
+  _success "Done"
 
 }
 
@@ -2741,6 +2813,48 @@ risk_identity_current_command() {
   # src/identity_current_command.sh
   # Simply print the active identity in the vault
   _identity_active_or_specified
+
+}
+
+# :command.function
+risk_slam_command() {
+  # src/slam_command.sh
+
+  # If no active identity to slam, nothing to do except umounting the hush device
+  if ! _identity_active ; then
+      _message "No active identity, only detaching hush and backup devices"
+      risk_hush_detach_command
+      risk_backup_detach_command
+      exit 0
+  fi
+
+  # Else get the active identity, and propagate values to the script
+  local active_identity
+  active_identity=$(_identity_active_or_specified)
+  _set_identity "$active_identity"
+
+  _message "Slamming infrastructure, vault and devices: identity $active_identity"
+
+  # First shut down all client VMs
+  read -ra client_vms "$(identity_client_vms)"
+  for vm in "${client_vms[@]}" ; do
+      _message "Shutting down $vm"
+      shutdown_vm "$vm"
+  done
+
+  # Do the same for proxyVMs
+  read -ra proxy_vms "$(identity_proxies)"
+  for vm in "${proxy_vms[@]}" ; do
+      _message "Shutting down $vm"
+      shutdown_vm "$vm"
+  done
+
+  # Close the identity in the vault, unmount hush and backup
+  risk_identity_close_command
+  risk_hush_detach_command
+  risk_backup_detach_command
+
+  _success "Done"
 
 }
 
@@ -2949,7 +3063,7 @@ risk_vpn_delete_command() {
 
   # If the VPN was the default NetVM for the identity,
   # update the NetVM to Whonix.
-  netvm="$(cat "${IDENTITY_DIR}/net_vm")"
+  netvm="$(cat "${IDENTITY_DIR}/net_vm" 2>/dev/null)"
   if [[ $netvm == "$name" ]]; then
       _warning "Gateway $name is the default NetVM for identity clients !"
 
@@ -3075,6 +3189,13 @@ parse_requirements() {
     action="identity"
     shift
     risk_identity_parse_requirements "$@"
+    shift $#
+    ;;
+
+  slam )
+    action="slam"
+    shift
+    risk_slam_parse_requirements "$@"
     shift $#
     ;;
 
@@ -4104,6 +4225,51 @@ risk_identity_current_parse_requirements() {
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
+
+    -?* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      # :command.parse_requirements_case_simple
+      printf "invalid argument: %s\n" "$key"
+      exit 1
+
+      ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
+risk_slam_parse_requirements() {
+  # :command.fixed_flags_filter
+  case "${1:-}" in
+  --help | -h )
+    long_usage=yes
+    risk_slam_usage
+    exit
+    ;;
+
+  esac
+
+  # :command.command_filter
+  action="slam"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+    # :flag.case
+    --verbose | -v )
+
+      # :flag.case_no_arg
+      args[--verbose]=1
+      shift
+      ;;
 
     -?* )
       printf "invalid option: %s\n" "$key"
@@ -5321,6 +5487,14 @@ run() {
       risk_identity_current_usage
     else
       risk_identity_current_command
+    fi
+
+  elif [[ $action == "slam" ]]; then
+    if [[ ${args[--help]:-} ]]; then
+      long_usage=yes
+      risk_slam_usage
+    else
+      risk_slam_command
     fi
 
   elif [[ $action == "vpn" ]]; then

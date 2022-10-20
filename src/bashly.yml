@@ -8,6 +8,7 @@ commands:
 - import: src/backup_commands.yml
   # Identities
 - import: src/identity_commands.yml
+- import: src/slam_commands.yml
   # Infrastructure
 - import: src/vpn_commands.yml
 - import: src/config_commands.yml

@@ -340,7 +340,7 @@ _flags_base=(
 
 ## Base flags needed when creating/cloning a VM
 _flags_vm_base=(
-    '(-N --name)'{-N,--name}'[Use a different name for naming identity VMs]:VM base name:' 
+    '(-P --prefix)'{-P,--prefix}'[Use a different name for naming identity VMs]:VM base name:' 
     '(-L --label)'{-L,--label}'[Specify a label color to be used for ALL subsequently created VMs]:VM label:' 
     )
 

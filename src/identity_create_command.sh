@@ -1,10 +1,6 @@
 
 # Variables setup ==========================================================
 
-# Default settings that are always defined in the config.
-local vault_vm="$(config_get VAULT_VM)"
-local default_netvm="$(config_get DEFAULT_NETVM)"
-
 # Variables populated from command-line args/flags
 local name="${args[identity]}"
 local email="${args[email]}"
@@ -18,37 +14,28 @@ local label             # Default label color to use for all VMs, varies if not 
 local netvm             # Entry NetVM for the identity
 local backup_args       # If identity is to be immediately backed up, this is the flag + the /dev/path in vault
 local gw_netvm          # NetVM for the tor gateway
-local vpn_netvm         # NetVM for the VPN gateway
 local web_netvm         # NetVM for the Web browser VM
 local clone             # A variable that might be overritten several times, used to assign a VM to clone.
 
-# Propagate the identity and its settings
+# Propagate the identity and its settings (in the script only)
 _set_identity "${args[identity]}"
 
 
 # Identity checks and basic setup ==========================================
 
-# First open the identity, because we might need its credentials and stuff
-# The identity argument is here, so this command has the arguments it needs
-active_identity=$(qvm-run --pass-io "$vault_vm" 'cat .identity' 2>/dev/null)
-if [[ -n $active_identity ]]; then
-    # It might be the same
-    if [[ $active_identity != "$IDENTITY" ]]; then
-        _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
-    fi
-else
-    risk_open_identity_command
-    _catch "Failed to open identity $IDENTITY"
+# Check no active identity is here
+if _identity_active ; then
+    _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
 fi
+
+# We're good to go
+_message "Creating identity $IDENTITY and infrastructure"
 
 # Make a directory for this identity, and store the associated VM name
 [[ -e ${IDENTITY_DIR} ]] || mkdir -p "$IDENTITY_DIR"
 
-# Else we're good to go
-_message "Creating identity $IDENTITY and infrastructure"
-
 # If the user wants to use a different vm_name for the VMs
-vm_name="${args[--name]-$IDENTITY}"
+vm_name="${args[--prefix]-$IDENTITY}"
 echo "$vm_name" > "${IDENTITY_DIR}/vm_name" 
 _message "Using vm_name '$name' as VM base name"
 
@@ -57,7 +44,8 @@ echo "$vm_name" > "${IDENTITY_DIR}/vm_label"
 _message "Using label '$label' as VM default label"
 
 # Prepare the root NetVM for this identity
-netvm="${default_netvm}"
+netvm="${DEFAULT_NETVM}"
+
 
 # Create identity in vault =================================================
 
@@ -68,15 +56,17 @@ if [[ -n "$pendrive" ]]; then
     backup_args=(--backup "$pendrive")
 fi
 
-_qrun "$vault_vm" risks create identity "$name" "$email" "$expiry" "${backup_args[@]}" 
+# Create it
+_qrun "$VAULT_VM" risks create identity "$name" "$email" "$expiry" "${backup_args[@]}" 
 _catch "Failed to create identity in vault"
 
-# Then, open it
-_qrun "$vault_vm" risks open identity "$name"
+# And open it
+_qrun "$VAULT_VM" risks open identity "$name"
 _catch "Failed to open identity in vault"
 
+
 # Network VMs ==============================================================
-_message "Creating network VMs:"
+_in_section "network" && _message "Creating network VMs:"
 
 # 1 - Tor gateway, if not explicitly disabled
 if [[ ${args[--no-gw]} -eq 0 ]]; then
@@ -97,41 +87,11 @@ else
     _message "Skipping TOR gateway"
 fi
 
-
-# 2 - VPNs, if not explicitly disabled
-if [[ ${args[--no-vpn]} -eq 0 ]]; then
-    local vpn_netvm="$(cat "${IDENTITY_DIR}/net_vm" )"
-
-    # We either clone the gateway from an existing one,
-    # or we create it from a template.
-    if [[ -n ${args[--clone-vpn-from]} ]]; then
-        clone="${args[--clone-vpn-from]}"
-        clone_vpn_gateway "$vm_name" "$clone" "$vpn_netvm" "$label"
-    else
-        create_vpn_gateway "$vm_name" "$vpn_netvm" "$label"
-    fi
-
-    # Set it as the netvm for this identity
-    echo "$vm_name" > "${IDENTITY_DIR}/net_vm" 
-else
-    _message "Skipping VPN gateway"
-fi
-
 # At this point we should know the vm_name of the VM to be used as NetVM
 # for the subsquent machines, such as web browsing and messaging VMs.
 
-# Message VMs ==============================================================
-_message "Creating messaging VMs:"
-
-# if [[ ${args[--no-messenger]} -eq 0 ]]; then
-#     local msg="${vm_name}-msg"
-# else
-#     _message "Skipping messaging VM"
-# fi
-
-
 # Browser VMs ==============================================================
-_message "Creating web VMs:"
+_in_section "web" && _message "Creating browsing VMs:"
 
 # Browser VMs are disposable, but we make a template for this identity,
 # since we might  either modify stuff in there, and we need them at least 
@@ -149,9 +109,9 @@ fi
 local split_web="${vm_name}-split-web"
 if [[ -n ${args[--clone-split-from]} ]]; then
     clone="${args[--clone-split-from]}"
-    clone_split_browser_vm "$vm_name" "$clone" "$label"
+    clone_split_browser_vm "$split_web" "$clone" "$label"
 else
-    create_split_browser_vm "$vm_name" "$label"
+    create_split_browser_vm "$split_web" "$label"
 fi
 
 

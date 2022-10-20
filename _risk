@@ -181,6 +181,7 @@ _identity_commands ()
         'close:Simply open the identity store in the vault'
         'start:Start the identity in the vault and all of its enabled VMs'
         'stop:Stops all machines belonging to an identity, and close its vault if active.'
+        'equip:Creates the default infrastructure for an already exiting identity'
     )
     _describe -t commands 'identity commands' subcmds && ret=0
 }
@@ -200,6 +201,15 @@ _identity ()
             case $line[1] in
             create)
                 _identity_create
+                ;;
+            equip)
+                _arguments -C \
+                    '1:identity name:->name' \
+                    "${_flags_base[@]}" \
+                    "${_flags_vm_base[@]}" \
+                    "${_flags_init_tor[@]}" \
+                    "${_flags_init_web[@]}" \
+                    && ret=0
                 ;;
             start|open|delete)
                 _arguments \
@@ -229,10 +239,8 @@ _identity_create ()
         "${_flags_base[@]}" \
         '(-b --backup)'{-b,--backup}'[Device file of the backup drive (whole drive without partition number, eg. /dev/sdb)]:path to backup device in vault:($(_vault_devices))' \
         "${_flags_vm_base[@]}" \
-        "${_flags_init_vpn[@]}" \
         "${_flags_init_tor[@]}" \
         "${_flags_init_web[@]}" \
-        "${_flags_init_messenger[@]}" \
         && ret=0
 
     # Indications for the create identity command
@@ -366,19 +374,9 @@ _flags_vpn=(
 # The following flags groups are used only in the 'identity create' command,
 # since the command normally creates a bunch of different vms: most of these
 # flags are made to slightly change these default VMs' settings.
-_flags_init_vpn=(
-    '(--clone-vpn-from -V --no-vpn)'{-V,--no-vpn}'[Do not create a VPN gateway]' 
-    '(-V --no-vpn --clone-vpn-from)'--clone-vpn-from'[Instead of creating the VPN gateway from a template, clone an existing VPN AppVM]:VM:_known_vms'
-)
-
 _flags_init_tor=(
     '(--clone-gw-from -G --no-gw)'{-G,--no-gw}'[Do not create a Whonix TOR gateway]' 
     '(-G --no-gw --clone-gw-from)'--clone-gw-from"[Instead of creating the TOR gateway from a template, clone an existing TOR AppVM]:VM:_known_vms"
-)
-
-_flags_init_messenger=(
-    '(--clone-messenger-from -M --no-messenger)'{-M,--no-messenger}'[Do not create a Messenger VM (for Signal and other message services)]'
-    '(-M --no-messenger --clone-messenger-from)'--clone-messenger-from'[Instead of creating the Messenger VM from a template, clone an existing Messenger AppVM]:VM:_known_vms'
 )
 
 _flags_init_web=(

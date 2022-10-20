@@ -1,17 +1,10 @@
 
-# Variables setup ==========================================================
-
-# Variables populated from command-line args/flags
 local name="${args[identity]}"
-local email="${args[email]}"
-local expiry="${args[expiry_date]}"
-local pendrive="${args[--backup]}" 
 
 # Other variables
 local vm_name           # Default prefix to use for newly created vm (eg. 'joe' => joe-vpn, joe-web)
 local label             # Default label color to use for all VMs, varies if not specified
 local netvm             # Entry NetVM for the identity
-local backup_args       # If identity is to be immediately backed up, this is the flag + the /dev/path in vault
 local gw_netvm          # NetVM for the tor gateway
 local web_netvm         # NetVM for the Web browser VM
 local clone             # A variable that might be overritten several times, used to assign a VM to clone.
@@ -19,16 +12,11 @@ local clone             # A variable that might be overritten several times, use
 # Propagate the identity and its settings (in the script only)
 _set_identity "${args[identity]}"
 
-
 # Identity checks and basic setup ==========================================
 
-# Check no active identity is here
-if _identity_active ; then
-    _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
-fi
+# Check the identity exists
 
-# We're good to go
-_message "Creating identity $IDENTITY and infrastructure"
+_message "Creating infrastructure for identity $IDENTITY"
 
 # Make a directory for this identity, and store the associated VM name
 [[ -e ${IDENTITY_DIR} ]] || mkdir -p "$IDENTITY_DIR"
@@ -44,30 +32,6 @@ _message "Using label '$label' as VM default label"
 
 # Prepare the root NetVM for this identity
 netvm="${DEFAULT_NETVM}"
-
-
-# Create identity in vault =================================================
-
-# Simply pass the arguments to the vault
-_message "Creating identity in vault"
-
-if [[ -n "$pendrive" ]]; then
-    backup_args=(--backup "$pendrive")
-fi
-
-# Create it
-_qrun "$VAULT_VM" risks create identity "$name" "$email" "$expiry" "${backup_args[@]}" 
-_catch "Failed to create identity in vault"
-
-# And open it
-_qrun "$VAULT_VM" risks open identity "$name"
-_catch "Failed to open identity in vault"
-
-# If the user only wanted to create the identity in the vault, exit.
-if [[ ${args[--only]} -eq 1 ]] ; then
-    _success "Successfully created identity $IDENTITY"
-    _message "Skipping infrastructure setup" && exit
-fi
 
 # Network VMs ==============================================================
 _in_section "network" && _message "Creating network VMs:"

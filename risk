@@ -295,6 +295,7 @@ risk_identity_usage() {
   # :command.usage_commands
   printf "Commands:\n"
   echo "  create   Creates associated VMs for an identity (joe-gw, joe-vpn, joe-msg, joe-web)"
+  echo "  equip    Creates the infrastructure for an already exiting identity."
   echo "  delete   Destroys an identity and all its associated machines and data"
   echo "  open     Simply open the identity store in the vault"
   echo "  close    Simply close the identity store in the vault"
@@ -347,7 +348,7 @@ risk_identity_create_usage() {
     echo
 
     # :flag.usage
-    echo "  --name, -N NAME"
+    echo "  --prefix, -P NAME"
     printf "    Use a different name for naming identity VMs\n"
     echo
 
@@ -362,6 +363,11 @@ risk_identity_create_usage() {
     echo
 
     # :flag.usage
+    echo "  --only"
+    printf "    Only create the identity in the vault: do not create any machines\n"
+    echo
+
+    # :flag.usage
     echo "  --no-gw, -G"
     printf "    Don't create a Whonix TOR gateway\n"
     echo
@@ -369,26 +375,6 @@ risk_identity_create_usage() {
     # :flag.usage
     echo "  --clone-gw-from TOR_GW"
     printf "    Instead of creating the TOR gateway from a template, clone an existing TOR\n    AppVM\n"
-    echo
-
-    # :flag.usage
-    echo "  --no-vpn, -V"
-    printf "    Don't create a VPN gateway\n"
-    echo
-
-    # :flag.usage
-    echo "  --clone-vpn-from VPN_GW"
-    printf "    Instead of creating the VPN gateway from a template, clone an existing VPN\n    AppVM\n"
-    echo
-
-    # :flag.usage
-    echo "  --no-messenger, -M"
-    printf "    Don't create a Messenger VM (for Signal and other message services)\n"
-    echo
-
-    # :flag.usage
-    echo "  --clone-messenger-from MESSENGER_VM"
-    printf "    Instead of creating the Messenger VM from a template, clone an existing\n    Messenger AppVM\n"
     echo
 
     # :flag.usage
@@ -417,6 +403,79 @@ risk_identity_create_usage() {
     # :argument.usage
     echo "  EXPIRY_DATE"
     printf "    Human readable, or GPG-compliant expiry duration to use for the GPG subkeys\n    (eg. '1 year', '1 week', etc)\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_identity_equip_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk identity equip - Creates the infrastructure for an already exiting identity.\n"
+    echo
+
+  else
+    printf "risk identity equip - Creates the infrastructure for an already exiting identity.\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  risk identity equip IDENTITY [options]\n"
+  printf "  risk identity equip --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_flags
+    # :flag.usage
+    echo "  --verbose, -v"
+    printf "    Show verbose logging\n"
+    echo
+
+    # :flag.usage
+    echo "  --prefix, -P NAME"
+    printf "    Use a different name for naming identity VMs\n"
+    echo
+
+    # :flag.usage
+    echo "  --label, -L COLOR"
+    printf "    Specify a label color to be used for all VMs belonging to this identity\n"
+    echo
+
+    # :flag.usage
+    echo "  --no-gw, -G"
+    printf "    Don't create a Whonix TOR gateway\n"
+    echo
+
+    # :flag.usage
+    echo "  --clone-gw-from TOR_GW"
+    printf "    Instead of creating the TOR gateway from a template, clone an existing TOR\n    AppVM\n"
+    echo
+
+    # :flag.usage
+    echo "  --clone-web-from WEB_VM"
+    printf "    Instead of creating the Web browsing VM from a template, clone an existing\n    browser AppVM\n"
+    echo
+
+    # :flag.usage
+    echo "  --clone-split-from SPLIT_BROWSER_VM"
+    printf "    Instead of creating the split-browser VM from a template, clone an existing\n    one\n"
+    echo
+
+    # :command.usage_args
+    printf "Arguments:\n"
+
+    # :argument.usage
+    echo "  IDENTITY"
+    printf "    Identity for which to setup infrastructure\n"
     echo
 
   fi
@@ -2536,10 +2595,6 @@ risk_identity_create_command() {
 
   # Variables setup ==========================================================
 
-  # Default settings that are always defined in the config.
-  local vault_vm="$(config_get VAULT_VM)"
-  local default_netvm="$(config_get DEFAULT_NETVM)"
-
   # Variables populated from command-line args/flags
   local name="${args[identity]}"
   local email="${args[email]}"
@@ -2554,36 +2609,27 @@ risk_identity_create_command() {
   local netvm             # Entry NetVM for the identity
   local backup_args       # If identity is to be immediately backed up, this is the flag + the /dev/path in vault
   local gw_netvm          # NetVM for the tor gateway
-  local vpn_netvm         # NetVM for the VPN gateway
   local web_netvm         # NetVM for the Web browser VM
   local clone             # A variable that might be overritten several times, used to assign a VM to clone.
 
-  # Propagate the identity and its settings
+  # Propagate the identity and its settings (in the script only)
   _set_identity "${args[identity]}"
 
   # Identity checks and basic setup ==========================================
 
-  # First open the identity, because we might need its credentials and stuff
-  # The identity argument is here, so this command has the arguments it needs
-  active_identity=$(qvm-run --pass-io "$vault_vm" 'cat .identity' 2>/dev/null)
-  if [[ -n $active_identity ]]; then
-      # It might be the same
-      if [[ $active_identity != "$IDENTITY" ]]; then
-          _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
-      fi
-  else
-      risk_open_identity_command
-      _catch "Failed to open identity $IDENTITY"
+  # Check no active identity is here
+  if _identity_active ; then
+      _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
   fi
+
+  # We're good to go
+  _message "Creating identity $IDENTITY and infrastructure"
 
   # Make a directory for this identity, and store the associated VM name
   [[ -e ${IDENTITY_DIR} ]] || mkdir -p "$IDENTITY_DIR"
 
-  # Else we're good to go
-  _message "Creating identity $IDENTITY and infrastructure"
-
   # If the user wants to use a different vm_name for the VMs
-  vm_name="${args[--name]-$IDENTITY}"
+  vm_name="${args[--prefix]-$IDENTITY}"
   echo "$vm_name" > "${IDENTITY_DIR}/vm_name"
 
   _message "Using vm_name '$name' as VM base name"
@@ -2594,7 +2640,7 @@ risk_identity_create_command() {
   _message "Using label '$label' as VM default label"
 
   # Prepare the root NetVM for this identity
-  netvm="${default_netvm}"
+  netvm="${DEFAULT_NETVM}"
 
   # Create identity in vault =================================================
 
@@ -2605,16 +2651,23 @@ risk_identity_create_command() {
       backup_args=(--backup "$pendrive")
   fi
 
-  _qrun "$vault_vm" risks create identity "$name" "$email" "$expiry" "${backup_args[@]}"
+  # Create it
+  _qrun "$VAULT_VM" risks create identity "$name" "$email" "$expiry" "${backup_args[@]}"
 
   _catch "Failed to create identity in vault"
 
-  # Then, open it
-  _qrun "$vault_vm" risks open identity "$name"
+  # And open it
+  _qrun "$VAULT_VM" risks open identity "$name"
   _catch "Failed to open identity in vault"
 
+  # If the user only wanted to create the identity in the vault, exit.
+  if [[ ${args[--only]} -eq 1 ]] ; then
+      _success "Successfully created identity $IDENTITY"
+      _message "Skipping infrastructure setup" && exit
+  fi
+
   # Network VMs ==============================================================
-  _message "Creating network VMs:"
+  _in_section "network" && _message "Creating network VMs:"
 
   # 1 - Tor gateway, if not explicitly disabled
   if [[ ${args[--no-gw]} -eq 0 ]]; then
@@ -2636,40 +2689,11 @@ risk_identity_create_command() {
       _message "Skipping TOR gateway"
   fi
 
-  # 2 - VPNs, if not explicitly disabled
-  if [[ ${args[--no-vpn]} -eq 0 ]]; then
-      local vpn_netvm="$(cat "${IDENTITY_DIR}/net_vm" )"
-
-      # We either clone the gateway from an existing one,
-      # or we create it from a template.
-      if [[ -n ${args[--clone-vpn-from]} ]]; then
-          clone="${args[--clone-vpn-from]}"
-          clone_vpn_gateway "$vm_name" "$clone" "$vpn_netvm" "$label"
-      else
-          create_vpn_gateway "$vm_name" "$vpn_netvm" "$label"
-      fi
-
-      # Set it as the netvm for this identity
-      echo "$vm_name" > "${IDENTITY_DIR}/net_vm"
-
-  else
-      _message "Skipping VPN gateway"
-  fi
-
   # At this point we should know the vm_name of the VM to be used as NetVM
   # for the subsquent machines, such as web browsing and messaging VMs.
 
-  # Message VMs ==============================================================
-  _message "Creating messaging VMs:"
-
-  # if [[ ${args[--no-messenger]} -eq 0 ]]; then
-  #     local msg="${vm_name}-msg"
-  # else
-  #     _message "Skipping messaging VM"
-  # fi
-
   # Browser VMs ==============================================================
-  _message "Creating web VMs:"
+  _in_section "web" && _message "Creating browsing VMs:"
 
   # Browser VMs are disposable, but we make a template for this identity,
   # since we might  either modify stuff in there, and we need them at least
@@ -2688,12 +2712,22 @@ risk_identity_create_command() {
   local split_web="${vm_name}-split-web"
   if [[ -n ${args[--clone-split-from]} ]]; then
       clone="${args[--clone-split-from]}"
-      clone_split_browser_vm "$vm_name" "$clone" "$label"
+      clone_split_browser_vm "$split_web" "$clone" "$label"
   else
-      create_split_browser_vm "$vm_name" "$label"
+      create_split_browser_vm "$split_web" "$label"
   fi
 
   _success "Successfully initialized infrastructure for identity $IDENTITY"
+
+}
+
+# :command.function
+risk_identity_equip_command() {
+  # src/identity_equip_command.sh
+  echo "# this file is located in 'src/identity_equip_command.sh'"
+  echo "# code for 'risk identity equip' goes here"
+  echo "# you can edit it freely and regenerate (it will not be overwritten)"
+  inspect_args
 
 }
 
@@ -3627,6 +3661,13 @@ risk_identity_parse_requirements() {
     shift $#
     ;;
 
+  equip )
+    action="equip"
+    shift
+    risk_identity_equip_parse_requirements "$@"
+    shift $#
+    ;;
+
   delete )
     action="delete"
     shift
@@ -3733,16 +3774,16 @@ risk_identity_create_parse_requirements() {
       ;;
 
     # :flag.case
-    --name | -N )
+    --prefix | -P )
 
       # :flag.case_arg
       if [[ -n ${2+x} ]]; then
 
-        args[--name]="$2"
+        args[--prefix]="$2"
         shift
         shift
       else
-        printf "%s\n" "--name requires an argument: --name, -N NAME"
+        printf "%s\n" "--prefix requires an argument: --prefix, -P NAME"
         exit 1
       fi
       ;;
@@ -3767,6 +3808,14 @@ risk_identity_create_parse_requirements() {
 
       # :flag.case_no_arg
       args[--backup]=1
+      shift
+      ;;
+
+    # :flag.case
+    --only )
+
+      # :flag.case_no_arg
+      args[--only]=1
       shift
       ;;
 
@@ -3799,72 +3848,6 @@ risk_identity_create_parse_requirements() {
         shift
       else
         printf "%s\n" "--clone-gw-from requires an argument: --clone-gw-from TOR_GW"
-        exit 1
-      fi
-      ;;
-
-    # :flag.case
-    --no-vpn | -V )
-      # :flag.conflicts
-      if [[ -n "${args[--clone-vpn-from]:-}" ]]; then
-        printf "conflicting options: %s cannot be used with %s\n" "$key" "--clone-vpn-from"
-        exit 1
-      fi
-
-      # :flag.case_no_arg
-      args[--no-vpn]=1
-      shift
-      ;;
-
-    # :flag.case
-    --clone-vpn-from )
-      # :flag.conflicts
-      if [[ -n "${args[--no-vpn]:-}" ]]; then
-        printf "conflicting options: %s cannot be used with %s\n" "$key" "--no-vpn"
-        exit 1
-      fi
-
-      # :flag.case_arg
-      if [[ -n ${2+x} ]]; then
-
-        args[--clone-vpn-from]="$2"
-        shift
-        shift
-      else
-        printf "%s\n" "--clone-vpn-from requires an argument: --clone-vpn-from VPN_GW"
-        exit 1
-      fi
-      ;;
-
-    # :flag.case
-    --no-messenger | -M )
-      # :flag.conflicts
-      if [[ -n "${args[--clone-messenger-from]:-}" ]]; then
-        printf "conflicting options: %s cannot be used with %s\n" "$key" "--clone-messenger-from"
-        exit 1
-      fi
-
-      # :flag.case_no_arg
-      args[--no-messenger]=1
-      shift
-      ;;
-
-    # :flag.case
-    --clone-messenger-from )
-      # :flag.conflicts
-      if [[ -n "${args[--no-messenger]:-}" ]]; then
-        printf "conflicting options: %s cannot be used with %s\n" "$key" "--no-messenger"
-        exit 1
-      fi
-
-      # :flag.case_arg
-      if [[ -n ${2+x} ]]; then
-
-        args[--clone-messenger-from]="$2"
-        shift
-        shift
-      else
-        printf "%s\n" "--clone-messenger-from requires an argument: --clone-messenger-from MESSENGER_VM"
         exit 1
       fi
       ;;
@@ -3940,6 +3923,156 @@ risk_identity_create_parse_requirements() {
   fi
   if [[ -z ${args[expiry_date]+x} ]]; then
     printf "missing required argument: EXPIRY_DATE\nusage: risk identity create IDENTITY EMAIL EXPIRY_DATE [options]\n"
+    exit 1
+  fi
+
+}
+
+# :command.parse_requirements
+risk_identity_equip_parse_requirements() {
+  # :command.fixed_flags_filter
+  case "${1:-}" in
+  --help | -h )
+    long_usage=yes
+    risk_identity_equip_usage
+    exit
+    ;;
+
+  esac
+
+  # :command.command_filter
+  action="identity equip"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+    # :flag.case
+    --verbose | -v )
+
+      # :flag.case_no_arg
+      args[--verbose]=1
+      shift
+      ;;
+
+    # :flag.case
+    --prefix | -P )
+
+      # :flag.case_arg
+      if [[ -n ${2+x} ]]; then
+
+        args[--prefix]="$2"
+        shift
+        shift
+      else
+        printf "%s\n" "--prefix requires an argument: --prefix, -P NAME"
+        exit 1
+      fi
+      ;;
+
+    # :flag.case
+    --label | -L )
+
+      # :flag.case_arg
+      if [[ -n ${2+x} ]]; then
+
+        args[--label]="$2"
+        shift
+        shift
+      else
+        printf "%s\n" "--label requires an argument: --label, -L COLOR"
+        exit 1
+      fi
+      ;;
+
+    # :flag.case
+    --no-gw | -G )
+      # :flag.conflicts
+      if [[ -n "${args[--clone-gw-from]:-}" ]]; then
+        printf "conflicting options: %s cannot be used with %s\n" "$key" "--clone-gw-from"
+        exit 1
+      fi
+
+      # :flag.case_no_arg
+      args[--no-gw]=1
+      shift
+      ;;
+
+    # :flag.case
+    --clone-gw-from )
+      # :flag.conflicts
+      if [[ -n "${args[--no-gw]:-}" ]]; then
+        printf "conflicting options: %s cannot be used with %s\n" "$key" "--no-gw"
+        exit 1
+      fi
+
+      # :flag.case_arg
+      if [[ -n ${2+x} ]]; then
+
+        args[--clone-gw-from]="$2"
+        shift
+        shift
+      else
+        printf "%s\n" "--clone-gw-from requires an argument: --clone-gw-from TOR_GW"
+        exit 1
+      fi
+      ;;
+
+    # :flag.case
+    --clone-web-from )
+
+      # :flag.case_arg
+      if [[ -n ${2+x} ]]; then
+
+        args[--clone-web-from]="$2"
+        shift
+        shift
+      else
+        printf "%s\n" "--clone-web-from requires an argument: --clone-web-from WEB_VM"
+        exit 1
+      fi
+      ;;
+
+    # :flag.case
+    --clone-split-from )
+
+      # :flag.case_arg
+      if [[ -n ${2+x} ]]; then
+
+        args[--clone-split-from]="$2"
+        shift
+        shift
+      else
+        printf "%s\n" "--clone-split-from requires an argument: --clone-split-from SPLIT_BROWSER_VM"
+        exit 1
+      fi
+      ;;
+
+    -?* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      # :command.parse_requirements_case_simple
+      if [[ -z ${args[identity]+x} ]]; then
+
+        args[identity]=$1
+        shift
+      else
+        printf "invalid argument: %s\n" "$key"
+        exit 1
+      fi
+
+      ;;
+
+    esac
+  done
+
+  # :command.required_args_filter
+  if [[ -z ${args[identity]+x} ]]; then
+    printf "missing required argument: IDENTITY\nusage: risk identity equip IDENTITY [options]\n"
     exit 1
   fi
 
@@ -5319,7 +5452,7 @@ risk_config_keys_parse_requirements() {
 initialize() {
   version="0.1.0"
   long_usage=''
-  
+  set -e
 
   # src/initialize.sh
 
@@ -5346,6 +5479,7 @@ initialize() {
   # Default filesystem settings from configuration file ----------------------------------------------
 
   typeset -g VAULT_VM=$(config_get VAULT_VM)
+  typeset -g DEFAULT_NETVM=$(config_get DEFAULT_NETVM)
 
   #----------------------------#
 
@@ -5439,6 +5573,14 @@ run() {
       risk_identity_create_usage
     else
       risk_identity_create_command
+    fi
+
+  elif [[ $action == "identity equip" ]]; then
+    if [[ ${args[--help]:-} ]]; then
+      long_usage=yes
+      risk_identity_equip_usage
+    else
+      risk_identity_equip_command
     fi
 
   elif [[ $action == "identity delete" ]]; then

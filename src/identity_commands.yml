@@ -19,11 +19,13 @@ commands:
         long: --verbose
         short: -v
         help: "Show verbose logging"
-      - long: --name
-        short: -N
+      - &prefix
+        long: --prefix
+        short: -P
         help: "Use a different name for naming identity VMs"
         arg: name 
-      - long: --label
+      - &label
+        long: --label
         short: -L
         help: "Specify a label color to be used for all VMs belonging to this identity"
         arg: color 
@@ -32,40 +34,43 @@ commands:
         short: -b
         help: "Device file of the backup drive (must be a whole drive without a partition number, eg. /dev/sdb)"
         validate: device
+      - long: --only
+        help: "Only create the identity in the vault: do not create any machines"
         # Tor gateway options
-      - long: --no-gw
+      - &no_gw
+        long: --no-gw
         short: -G
         help: "Don't create a Whonix TOR gateway"
         conflicts: [ --clone-gw-from ]
-      - long: --clone-gw-from
+      - &clone_gw_from
+        long: --clone-gw-from
         help: "Instead of creating the TOR gateway from a template, clone an existing TOR AppVM"
         arg: tor_gw 
         conflicts: [ --no-gw ]
-        # VPN gateway options
-      - long: --no-vpn
-        short: -V
-        help: "Don't create a VPN gateway"
-        conflicts: [ --clone-vpn-from ]
-      - long: --clone-vpn-from
-        help: "Instead of creating the VPN gateway from a template, clone an existing VPN AppVM"
-        arg: vpn_gw 
-        conflicts: [ --no-vpn ]
-        # Messengers
-      - long: --no-messenger
-        short: -M
-        help: "Don't create a Messenger VM (for Signal and other message services)"
-        conflicts: [ --clone-messenger-from ]
-      - long: --clone-messenger-from
-        help: "Instead of creating the Messenger VM from a template, clone an existing Messenger AppVM"
-        arg: messenger_vm 
-        conflicts: [ --no-messenger ]
         # Browsers
-      - long: --clone-web-from
+      - &clone_web_from
+        long: --clone-web-from
         help: "Instead of creating the Web browsing VM from a template, clone an existing browser AppVM"
         arg: web_vm 
-      - long: --clone-split-from
+      - &clone_split_from
+        long: --clone-split-from
         help: "Instead of creating the split-browser VM from a template, clone an existing one"
         arg: split_browser_vm 
+
+  - name: equip 
+    help: Creates the infrastructure for an already exiting identity.
+    args:
+      - name: identity
+        help: "Identity for which to setup infrastructure"
+        required: true
+    flags:
+      - *verbose
+      - *prefix
+      - *label
+      - *no_gw
+      - *clone_gw_from
+      - *clone_web_from
+      - *clone_split_from
 
   - name: delete
     help: Destroys an identity and all its associated machines and data

@@ -489,7 +489,7 @@ _enabled_vms ()
     read -d '' -r -A vms <"${identity_dir}/autostart_vms"
 
     if [[ "${#vms[@]}" -eq 0 ]]; then
-        _message "no VPN gateways for identity"
+        _message "no enabled VPN gateways"
     else
         _arguments -C "1:autostart enabled VMs:($vms)"
     fi

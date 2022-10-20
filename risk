@@ -1521,9 +1521,9 @@ _set_active_identity ()
 _identity_active ()
 
 {
-    local identity
+    local active_identity
 
-    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'cat ~/.risks/.identity' 2>/dev/null)
+    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity' 2>/dev/null)
     if [[ -z "${active_identity}" ]]; then
         return 1
 	fi
@@ -1543,7 +1543,7 @@ _identity_active_or_specified ()
     local active_identity
 
     if [[ -z "${1}" ]] ; then
-        active_identity=$(qvm-run --pass-io "$VAULT_VM" 'cat ~/.risks/.identity' 2>/dev/null)
+        active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity' 2>/dev/null)
         if [[ -z "${active_identity}" ]]; then
             return 1
         fi
@@ -1580,7 +1580,7 @@ _set_identity ()
 # check that no identity is active in the vault, and fail if there is.
 check_no_active_identity ()
 {
-    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'cat .identity' 2>/dev/null)
+    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity' 2>/dev/null)
     if [[ -n $active_identity ]]; then
         # It might be the same
         if [[ $active_identity == "$1" ]]; then
@@ -2494,16 +2494,29 @@ risk_backup_detach_command() {
 risk_identity_create_command() {
   # src/identity_create_command.sh
 
+  # Variables setup ==========================================================
+
+  # Default settings that are always defined in the config.
   local vault_vm="$(config_get VAULT_VM)"
   local default_netvm="$(config_get DEFAULT_NETVM)"
 
-  # Base identity parameters, set globally.
+  # Variables populated from command-line args/flags
   local name="${args[identity]}"
   local email="${args[email]}"
   local expiry="${args[expiry_date]}"
   local pendrive="${args[--backup]}"
 
   local backup_args
+
+  # Other variables
+  local vm_name           # Default prefix to use for newly created vm (eg. 'joe' => joe-vpn, joe-web)
+  local label             # Default label color to use for all VMs, varies if not specified
+  local netvm             # Entry NetVM for the identity
+  local backup_args       # If identity is to be immediately backed up, this is the flag + the /dev/path in vault
+  local gw_netvm          # NetVM for the tor gateway
+  local vpn_netvm         # NetVM for the VPN gateway
+  local web_netvm         # NetVM for the Web browser VM
+  local clone             # A variable that might be overritten several times, used to assign a VM to clone.
 
   # Propagate the identity and its settings
   _set_identity "${args[identity]}"
@@ -2530,18 +2543,18 @@ risk_identity_create_command() {
   _message "Creating identity $IDENTITY and infrastructure"
 
   # If the user wants to use a different vm_name for the VMs
-  local vm_name="${args[--name]-$IDENTITY}"
+  vm_name="${args[--name]-$IDENTITY}"
   echo "$vm_name" > "${IDENTITY_DIR}/vm_name"
 
   _message "Using vm_name '$name' as VM base name"
 
-  local label="${args[--label]}"
+  label="${args[--label]}"
   echo "$vm_name" > "${IDENTITY_DIR}/vm_label"
 
   _message "Using label '$label' as VM default label"
 
   # Prepare the root NetVM for this identity
-  local netvm="${default_netvm}"
+  netvm="${default_netvm}"
 
   # Create identity in vault =================================================
 
@@ -2549,7 +2562,7 @@ risk_identity_create_command() {
   _message "Creating identity in vault"
 
   if [[ -n "$pendrive" ]]; then
-      local backup_args=(--backup "$pendrive")
+      backup_args=(--backup "$pendrive")
   fi
 
   _qrun "$vault_vm" risks create identity "$name" "$email" "$expiry" "${backup_args[@]}"
@@ -2565,12 +2578,12 @@ risk_identity_create_command() {
 
   # 1 - Tor gateway, if not explicitly disabled
   if [[ ${args[--no-gw]} -eq 0 ]]; then
-      local gw_netvm="$netvm"
+      gw_netvm="$netvm"
 
       # We either clone the gateway from an existing one,
       # or we create it from a template.
       if [[ -n ${args[--clone-gw-from]} ]]; then
-          local clone="${args[--clone-gw-from]}"
+          clone="${args[--clone-gw-from]}"
           clone_tor_gateway "$vm_name" "$clone" "$gw_netvm" "$label"
       else
           create_tor_gateway "$vm_name" "$gw_netvm" "$label"
@@ -2590,7 +2603,7 @@ risk_identity_create_command() {
       # We either clone the gateway from an existing one,
       # or we create it from a template.
       if [[ -n ${args[--clone-vpn-from]} ]]; then
-          local clone="${args[--clone-vpn-from]}"
+          clone="${args[--clone-vpn-from]}"
           clone_vpn_gateway "$vm_name" "$clone" "$vpn_netvm" "$label"
       else
           create_vpn_gateway "$vm_name" "$vpn_netvm" "$label"
@@ -2623,9 +2636,9 @@ risk_identity_create_command() {
 
   # to have a different network route.
   if [[ -n ${args[--clone-web-from]} ]]; then
-      local web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
+      web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
-      local clone="${args[--clone-web-from]}"
+      clone="${args[--clone-web-from]}"
       clone_browser_vm "$vm_name" "$clone" "$web_netvm" "$label"
   else
       create_browser_vm "$vm_name" "$web_netvm" "$label"
@@ -2634,7 +2647,7 @@ risk_identity_create_command() {
   # Split-browser has its own dispVMs and bookmarks
   local split_web="${vm_name}-split-web"
   if [[ -n ${args[--clone-split-from]} ]]; then
-      local clone="${args[--clone-split-from]}"
+      clone="${args[--clone-split-from]}"
       clone_split_browser_vm "$vm_name" "$clone" "$label"
   else
       create_split_browser_vm "$vm_name" "$label"
@@ -5163,6 +5176,10 @@ initialize() {
   typeset -rg RISK_DIR="${HOME}/.risk"                         # Directory where risk stores its state
   typeset -rg RISK_IDENTITIES_DIR="${RISK_DIR}/identities"     # Idendities store their settings here
   typeset -rg RISK_IDENTITY_FILE="${RISK_DIR}/.identity"
+
+  # Default filesystem settings from configuration file ----------------------------------------------
+
+  typeset -g VAULT_VM=$(config_get VAULT_VM)
 
   #----------------------------#
 

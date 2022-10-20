@@ -19,6 +19,10 @@ typeset -rg RISK_DIR="${HOME}/.risk"                         # Directory where r
 typeset -rg RISK_IDENTITIES_DIR="${RISK_DIR}/identities"     # Idendities store their settings here
 typeset -rg RISK_IDENTITY_FILE="${RISK_DIR}/.identity"
 
+# Default filesystem settings from configuration file ----------------------------------------------
+
+typeset -g VAULT_VM=$(config_get VAULT_VM)
+
 
 #----------------------------#
 ## Checks ##

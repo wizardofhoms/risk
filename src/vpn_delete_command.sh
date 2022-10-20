@@ -23,7 +23,7 @@ _message "Deleting gateway VM $name"
 
 # If the VPN was the default NetVM for the identity,
 # update the NetVM to Whonix.
-netvm="$(cat "${IDENTITY_DIR}/net_vm")"
+netvm="$(cat "${IDENTITY_DIR}/net_vm" 2>/dev/null)"
 if [[ $netvm == "$name" ]]; then
     _warning "Gateway $name is the default NetVM for identity clients !"
 

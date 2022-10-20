@@ -1,12 +1,16 @@
-local block="${args[device]:-$(config_get BACKUP_BLOCK)}"
-local vm="$(config_get VAULT_VM)"
+local block vm
 
-local sdcard_block="$(config_get SDCARD_BLOCK)"
+block="${args[device]:-$(config_get BACKUP_BLOCK)}"
 
-qvm-block detach "${vm}" "${block}"
+# Always umount first
+_qrun "$VAULT_VM" risks backup umount
+_catch "Failed to unmount backup device ($block)"
+
+# detach the backup device
+qvm-block detach "${VAULT_VM}" "${block}"
 if [[ $? -eq 0 ]]; then
-	_success "Block ${sdcard_block} has been detached from to ${vm}"
+	_success "Block ${block} has been detached from to ${VAULT_VM}"
 else
-	_success "Block ${sdcard_block} can not be detached from ${vm}"
+	_success "Block ${block} can not be detached from ${VAULT_VM}"
 fi
 

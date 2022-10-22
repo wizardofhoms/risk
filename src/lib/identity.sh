@@ -1,4 +1,24 @@
 
+# _set_identity is used to propagate our various IDENTITY related variables
+# so that all functions that will be subsequently called can access them.
+#
+# This function also takes care of checking if there is already an active
+# identity that should be used, in case the argument is empty or none.
+#
+# $1 - The identity to use.
+_set_identity () 
+{
+    local identity="$1"
+
+    # This will throw an error if we don't have an identity from any source.
+    IDENTITY=$(_identity_active_or_specified "$identity")
+    _catch "Command requires either an identity to be active or given as argument"
+
+    # Set the identity directory
+    IDENTITY_DIR="${RISK_IDENTITIES_DIR}/${IDENTITY}"
+}
+
+
 # Upon unlocking a given identity, sets the name as an ENV 
 # variable that we can use in further functions and commands.
 # $1 - The name to use. If empty, just resets the identity.
@@ -64,25 +84,6 @@ _identity_active_or_specified ()
     print "$active_identity"
 }
 
-# _set_identity is used to propagate our various IDENTITY related variables
-# so that all functions that will be subsequently called can access them.
-#
-# This function also takes care of checking if there is already an active
-# identity that should be used, in case the argument is empty or none.
-#
-# $1 - The identity to use.
-_set_identity () 
-{
-    local identity="$1"
-
-    # This will throw an error if we don't have an identity from any source.
-    IDENTITY=$(_identity_active_or_specified "$identity")
-    _catch "Command requires either an identity to be active or given as argument"
-
-    # Set the identity directory
-    IDENTITY_DIR="${RISK_IDENTITIES_DIR}/${IDENTITY}"
-}
-
 # check that no identity is active in the vault, and fail if there is.
 check_no_active_identity ()
 {
@@ -96,6 +97,35 @@ check_no_active_identity ()
 
         _failure "Identity $active_identity is active. Close/slam/fold it and rerun this command"
     fi
+}
+
+# Checks that an identity exists in the vault
+check_identity_exists ()
+{
+    local encryption_key        # The supposed key for the identity we want to verify
+    local encrypted_identity    # The corresponding identity encrypted name
+
+    encryption_key="print ""$1"" | spectre -q -n -s 0 -F n -t n -u ""$1"" 'file_encryption_key'"
+    encrypted_identity_command="print ""$encryption_key"" | spectre -q -n -s 0 -F n -t n -u ""$1"" ""$1"""
+
+    # Get the resulting encrypted name
+    encrypted_identity="$(_qvrun "$VAULT_VM" "$encrypted_identity_command")"
+
+    # And check the directory exists
+    _qvrun "$VAULT" "ls /home/user/.graveyard/$encrypted_identity"
+    _catch "Invalid identity: $1 does not exists in vault"
+}
+
+# Returns the name of the identity to which a VM belongs.
+get_vm_owner ()
+{
+    print "$(qvm-tags "$1" "$RISK_VM_OWNER_TAG" 2>/dev/null)"
+}
+
+# Returns the default network VM for the active identity
+identity_default_netvm ()
+{
+    cat "${IDENTITY_DIR}/netvm" 2>/dev/null
 }
 
 # Get the default VM label/color for an identity

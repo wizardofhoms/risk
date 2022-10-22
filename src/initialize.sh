@@ -10,22 +10,6 @@ setopt +o nomatch
 # The generated script makes use of BASH_REMATCH, set compat for ZSH
 setopt BASH_REMATCH
 
-# Working state variables
-typeset -r IDENTITY            # The identity to use for this single risk execution
-typeset -g IDENTITY_DIR        # The directory where to store identity settings
-
-# Working state and configurations
-typeset -rg RISK_DIR="${HOME}/.risk"                         # Directory where risk stores its state
-typeset -rg RISK_IDENTITIES_DIR="${RISK_DIR}/identities"     # Idendities store their settings here
-typeset -rg RISK_IDENTITY_FILE="${RISK_DIR}/.identity"
-
-# Default filesystem settings from configuration file ----------------------------------------------
-
-typeset -g VAULT_VM=$(config_get VAULT_VM)
-typeset -g DEFAULT_NETVM=$(config_get DEFAULT_NETVM)
-
-
-#----------------------------#
 ## Checks ##
 
 # Don't run as root
@@ -38,8 +22,12 @@ fi
 { ! option_is_set --no-color } && { autoload -Uz colors && colors }
 
 
-#----------------------------#
-## Configuration directories ##
+# Configuration file -------------------------------------------------------------------------------
+#
+# Working state and configurations
+typeset -rg RISK_DIR="${HOME}/.risk"                         # Directory where risk stores its state
+typeset -rg RISK_IDENTITIES_DIR="${RISK_DIR}/identities"     # Idendities store their settings here
+typeset -rg RISK_IDENTITY_FILE="${RISK_DIR}/.identity"
 
 # Create the risk directory if needed
 [[ -e $RISK_DIR ]] || { mkdir -p $RISK_DIR && _message "Creating RISK directory in $RISK_DIR" }
@@ -47,3 +35,12 @@ fi
 
 # Write the default configuration if it does not exist.
 config_init
+
+# Default filesystem settings from configuration file ----------------------------------------------
+typeset -g VAULT_VM=$(config_get VAULT_VM)
+typeset -g DEFAULT_NETVM=$(config_get DEFAULT_NETVM)
+
+# Working state variables --------------------------------------------------------------------------
+typeset -r IDENTITY            # The identity to use for this single risk execution
+typeset -g IDENTITY_DIR        # The directory where to store identity settings
+

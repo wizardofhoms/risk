@@ -26,12 +26,14 @@ risk_usage() {
   echo
   # :command.usage_commands
   printf "Commands:\n"
+  echo "  config     Manage the risk global configuration"
   echo "  hush       Manage the hush partition attach/detach from qubes"
   echo "  backup     Manage backup devices attach/detach from qubes"
   echo "  identity   Create, manage and use identities and/or use their machines"
   echo "  slam       Close identity, infrastructure and detach hush/backup at once"
   echo "  vpn        Create, configure, manage and use VPN gateways for an identity."
-  echo "  config     Manage the risk global configuration"
+  echo "  vm         Manage generic VMs (identity settings, enable/disable, etc)"
+  echo "  use        Execute a command in a VM belong to an identity."
   echo
 
   # :command.long_usage
@@ -44,6 +46,216 @@ risk_usage() {
     echo
     echo "  --version, -v"
     printf "    Show version number\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_config_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk config - Manage the risk global configuration\n"
+    echo
+
+  else
+    printf "risk config - Manage the risk global configuration\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  risk config [command]\n"
+  printf "  risk config [command] --help | -h\n"
+  echo
+  # :command.usage_commands
+  printf "Commands:\n"
+  echo "  set     Set a configuration variable to a value"
+  echo "  get     Print the value of a configuration variable"
+  echo "  unset   Delete the value of a configuration variable"
+  echo "  list    List all configuration variables"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_config_set_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk config set - Set a configuration variable to a value\n"
+    echo
+
+  else
+    printf "risk config set - Set a configuration variable to a value\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  risk config set KEY VALUE\n"
+  printf "  risk config set --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "Arguments:\n"
+
+    # :argument.usage
+    echo "  KEY"
+    printf "    Name of of key to set\n"
+    echo
+
+    # :argument.usage
+    echo "  VALUE"
+    printf "    Value to assign to the key\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_config_get_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk config get - Print the value of a configuration variable\n"
+    echo
+
+  else
+    printf "risk config get - Print the value of a configuration variable\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  risk config get KEY\n"
+  printf "  risk config get --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "Arguments:\n"
+
+    # :argument.usage
+    echo "  KEY"
+    printf "    Name of of key to show\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_config_unset_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk config unset - Delete the value of a configuration variable\n"
+    echo
+
+  else
+    printf "risk config unset - Delete the value of a configuration variable\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  risk config unset KEY\n"
+  printf "  risk config unset --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "Arguments:\n"
+
+    # :argument.usage
+    echo "  KEY"
+    printf "    Name of of key to delete/unset\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_config_list_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk config list - List all configuration variables\n"
+    echo
+
+  else
+    printf "risk config list - List all configuration variables\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  risk config list\n"
+  printf "  risk config list --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_config_keys_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk config keys - List all configuration variables as an array (for completions)\n"
+    echo
+
+  else
+    printf "risk config keys - List all configuration variables as an array (for completions)\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  risk config keys\n"
+  printf "  risk config keys --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
     echo
 
   fi
@@ -1150,27 +1362,27 @@ risk_vpn_delete_usage() {
 }
 
 # :command.usage
-risk_config_usage() {
+risk_vm_usage() {
   if [[ -n $long_usage ]]; then
-    printf "risk config - Manage the risk global configuration\n"
+    printf "risk vm - Manage generic VMs (identity settings, enable/disable, etc)\n"
     echo
 
   else
-    printf "risk config - Manage the risk global configuration\n"
+    printf "risk vm - Manage generic VMs (identity settings, enable/disable, etc)\n"
     echo
 
   fi
 
   printf "Usage:\n"
-  printf "  risk config [command]\n"
-  printf "  risk config [command] --help | -h\n"
+  printf "  risk vm [command]\n"
+  printf "  risk vm [command] --help | -h\n"
   echo
   # :command.usage_commands
   printf "Commands:\n"
-  echo "  set     Set a configuration variable to a value"
-  echo "  get     Print the value of a configuration variable"
-  echo "  unset   Delete the value of a configuration variable"
-  echo "  list    List all configuration variables"
+  echo "  add       Tag an existing VM as belonging to the active identity, and change its netVM if one is already set"
+  echo "  delete    Delete a VM belonging to the current identity"
+  echo "  enable    Enable an identity VM to autostart"
+  echo "  disable   Disable an identity VM to autostart"
   echo
 
   # :command.long_usage
@@ -1186,20 +1398,20 @@ risk_config_usage() {
 }
 
 # :command.usage
-risk_config_set_usage() {
+risk_vm_add_usage() {
   if [[ -n $long_usage ]]; then
-    printf "risk config set - Set a configuration variable to a value\n"
+    printf "risk vm add - Tag an existing VM as belonging to the active identity, and change its netVM if one is already set\n"
     echo
 
   else
-    printf "risk config set - Set a configuration variable to a value\n"
+    printf "risk vm add - Tag an existing VM as belonging to the active identity, and change its netVM if one is already set\n"
     echo
 
   fi
 
   printf "Usage:\n"
-  printf "  risk config set KEY VALUE\n"
-  printf "  risk config set --help | -h\n"
+  printf "  risk vm add VM\n"
+  printf "  risk vm add --help | -h\n"
   echo
 
   # :command.long_usage
@@ -1215,33 +1427,28 @@ risk_config_set_usage() {
     printf "Arguments:\n"
 
     # :argument.usage
-    echo "  KEY"
-    printf "    Name of of key to set\n"
-    echo
-
-    # :argument.usage
-    echo "  VALUE"
-    printf "    Value to assign to the key\n"
+    echo "  VM"
+    printf "    VM to tag with identity settings\n"
     echo
 
   fi
 }
 
 # :command.usage
-risk_config_get_usage() {
+risk_vm_delete_usage() {
   if [[ -n $long_usage ]]; then
-    printf "risk config get - Print the value of a configuration variable\n"
+    printf "risk vm delete - Delete a VM belonging to the current identity\n"
     echo
 
   else
-    printf "risk config get - Print the value of a configuration variable\n"
+    printf "risk vm delete - Delete a VM belonging to the current identity\n"
     echo
 
   fi
 
   printf "Usage:\n"
-  printf "  risk config get KEY\n"
-  printf "  risk config get --help | -h\n"
+  printf "  risk vm delete VM\n"
+  printf "  risk vm delete --help | -h\n"
   echo
 
   # :command.long_usage
@@ -1257,28 +1464,28 @@ risk_config_get_usage() {
     printf "Arguments:\n"
 
     # :argument.usage
-    echo "  KEY"
-    printf "    Name of of key to show\n"
+    echo "  VM"
+    printf "    VM to delete\n"
     echo
 
   fi
 }
 
 # :command.usage
-risk_config_unset_usage() {
+risk_vm_enable_usage() {
   if [[ -n $long_usage ]]; then
-    printf "risk config unset - Delete the value of a configuration variable\n"
+    printf "risk vm enable - Enable an identity VM to autostart\n"
     echo
 
   else
-    printf "risk config unset - Delete the value of a configuration variable\n"
+    printf "risk vm enable - Enable an identity VM to autostart\n"
     echo
 
   fi
 
   printf "Usage:\n"
-  printf "  risk config unset KEY\n"
-  printf "  risk config unset --help | -h\n"
+  printf "  risk vm enable VM\n"
+  printf "  risk vm enable --help | -h\n"
   echo
 
   # :command.long_usage
@@ -1294,28 +1501,28 @@ risk_config_unset_usage() {
     printf "Arguments:\n"
 
     # :argument.usage
-    echo "  KEY"
-    printf "    Name of of key to delete/unset\n"
+    echo "  VM"
+    printf "    VM to enable for autostart\n"
     echo
 
   fi
 }
 
 # :command.usage
-risk_config_list_usage() {
+risk_vm_disable_usage() {
   if [[ -n $long_usage ]]; then
-    printf "risk config list - List all configuration variables\n"
+    printf "risk vm disable - Disable an identity VM to autostart\n"
     echo
 
   else
-    printf "risk config list - List all configuration variables\n"
+    printf "risk vm disable - Disable an identity VM to autostart\n"
     echo
 
   fi
 
   printf "Usage:\n"
-  printf "  risk config list\n"
-  printf "  risk config list --help | -h\n"
+  printf "  risk vm disable VM\n"
+  printf "  risk vm disable --help | -h\n"
   echo
 
   # :command.long_usage
@@ -1327,24 +1534,32 @@ risk_config_list_usage() {
     printf "    Show this help\n"
     echo
 
+    # :command.usage_args
+    printf "Arguments:\n"
+
+    # :argument.usage
+    echo "  VM"
+    printf "    VM to disable for autostart\n"
+    echo
+
   fi
 }
 
 # :command.usage
-risk_config_keys_usage() {
+risk_use_usage() {
   if [[ -n $long_usage ]]; then
-    printf "risk config keys - List all configuration variables as an array (for completions)\n"
+    printf "risk use - Execute a command in a VM belong to an identity.\n"
     echo
 
   else
-    printf "risk config keys - List all configuration variables as an array (for completions)\n"
+    printf "risk use - Execute a command in a VM belong to an identity.\n"
     echo
 
   fi
 
   printf "Usage:\n"
-  printf "  risk config keys\n"
-  printf "  risk config keys --help | -h\n"
+  printf "  risk use VM [...]\n"
+  printf "  risk use --help | -h\n"
   echo
 
   # :command.long_usage
@@ -1354,6 +1569,18 @@ risk_config_keys_usage() {
     # :command.usage_fixed_flags
     echo "  --help, -h"
     printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "Arguments:\n"
+
+    # :argument.usage
+    echo "  VM"
+    printf "    VM in which to execute the command\n"
+    echo
+
+    # :command.footer
+    printf "The target VM does not mandatorily need to belong to the active identity, if there is one.\nIf it does not belongs to another non-active identity, risk will take care of:\n  - Closing the active identity in the vault\n  - Opening the new one\nAfter this, the target VM is launched with the command arguments.\n\n"
     echo
 
   fi
@@ -1585,6 +1812,26 @@ check_is_device_attached ()
 
 # src/lib/identity.sh
 
+# _set_identity is used to propagate our various IDENTITY related variables
+# so that all functions that will be subsequently called can access them.
+#
+# This function also takes care of checking if there is already an active
+# identity that should be used, in case the argument is empty or none.
+#
+# $1 - The identity to use.
+_set_identity ()
+
+{
+    local identity="$1"
+
+    # This will throw an error if we don't have an identity from any source.
+    IDENTITY=$(_identity_active_or_specified "$identity")
+    _catch "Command requires either an identity to be active or given as argument"
+
+    # Set the identity directory
+    IDENTITY_DIR="${RISK_IDENTITIES_DIR}/${IDENTITY}"
+}
+
 # Upon unlocking a given identity, sets the name as an ENV
 
 # variable that we can use in further functions and commands.
@@ -1652,26 +1899,6 @@ _identity_active_or_specified ()
     print "$active_identity"
 }
 
-# _set_identity is used to propagate our various IDENTITY related variables
-# so that all functions that will be subsequently called can access them.
-#
-# This function also takes care of checking if there is already an active
-# identity that should be used, in case the argument is empty or none.
-#
-# $1 - The identity to use.
-_set_identity ()
-
-{
-    local identity="$1"
-
-    # This will throw an error if we don't have an identity from any source.
-    IDENTITY=$(_identity_active_or_specified "$identity")
-    _catch "Command requires either an identity to be active or given as argument"
-
-    # Set the identity directory
-    IDENTITY_DIR="${RISK_IDENTITIES_DIR}/${IDENTITY}"
-}
-
 # check that no identity is active in the vault, and fail if there is.
 check_no_active_identity ()
 {
@@ -1685,6 +1912,12 @@ check_no_active_identity ()
 
         _failure "Identity $active_identity is active. Close/slam/fold it and rerun this command"
     fi
+}
+
+# Returns the name of the identity to which a VM belongs.
+get_vm_owner ()
+{
+    print "$(qvm-tags "$1" "$RISK_VM_OWNER_TAG" 2>/dev/null)"
 }
 
 # Get the default VM label/color for an identity
@@ -2004,10 +2237,10 @@ _qvrun () {
     shift
     local full_command="$*"
 
-    _verbose "Running command: ${full_command[*]}"
+    _verbose "Running command: ${full_command}"
 
     # Run the command raw, so that we get the output as it is.
-    qvm-run --pass-io "$vm" "${full_command[*]}"
+    qvm-run --pass-io "$vm" "${full_command}"
 }
 
 # Checks the return code of a command, and if not successful,
@@ -2040,11 +2273,11 @@ function assertRunning {
         else
             #we don't attempt to start
             return 2
+            fi
         fi
-    fi
 
-    return 0
-}
+        return 0
+    }
 
 # start_vm [vm 1] ... [vm n]
 #Start the given VMs without executing any command.
@@ -2456,6 +2689,57 @@ clone_split_browser_vm ()
 # :command.command_functions
 
 # :command.function
+risk_config_set_command() {
+  # src/config_set_command.sh
+
+  local key value
+
+  key="${args[key]}"
+  value="${args[value]}"
+
+  config_set "$key" "$value"
+
+}
+
+# :command.function
+risk_config_get_command() {
+  # src/config_get_command.sh
+
+  local key
+
+  key="${args[key]}"
+
+  config_get "$key"
+
+}
+
+# :command.function
+risk_config_unset_command() {
+  # src/config_unset_command.sh
+
+  local key
+
+  key="${args[key]}"
+
+  config_set "$key" ""
+
+}
+
+# :command.function
+risk_config_list_command() {
+  # src/config_list_command.sh
+  config_show
+
+}
+
+# :command.function
+risk_config_keys_command() {
+  # src/config_keys_command.sh
+  config_keys
+
+}
+
+# :command.function
 risk_hush_attach_command() {
   # src/hush_attach_command.sh
 
@@ -2601,8 +2885,6 @@ risk_identity_create_command() {
   local expiry="${args[expiry_date]}"
   local pendrive="${args[--backup]}"
 
-  local backup_args
-
   # Other variables
   local vm_name           # Default prefix to use for newly created vm (eg. 'joe' => joe-vpn, joe-web)
   local label             # Default label color to use for all VMs, varies if not specified
@@ -2689,6 +2971,98 @@ risk_identity_create_command() {
       _message "Skipping TOR gateway"
   fi
 
+  # Browser VMs ==============================================================
+  _in_section "web" && _message "Creating browsing VMs:"
+
+  # Browser VMs are disposable, but we make a template for this identity,
+  # since we might  either modify stuff in there, and we need them at least
+
+  # to have a different network route.
+  if [[ -n ${args[--clone-web-from]} ]]; then
+      web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
+
+      clone="${args[--clone-web-from]}"
+      clone_browser_vm "$vm_name" "$clone" "$web_netvm" "$label"
+  else
+      create_browser_vm "$vm_name" "$web_netvm" "$label"
+  fi
+
+  # Split-browser has its own dispVMs and bookmarks
+  local split_web="${vm_name}-split-web"
+  if [[ -n ${args[--clone-split-from]} ]]; then
+      clone="${args[--clone-split-from]}"
+      clone_split_browser_vm "$split_web" "$clone" "$label"
+  else
+      create_split_browser_vm "$split_web" "$label"
+  fi
+
+  _success "Successfully initialized infrastructure for identity $IDENTITY"
+
+}
+
+# :command.function
+risk_identity_equip_command() {
+  # src/identity_equip_command.sh
+
+  local name="${args[identity]}"
+
+  # Other variables
+  local vm_name           # Default prefix to use for newly created vm (eg. 'joe' => joe-vpn, joe-web)
+  local label             # Default label color to use for all VMs, varies if not specified
+  local netvm             # Entry NetVM for the identity
+  local gw_netvm          # NetVM for the tor gateway
+  local web_netvm         # NetVM for the Web browser VM
+  local clone             # A variable that might be overritten several times, used to assign a VM to clone.
+
+  # Propagate the identity and its settings (in the script only)
+  _set_identity "${args[identity]}"
+
+  # Identity checks and basic setup ==========================================
+
+  # Check the identity exists
+
+  _message "Creating infrastructure for identity $IDENTITY"
+
+  # Make a directory for this identity, and store the associated VM name
+  [[ -e ${IDENTITY_DIR} ]] || mkdir -p "$IDENTITY_DIR"
+
+  # If the user wants to use a different vm_name for the VMs
+  vm_name="${args[--prefix]-$IDENTITY}"
+  echo "$vm_name" > "${IDENTITY_DIR}/vm_name"
+
+  _message "Using vm_name '$name' as VM base name"
+
+  label="${args[--label]}"
+  echo "$vm_name" > "${IDENTITY_DIR}/vm_label"
+
+  _message "Using label '$label' as VM default label"
+
+  # Prepare the root NetVM for this identity
+  netvm="${DEFAULT_NETVM}"
+
+  # Network VMs ==============================================================
+  _in_section "network" && _message "Creating network VMs:"
+
+  # 1 - Tor gateway, if not explicitly disabled
+  if [[ ${args[--no-gw]} -eq 0 ]]; then
+      gw_netvm="$netvm"
+
+      # We either clone the gateway from an existing one,
+      # or we create it from a template.
+      if [[ -n ${args[--clone-gw-from]} ]]; then
+          clone="${args[--clone-gw-from]}"
+          clone_tor_gateway "$vm_name" "$clone" "$gw_netvm" "$label"
+      else
+          create_tor_gateway "$vm_name" "$gw_netvm" "$label"
+      fi
+
+      # Set it as the netvm for this identity, and for the rest of the VMs
+      echo "$vm_name" > "${IDENTITY_DIR}/net_vm"
+
+  else
+      _message "Skipping TOR gateway"
+  fi
+
   # At this point we should know the vm_name of the VM to be used as NetVM
   # for the subsquent machines, such as web browsing and messaging VMs.
 
@@ -2722,16 +3096,6 @@ risk_identity_create_command() {
 }
 
 # :command.function
-risk_identity_equip_command() {
-  # src/identity_equip_command.sh
-  echo "# this file is located in 'src/identity_equip_command.sh'"
-  echo "# code for 'risk identity equip' goes here"
-  echo "# you can edit it freely and regenerate (it will not be overwritten)"
-  inspect_args
-
-}
-
-# :command.function
 risk_identity_delete_command() {
   # src/identity_delete_command.sh
 
@@ -2740,6 +3104,8 @@ risk_identity_delete_command() {
   # First check the identity is valid
 
   # Check access to hush device in vault
+
+  # Close the identity
 
   # Close all machines belonging to the identity
 
@@ -2809,8 +3175,17 @@ risk_identity_start_command() {
   _set_identity "${args[identity]}"
 
   # Get the name for VMs
-  local identity_dir="${IDENTITY_DIR}"
-  local name="$(cat "${identity_dir}/vm_name")"
+  local name="$(cat "${IDENTITY_DIR}/vm_name")"
+
+  # Check the identity is valid
+
+  # Open the identity in vault
+
+  # Start all enabled network machines
+
+  # Start all enabled client machines
+
+  _success "Opened identity '$IDENTITY' and started enabled VMs"
 
 }
 
@@ -3131,53 +3506,78 @@ risk_vpn_delete_command() {
 }
 
 # :command.function
-risk_config_set_command() {
-  # src/config_set_command.sh
-
-  local key value
-
-  key="${args[key]}"
-  value="${args[value]}"
-
-  config_set "$key" "$value"
+risk_vm_add_command() {
+  # src/vm_add_command.sh
+  echo "# this file is located in 'src/vm_add_command.sh'"
+  echo "# code for 'risk vm add' goes here"
+  echo "# you can edit it freely and regenerate (it will not be overwritten)"
+  inspect_args
 
 }
 
 # :command.function
-risk_config_get_command() {
-  # src/config_get_command.sh
-
-  local key
-
-  key="${args[key]}"
-
-  config_get "$key"
+risk_vm_delete_command() {
+  # src/vm_delete_command.sh
+  echo "# this file is located in 'src/vm_delete_command.sh'"
+  echo "# code for 'risk vm delete' goes here"
+  echo "# you can edit it freely and regenerate (it will not be overwritten)"
+  inspect_args
 
 }
 
 # :command.function
-risk_config_unset_command() {
-  # src/config_unset_command.sh
-
-  local key
-
-  key="${args[key]}"
-
-  config_set "$key" ""
+risk_vm_enable_command() {
+  # src/vm_enable_command.sh
+  echo "# this file is located in 'src/vm_enable_command.sh'"
+  echo "# code for 'risk vm enable' goes here"
+  echo "# you can edit it freely and regenerate (it will not be overwritten)"
+  inspect_args
 
 }
 
 # :command.function
-risk_config_list_command() {
-  # src/config_list_command.sh
-  config_show
+risk_vm_disable_command() {
+  # src/vm_disable_command.sh
+  echo "# this file is located in 'src/vm_disable_command.sh'"
+  echo "# code for 'risk vm disable' goes here"
+  echo "# you can edit it freely and regenerate (it will not be overwritten)"
+  inspect_args
 
 }
 
 # :command.function
-risk_config_keys_command() {
-  # src/config_keys_command.sh
-  config_keys
+risk_use_command() {
+  # src/use_command.sh
+
+  local vm arguments
+
+  # Note that we concatenate all command arguments in a string (with *), to be passed to qvm-run
+  vm="${args[vm]}"
+  arguments="${other_args[@]}"
+
+  local owner active_identity
+  owner=$(get_vm_owner "$vm")
+  active_identity="$(_identity_active_or_specified)"
+
+  # If the VM does not belong to any identity, then we don't have
+  # to interact with any of them, and this branch is skipped.
+  #
+
+  # However if the VM does not belong the active identity, we must:
+
+  if [[ -n "$owner" ]] && [[ $owner != "$active_identity" ]]; then
+      # Close the active identity
+      _message "Closing identity $active_identity"
+      risk_identity_close_command
+
+      # Open the new one
+      args[identity]="$owner"
+      risk_identity_open_command
+  fi
+
+  # At this point everything identity-related should be cleared and done.
+  _qvrun "$vm" "${arguments[@]}"
+  _catch "Failed to execute command in $vm:"
 
 }
 
@@ -3203,6 +3603,13 @@ parse_requirements() {
 
   case $action in
   -* )
+    ;;
+
+  config )
+    action="config"
+    shift
+    risk_config_parse_requirements "$@"
+    shift $#
     ;;
 
   hush )
@@ -3240,10 +3647,17 @@ parse_requirements() {
     shift $#
     ;;
 
-  config )
-    action="config"
+  vm )
+    action="vm"
     shift
-    risk_config_parse_requirements "$@"
+    risk_vm_parse_requirements "$@"
+    shift $#
+    ;;
+
+  use )
+    action="use"
+    shift
+    risk_use_parse_requirements "$@"
     shift $#
     ;;
 
@@ -3259,6 +3673,330 @@ parse_requirements() {
     ;;
 
   esac
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+    -?* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      # :command.parse_requirements_case_simple
+      printf "invalid argument: %s\n" "$key"
+      exit 1
+
+      ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
+risk_config_parse_requirements() {
+  # :command.fixed_flags_filter
+  case "${1:-}" in
+  --help | -h )
+    long_usage=yes
+    risk_config_usage
+    exit
+    ;;
+
+  esac
+
+  # :command.command_filter
+  action=${1:-}
+
+  case $action in
+  -* )
+    ;;
+
+  set )
+    action="set"
+    shift
+    risk_config_set_parse_requirements "$@"
+    shift $#
+    ;;
+
+  get )
+    action="get"
+    shift
+    risk_config_get_parse_requirements "$@"
+    shift $#
+    ;;
+
+  unset )
+    action="unset"
+    shift
+    risk_config_unset_parse_requirements "$@"
+    shift $#
+    ;;
+
+  list )
+    action="list"
+    shift
+    risk_config_list_parse_requirements "$@"
+    shift $#
+    ;;
+
+  keys )
+    action="keys"
+    shift
+    risk_config_keys_parse_requirements "$@"
+    shift $#
+    ;;
+
+  # :command.command_fallback
+  "" )
+    risk_config_usage
+    exit 1
+    ;;
+
+  * )
+    printf "invalid command: %s\n" "$action"
+    exit 1
+    ;;
+
+  esac
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+    -?* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      # :command.parse_requirements_case_simple
+      printf "invalid argument: %s\n" "$key"
+      exit 1
+
+      ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
+risk_config_set_parse_requirements() {
+  # :command.fixed_flags_filter
+  case "${1:-}" in
+  --help | -h )
+    long_usage=yes
+    risk_config_set_usage
+    exit
+    ;;
+
+  esac
+
+  # :command.command_filter
+  action="config set"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+    -?* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      # :command.parse_requirements_case_simple
+      if [[ -z ${args[key]+x} ]]; then
+
+        args[key]=$1
+        shift
+      elif [[ -z ${args[value]+x} ]]; then
+
+        args[value]=$1
+        shift
+      else
+        printf "invalid argument: %s\n" "$key"
+        exit 1
+      fi
+
+      ;;
+
+    esac
+  done
+
+  # :command.required_args_filter
+  if [[ -z ${args[key]+x} ]]; then
+    printf "missing required argument: KEY\nusage: risk config set KEY VALUE\n"
+    exit 1
+  fi
+  if [[ -z ${args[value]+x} ]]; then
+    printf "missing required argument: VALUE\nusage: risk config set KEY VALUE\n"
+    exit 1
+  fi
+
+}
+
+# :command.parse_requirements
+risk_config_get_parse_requirements() {
+  # :command.fixed_flags_filter
+  case "${1:-}" in
+  --help | -h )
+    long_usage=yes
+    risk_config_get_usage
+    exit
+    ;;
+
+  esac
+
+  # :command.command_filter
+  action="config get"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+    -?* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      # :command.parse_requirements_case_simple
+      if [[ -z ${args[key]+x} ]]; then
+
+        args[key]=$1
+        shift
+      else
+        printf "invalid argument: %s\n" "$key"
+        exit 1
+      fi
+
+      ;;
+
+    esac
+  done
+
+  # :command.required_args_filter
+  if [[ -z ${args[key]+x} ]]; then
+    printf "missing required argument: KEY\nusage: risk config get KEY\n"
+    exit 1
+  fi
+
+}
+
+# :command.parse_requirements
+risk_config_unset_parse_requirements() {
+  # :command.fixed_flags_filter
+  case "${1:-}" in
+  --help | -h )
+    long_usage=yes
+    risk_config_unset_usage
+    exit
+    ;;
+
+  esac
+
+  # :command.command_filter
+  action="config unset"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+    -?* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      # :command.parse_requirements_case_simple
+      if [[ -z ${args[key]+x} ]]; then
+
+        args[key]=$1
+        shift
+      else
+        printf "invalid argument: %s\n" "$key"
+        exit 1
+      fi
+
+      ;;
+
+    esac
+  done
+
+  # :command.required_args_filter
+  if [[ -z ${args[key]+x} ]]; then
+    printf "missing required argument: KEY\nusage: risk config unset KEY\n"
+    exit 1
+  fi
+
+}
+
+# :command.parse_requirements
+risk_config_list_parse_requirements() {
+  # :command.fixed_flags_filter
+  case "${1:-}" in
+  --help | -h )
+    long_usage=yes
+    risk_config_list_usage
+    exit
+    ;;
+
+  esac
+
+  # :command.command_filter
+  action="config list"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+    -?* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      # :command.parse_requirements_case_simple
+      printf "invalid argument: %s\n" "$key"
+      exit 1
+
+      ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
+risk_config_keys_parse_requirements() {
+  # :command.fixed_flags_filter
+  case "${1:-}" in
+  --help | -h )
+    long_usage=yes
+    risk_config_keys_usage
+    exit
+    ;;
+
+  esac
+
+  # :command.command_filter
+  action="config keys"
 
   # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
@@ -5125,12 +5863,12 @@ risk_vpn_delete_parse_requirements() {
 }
 
 # :command.parse_requirements
-risk_config_parse_requirements() {
+risk_vm_parse_requirements() {
   # :command.fixed_flags_filter
   case "${1:-}" in
   --help | -h )
     long_usage=yes
-    risk_config_usage
+    risk_vm_usage
     exit
     ;;
 
@@ -5143,44 +5881,37 @@ risk_config_parse_requirements() {
   -* )
     ;;
 
-  set )
-    action="set"
+  add )
+    action="add"
     shift
-    risk_config_set_parse_requirements "$@"
+    risk_vm_add_parse_requirements "$@"
     shift $#
     ;;
 
-  get )
-    action="get"
+  delete )
+    action="delete"
     shift
-    risk_config_get_parse_requirements "$@"
+    risk_vm_delete_parse_requirements "$@"
     shift $#
     ;;
 
-  unset )
-    action="unset"
+  enable )
+    action="enable"
     shift
-    risk_config_unset_parse_requirements "$@"
+    risk_vm_enable_parse_requirements "$@"
     shift $#
     ;;
 
-  list )
-    action="list"
+  disable )
+    action="disable"
     shift
-    risk_config_list_parse_requirements "$@"
-    shift $#
-    ;;
-
-  keys )
-    action="keys"
-    shift
-    risk_config_keys_parse_requirements "$@"
+    risk_vm_disable_parse_requirements "$@"
     shift $#
     ;;
 
   # :command.command_fallback
   "" )
-    risk_config_usage
+    risk_vm_usage
     exit 1
     ;;
 
@@ -5215,19 +5946,19 @@ risk_config_parse_requirements() {
 }
 
 # :command.parse_requirements
-risk_config_set_parse_requirements() {
+risk_vm_add_parse_requirements() {
   # :command.fixed_flags_filter
   case "${1:-}" in
   --help | -h )
     long_usage=yes
-    risk_config_set_usage
+    risk_vm_add_usage
     exit
     ;;
 
   esac
 
   # :command.command_filter
-  action="config set"
+  action="vm add"
 
   # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
@@ -5242,13 +5973,9 @@ risk_config_set_parse_requirements() {
     * )
       # :command.parse_requirements_case
       # :command.parse_requirements_case_simple
-      if [[ -z ${args[key]+x} ]]; then
+      if [[ -z ${args[vm]+x} ]]; then
 
-        args[key]=$1
-        shift
-      elif [[ -z ${args[value]+x} ]]; then
-
-        args[value]=$1
+        args[vm]=$1
         shift
       else
         printf "invalid argument: %s\n" "$key"
@@ -5261,31 +5988,27 @@ risk_config_set_parse_requirements() {
   done
 
   # :command.required_args_filter
-  if [[ -z ${args[key]+x} ]]; then
-    printf "missing required argument: KEY\nusage: risk config set KEY VALUE\n"
-    exit 1
-  fi
-  if [[ -z ${args[value]+x} ]]; then
-    printf "missing required argument: VALUE\nusage: risk config set KEY VALUE\n"
+  if [[ -z ${args[vm]+x} ]]; then
+    printf "missing required argument: VM\nusage: risk vm add VM\n"
     exit 1
   fi
 
 }
 
 # :command.parse_requirements
-risk_config_get_parse_requirements() {
+risk_vm_delete_parse_requirements() {
   # :command.fixed_flags_filter
   case "${1:-}" in
   --help | -h )
     long_usage=yes
-    risk_config_get_usage
+    risk_vm_delete_usage
     exit
     ;;
 
   esac
 
   # :command.command_filter
-  action="config get"
+  action="vm delete"
 
   # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
@@ -5300,9 +6023,9 @@ risk_config_get_parse_requirements() {
     * )
       # :command.parse_requirements_case
       # :command.parse_requirements_case_simple
-      if [[ -z ${args[key]+x} ]]; then
+      if [[ -z ${args[vm]+x} ]]; then
 
-        args[key]=$1
+        args[vm]=$1
         shift
       else
         printf "invalid argument: %s\n" "$key"
@@ -5315,27 +6038,27 @@ risk_config_get_parse_requirements() {
   done
 
   # :command.required_args_filter
-  if [[ -z ${args[key]+x} ]]; then
-    printf "missing required argument: KEY\nusage: risk config get KEY\n"
+  if [[ -z ${args[vm]+x} ]]; then
+    printf "missing required argument: VM\nusage: risk vm delete VM\n"
     exit 1
   fi
 
 }
 
 # :command.parse_requirements
-risk_config_unset_parse_requirements() {
+risk_vm_enable_parse_requirements() {
   # :command.fixed_flags_filter
   case "${1:-}" in
   --help | -h )
     long_usage=yes
-    risk_config_unset_usage
+    risk_vm_enable_usage
     exit
     ;;
 
   esac
 
   # :command.command_filter
-  action="config unset"
+  action="vm enable"
 
   # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
@@ -5350,9 +6073,9 @@ risk_config_unset_parse_requirements() {
     * )
       # :command.parse_requirements_case
       # :command.parse_requirements_case_simple
-      if [[ -z ${args[key]+x} ]]; then
+      if [[ -z ${args[vm]+x} ]]; then
 
-        args[key]=$1
+        args[vm]=$1
         shift
       else
         printf "invalid argument: %s\n" "$key"
@@ -5365,27 +6088,27 @@ risk_config_unset_parse_requirements() {
   done
 
   # :command.required_args_filter
-  if [[ -z ${args[key]+x} ]]; then
-    printf "missing required argument: KEY\nusage: risk config unset KEY\n"
+  if [[ -z ${args[vm]+x} ]]; then
+    printf "missing required argument: VM\nusage: risk vm enable VM\n"
     exit 1
   fi
 
 }
 
 # :command.parse_requirements
-risk_config_list_parse_requirements() {
+risk_vm_disable_parse_requirements() {
   # :command.fixed_flags_filter
   case "${1:-}" in
   --help | -h )
     long_usage=yes
-    risk_config_list_usage
+    risk_vm_disable_usage
     exit
     ;;
 
   esac
 
   # :command.command_filter
-  action="config list"
+  action="vm disable"
 
   # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
@@ -5400,30 +6123,42 @@ risk_config_list_parse_requirements() {
     * )
       # :command.parse_requirements_case
       # :command.parse_requirements_case_simple
-      printf "invalid argument: %s\n" "$key"
-      exit 1
+      if [[ -z ${args[vm]+x} ]]; then
+
+        args[vm]=$1
+        shift
+      else
+        printf "invalid argument: %s\n" "$key"
+        exit 1
+      fi
 
       ;;
 
     esac
   done
+
+  # :command.required_args_filter
+  if [[ -z ${args[vm]+x} ]]; then
+    printf "missing required argument: VM\nusage: risk vm disable VM\n"
+    exit 1
+  fi
 
 }
 
 # :command.parse_requirements
-risk_config_keys_parse_requirements() {
+risk_use_parse_requirements() {
   # :command.fixed_flags_filter
   case "${1:-}" in
   --help | -h )
     long_usage=yes
-    risk_config_keys_usage
+    risk_use_usage
     exit
     ;;
 
   esac
 
   # :command.command_filter
-  action="config keys"
+  action="use"
 
   # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
@@ -5431,20 +6166,32 @@ risk_config_keys_parse_requirements() {
     case "$key" in
 
     -?* )
-      printf "invalid option: %s\n" "$key"
-      exit 1
+      other_args+=("$1")
+      shift
       ;;
 
     * )
       # :command.parse_requirements_case
-      # :command.parse_requirements_case_simple
-      printf "invalid argument: %s\n" "$key"
-      exit 1
+      # :command.parse_requirements_case_catch_all
+      if [[ -z ${args[vm]+x} ]]; then
+
+        args[vm]=$1
+        shift
+      else
+        other_args+=("$1")
+        shift
+      fi
 
       ;;
 
     esac
   done
+
+  # :command.required_args_filter
+  if [[ -z ${args[vm]+x} ]]; then
+    printf "missing required argument: VM\nusage: risk use VM [...]\n"
+    exit 1
+  fi
 
 }
 
@@ -5452,7 +6199,7 @@ risk_config_keys_parse_requirements() {
 initialize() {
   version="0.1.0"
   long_usage=''
-  set -e
+  
 
   # src/initialize.sh
 
@@ -5467,21 +6214,6 @@ initialize() {
   # The generated script makes use of BASH_REMATCH, set compat for ZSH
   setopt BASH_REMATCH
 
-  # Working state variables
-  typeset -r IDENTITY            # The identity to use for this single risk execution
-  typeset -g IDENTITY_DIR        # The directory where to store identity settings
-
-  # Working state and configurations
-  typeset -rg RISK_DIR="${HOME}/.risk"                         # Directory where risk stores its state
-  typeset -rg RISK_IDENTITIES_DIR="${RISK_DIR}/identities"     # Idendities store their settings here
-  typeset -rg RISK_IDENTITY_FILE="${RISK_DIR}/.identity"
-
-  # Default filesystem settings from configuration file ----------------------------------------------
-
-  typeset -g VAULT_VM=$(config_get VAULT_VM)
-  typeset -g DEFAULT_NETVM=$(config_get DEFAULT_NETVM)
-
-  #----------------------------#
 
   # Don't run as root
   if [[ $EUID -eq 0 ]]; then
@@ -5492,7 +6224,12 @@ initialize() {
   # Use colors unless told not to
   { ! option_is_set --no-color } && { autoload -Uz colors && colors }
 
-  #----------------------------#
+  # Configuration file -------------------------------------------------------------------------------
+  #
+  # Working state and configurations
+  typeset -rg RISK_DIR="${HOME}/.risk"                         # Directory where risk stores its state
+  typeset -rg RISK_IDENTITIES_DIR="${RISK_DIR}/identities"     # Idendities store their settings here
+  typeset -rg RISK_IDENTITY_FILE="${RISK_DIR}/.identity"
 
   # Create the risk directory if needed
   [[ -e $RISK_DIR ]] || { mkdir -p $RISK_DIR && _message "Creating RISK directory in $RISK_DIR" }
@@ -5500,6 +6237,17 @@ initialize() {
 
   # Write the default configuration if it does not exist.
   config_init
+
+  # Default filesystem settings from configuration file ----------------------------------------------
+
+  typeset -g VAULT_VM=$(config_get VAULT_VM)
+  typeset -g DEFAULT_NETVM=$(config_get DEFAULT_NETVM)
+
+  # Working state variables --------------------------------------------------------------------------
+  typeset -r IDENTITY            # The identity to use for this single risk execution
+  typeset -g IDENTITY_DIR        # The directory where to store identity settings
+
+  typeset -rg RISK_VM_OWNER_TAG="risk_owner"  # The value of the KEY qvm-tag used to mark the owner of a VM
 
 }
 
@@ -5511,7 +6259,55 @@ run() {
   normalize_input "$@"
   parse_requirements "${input[@]}"
 
-  if [[ $action == "hush" ]]; then
+  if [[ $action == "config" ]]; then
+    if [[ ${args[--help]:-} ]]; then
+      long_usage=yes
+      risk_config_usage
+    else
+      risk_config_command
+    fi
+
+  elif [[ $action == "config set" ]]; then
+    if [[ ${args[--help]:-} ]]; then
+      long_usage=yes
+      risk_config_set_usage
+    else
+      risk_config_set_command
+    fi
+
+  elif [[ $action == "config get" ]]; then
+    if [[ ${args[--help]:-} ]]; then
+      long_usage=yes
+      risk_config_get_usage
+    else
+      risk_config_get_command
+    fi
+
+  elif [[ $action == "config unset" ]]; then
+    if [[ ${args[--help]:-} ]]; then
+      long_usage=yes
+      risk_config_unset_usage
+    else
+      risk_config_unset_command
+    fi
+
+  elif [[ $action == "config list" ]]; then
+    if [[ ${args[--help]:-} ]]; then
+      long_usage=yes
+      risk_config_list_usage
+    else
+      risk_config_list_command
+    fi
+
+  elif [[ $action == "config keys" ]]; then
+    if [[ ${args[--help]:-} ]]; then
+      long_usage=yes
+      risk_config_keys_usage
+    else
+      risk_config_keys_command
+    fi
+
+  elif [[ $action == "hush" ]]; then
     if [[ ${args[--help]:-} ]]; then
       long_usage=yes
       risk_hush_usage
@@ -5703,52 +6499,52 @@ run() {
       risk_vpn_delete_command
     fi
 
-  elif [[ $action == "config" ]]; then
+  elif [[ $action == "vm" ]]; then
     if [[ ${args[--help]:-} ]]; then
       long_usage=yes
-      risk_config_usage
+      risk_vm_usage
     else
-      risk_config_command
+      risk_vm_command
     fi
 
-  elif [[ $action == "config set" ]]; then
+  elif [[ $action == "vm add" ]]; then
     if [[ ${args[--help]:-} ]]; then
       long_usage=yes
-      risk_config_set_usage
+      risk_vm_add_usage
     else
-      risk_config_set_command
+      risk_vm_add_command
     fi
 
-  elif [[ $action == "config get" ]]; then
+  elif [[ $action == "vm delete" ]]; then
     if [[ ${args[--help]:-} ]]; then
       long_usage=yes
-      risk_config_get_usage
+      risk_vm_delete_usage
     else
-      risk_config_get_command
+      risk_vm_delete_command
     fi
 
-  elif [[ $action == "config unset" ]]; then
+  elif [[ $action == "vm enable" ]]; then
     if [[ ${args[--help]:-} ]]; then
       long_usage=yes
-      risk_config_unset_usage
+      risk_vm_enable_usage
     else
-      risk_config_unset_command
+      risk_vm_enable_command
     fi
 
-  elif [[ $action == "config list" ]]; then
+  elif [[ $action == "vm disable" ]]; then
     if [[ ${args[--help]:-} ]]; then
       long_usage=yes
-      risk_config_list_usage
+      risk_vm_disable_usage
     else
-      risk_config_list_command
+      risk_vm_disable_command
     fi
 
-  elif [[ $action == "config keys" ]]; then
+  elif [[ $action == "use" ]]; then
     if [[ ${args[--help]:-} ]]; then
       long_usage=yes
-      risk_config_keys_usage
+      risk_use_usage
     else
-      risk_config_keys_command
+      risk_use_command
     fi
 
   elif [[ $action == "root" ]]; then

@@ -1,0 +1,42 @@
+# Commands used to manage generic VMs (non gateways)
+name: vm
+help: Manage generic VMs (identity settings, enable/disable, etc)
+
+commands:
+  - name: add
+    help: "Tag an existing VM as belonging to the active identity, and change its netVM if one is already set"
+    args:
+      - name: vm
+        help: "VM to tag with identity settings"
+        required: true
+    flags:
+    - long: --netvm
+      short: -n
+      help: "NetVM to use for this VM"
+      arg: vm
+    - long: --set-default
+      help: "If VM provides network, set this VM as default NetVM for identity"
+    - long: --enable
+      short: -E
+      help: "Autostart this VM when the identity is started"
+
+  - name: delete 
+    help: "Delete a VM belonging to the current identity"
+    args:
+      - name: vm
+        help: "VM to delete"
+        required: true
+
+  - name: enable 
+    help: "Enable an identity VM to autostart"
+    args:
+      - name: vm
+        help: "VM to enable for autostart"
+        required: true
+
+  - name: disable 
+    help: "Disable an identity VM to autostart"
+    args:
+      - name: vm
+        help: "VM to disable from autostart"
+        required: true

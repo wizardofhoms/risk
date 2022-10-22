@@ -20,6 +20,8 @@ _risk ()
             (identity) _identity ;;
             (vpn) _vpn ;;
             (config) _config ;;
+            (vm) _vm ;;
+            (use) _use ;;
         esac
     else
         local -a subcmds
@@ -30,6 +32,8 @@ _risk ()
             'vpn:Create, configure, manage and use VPN gateways for an identity'
             'slam:Close identity and/or associated stores in the vault only, and detach hush/backup'
             'config:Manage the global risk configuration settings from the CLI'
+            'use:Execute a command in a VM belong to an identity'
+            'vm:Manage generic VMs (identity settings, enable/disable, etc)'
         )
 
         _describe -t commands 'commands' subcmds
@@ -315,13 +319,13 @@ _vpn ()
             enable)
                 _arguments \
                     "${_flags_base[@]}" \
-                    '1:VPN gateway name:_disabled_vms' \
+                    '1:VPN gateway name:_disabled_vpns' \
                     && ret=0
                 ;;
             disable)
                 _arguments \
                     "${_flags_base[@]}" \
-                    '1:VPN gateway name:_enabled_vms' \
+                    '1:VPN gateway name:_enabled_vpns' \
                     && ret=0
                 ;;
             start) _arguments \
@@ -332,6 +336,75 @@ _vpn ()
             stop) _arguments \
                     "${_flags_base[@]}" \
                     '1:VPN gateway name:_running_identity_vpns' \
+                    && ret=0
+                ;;
+            esac
+    esac
+}
+
+# Completion for use command
+_use ()
+{
+    local ret=1
+    local line state
+
+    _arguments -C \
+        "1:VM to use:_structured_vms" \
+        "*::command arguments:" \
+        && ret=0
+}
+
+# Subcommands for the vm command
+_vm_commands ()
+{
+    local -a subcmds 
+    subcmds=(
+        'add:Tag an existing VM as belonging to the active identity, and change its netVM if one is already set'
+        'delete:Delete a VM belonging to the current identity'
+        'enable:Enable an identity VM to autostart'
+        'disable:Disable an identity VM from autostart'
+    )
+    _describe -t commands 'vm commands' subcmds && ret=0
+}
+
+# Completion dispatcher for vm command
+_vm ()
+{
+    local ret=1
+    local line state
+
+    _arguments -C \
+        "1: :_vm_commands" \
+        "*::arg:->args" \
+        && ret=0
+
+    # Arguments completion
+    case $state in
+        args)
+            case $line[1] in
+            add)
+                _arguments -C \
+                    "${_flags_base[@]}" \
+                    "${_flags_network[@]}" \
+                    '1::VM to tag with identity settings:_known_vms' \
+                    && ret=0
+                ;;
+            delete)
+                _arguments \
+                    "${_flags_base[@]}" \
+                    '1:VM to delete:_identity_vms' \
+                    && ret=0
+                ;;
+            enable)
+                _arguments \
+                    "${_flags_base[@]}" \
+                    '1:VM to enable for autostart:_disabled_identity_vms' \
+                    && ret=0
+                ;;
+            disable)
+                _arguments \
+                    "${_flags_base[@]}" \
+                    '1:Disable an identity VM to autostart:_enabled_identity_vms' \
                     && ret=0
                 ;;
             esac
@@ -426,6 +499,54 @@ _known_vms ()
     _arguments -C "*:VMs:($VM_COMPLETIONS)" && ret=0
 }
 
+# Returns all the VMs belonging to the active identity
+_identity_vms ()
+{
+    # Proxies
+    local identity_dir proxies vms
+
+    # Get the list of gateways, either for active identity or all
+    identity_dir="$(_identity_dir)"
+    read -d '' -r -A proxies <"${identity_dir}/proxy_vms"
+    
+    # Other clients 
+    read -d '' -r -A vms <"${identity_dir}/client_vms"
+
+    _alternative "proxies:proxies:($proxies)"
+    _alternative "other VMs:other VMs:($proxies)"
+}
+
+# Returns all identity enabled VMs
+_enabled_identity_vms ()
+{
+    local identity_dir="$(_identity_dir)"
+    read -d '' -r -A vms <"${identity_dir}/autostart_vms"
+
+    read -d '' -r -A proxies <"${identity_dir}/proxy_vms"
+    enabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -u))
+    _alternative "enabled VPNs:enabled VPNs:($enabled_vpns)"
+
+    read -d '' -r -A client_vms <"${identity_dir}/client_vms"
+    enabled_vms=($(echo "${client_vms[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -u))
+    _alternative "enabled VMs:enabled VMs:($enabled_vms)"
+}
+
+# Returns all identity disabled VMs
+_disabled_identity_vms ()
+{
+    # Enabled VMs
+    local identity_dir="$(_identity_dir)"
+    read -d '' -r -A vms <"${identity_dir}/autostart_vms"
+
+    read -d '' -r -A proxies <"${identity_dir}/proxy_vms"
+    disabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
+    _alternative "disabled VPNs:disabled VPNs:($enabled_vpns)"
+    
+    read -d '' -r -A client_vms <"${identity_dir}/client_vms"
+    disabled_vms=($(echo "${client_vms[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
+    _alternative "disabled VMs:disabled VMs:($disabled_vms)"
+}
+
 # Returns the list of running VPN gateways for the active identity.
 _running_identity_vpns ()
 {
@@ -481,10 +602,14 @@ _identity_vpns ()
 }
 
 # Returns all VMs that are marked autostart for the identity.
-_enabled_vms ()
+_enabled_vpns ()
 {
     local identity_dir="$(_identity_dir)"
     read -d '' -r -A vms <"${identity_dir}/autostart_vms"
+    read -d '' -r -A proxies <"${identity_dir}/proxy_vms"
+
+    # Diff both
+    enabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -u))
 
     if [[ "${#vms[@]}" -eq 0 ]]; then
         _message "no enabled VPN gateways"
@@ -494,23 +619,21 @@ _enabled_vms ()
 }
 
 # Returns all VMs that are marked autostart for the identity.
-_disabled_vms ()
+_disabled_vpns ()
 {
     # Enabled VMs
     local identity_dir="$(_identity_dir)"
     read -d '' -r -A vms <"${identity_dir}/autostart_vms"
-
-    # All proxy VMs
     read -d '' -r -A proxies <"${identity_dir}/proxy_vms"
     
     # Diff both
-    disabled_vms=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -u))
+    disabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
     
     # Return
-    if [[ "${#disabled_vms[@]}" -eq 0 ]]; then
+    if [[ "${#disabled_vpns[@]}" -eq 0 ]]; then
         _message "no disabled VPN gateways"
     else
-        _arguments -C "1:disabled VMs:($disabled_vms)"
+        _arguments -C "1:disabled VMs:($disabled_vpns)"
     fi
 }
 
@@ -520,6 +643,24 @@ _running_identity_vms ()
     local identity_dir="$(_identity_dir)"
     # VPNs
     # Clients
+}
+
+# returns all VMs, but in different categories for identity and not
+_structured_vms ()
+{
+    local -a proxies client_vms other_vms 
+
+    # First return the VMs belonging to the identity
+    [[ -e "${identity_dir}/proxy_vms" ]] && read -d '' -r -A proxies <"${identity_dir}/proxy_vms"
+    [[ -e "${identity_dir}/client_vms" ]] && read -d '' -r -A client_vms <"${identity_dir}/client_vms"
+    local identity_vms=( "${proxies[@]}" "${client_vms[@]}" )
+    _alternative "identity VMs:identity VMs:($identity_vms)"
+
+    # Then diff it with the complete VM list
+    read -d '' -r -A all_vms < <(qvm-ls --raw-list)
+    other_vms=($(echo "${proxies[@]}" "${all_vms[@]}" | tr ' ' '\n' | sort | uniq -u))
+    other_vms=($(echo "${client_vms[@]}" "${other_vms[@]}" | tr ' ' '\n' | sort | uniq -u))
+    _alternative "other VMs:other VMs:($other_vms)"
 }
 
 # Returns the keys found in the risk global configuration

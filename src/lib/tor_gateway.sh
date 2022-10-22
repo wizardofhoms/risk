@@ -15,6 +15,10 @@ create_tor_gateway ()
     create_command+=(qvm-create --property netvm="$netvm" --label "$gw_label" --template "$gw_template")
 
     _message "Creating TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_template)"
+
+    # Tag the VM with its owner
+    _run qvm-tags "$gw" set "$IDENTITY"
+
 }
 
 # very similar to create_tor_gateway, except that we clone an existing
@@ -32,4 +36,7 @@ clone_tor_gateway ()
     local netvm_command=(qvm-prefs "$gw" netvm "$netvm")
 
     _message "Cloning TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_clone)"
+
+    # Tag the VM with its owner
+    _run qvm-tags "$gw" set "$IDENTITY"
 }

@@ -22,9 +22,14 @@ _set_identity "${args[identity]}"
 
 # Identity checks and basic setup ==========================================
 
-# Check no active identity is here
+# Check no active identity is here,
 if _identity_active ; then
     _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
+fi
+
+# or that the one we want to create does not exists already
+if check_identity_exists "$IDENTITY" ; then
+    _failure "Identity $IDENTITY already exists"
 fi
 
 # We're good to go
@@ -90,9 +95,6 @@ if [[ ${args[--no-gw]} -eq 0 ]]; then
 else
     _message "Skipping TOR gateway"
 fi
-
-# At this point we should know the vm_name of the VM to be used as NetVM
-# for the subsquent machines, such as web browsing and messaging VMs.
 
 # Browser VMs ==============================================================
 _in_section "web" && _message "Creating browsing VMs:"

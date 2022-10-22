@@ -12,6 +12,9 @@ create_vpn_gateway ()
 
     _message "Getting network from $netvm"
 
+    # Tag the VM with its owner
+    _run qvm-tags "$gw" set "$IDENTITY"
+
     # Add the gateway to the list of existing proxies for this identity
     echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
 }
@@ -41,6 +44,9 @@ clone_vpn_gateway ()
 
     _verbose "Setting label to $gw_label"
     qvm-prefs "$gw" label "$gw_label"
+
+    # Tag the VM with its owner
+    _run qvm-tags "$gw" set "$IDENTITY"
 
     # Add the gateway to the list of existing proxies for this identity
     echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"

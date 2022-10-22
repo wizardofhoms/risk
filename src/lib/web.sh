@@ -45,6 +45,8 @@ create_split_browser_vm ()
 
     _message "Creating split-browser (name: $web / netvm: $netvm / template: $split_template)"
     qvm-create --property netvm=None --label "$web_label" --template "$split_template"
+
+    qvm-tags "$web" set "$IDENTITY"
 }
 
 # Clone an existing split-browser VM, and change its dispvms
@@ -59,4 +61,6 @@ clone_split_browser_vm ()
 
     qvm-prefs "$web" label "$web_label"
     qvm-prefs "$web" netvm None
+
+    qvm-tags "$web" set "$IDENTITY"
 }

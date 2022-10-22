@@ -5,6 +5,8 @@ _set_identity "${args[identity]}"
 
 # Check access to hush device in vault
 
+# Close the identity
+
 # Close all machines belonging to the identity
 
 # Delete these machines

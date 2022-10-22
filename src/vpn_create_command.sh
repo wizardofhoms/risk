@@ -34,6 +34,10 @@ else
     create_vpn_gateway "$name" "$netvm" "$label" "$template"
 fi
 
+# Tag the VM with its owner
+_run qvm-tags "$name" "$RISK_VM_OWNER_TAG" "$IDENTITY"
+_catch "Failed to tag VM with identity"
+
 # 2 - Setup
 #
 # Simply run the setup command, which has access to all the flags

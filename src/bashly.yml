@@ -3,6 +3,7 @@ help: RISKS Dom0 management application
 version: 0.1.0
 
 commands:
+- import: src/config_commands.yml
   # Drives/partitions
 - import: src/hush_commands.yml
 - import: src/backup_commands.yml
@@ -11,5 +12,5 @@ commands:
 - import: src/slam_commands.yml
   # Infrastructure
 - import: src/vpn_commands.yml
-- import: src/config_commands.yml
-
+- import: src/vm_commands.yml
+- import: src/use_commands.yml

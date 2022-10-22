@@ -1,0 +1,14 @@
+name: use
+help: Execute a command in a VM belong to an identity.
+args:
+  - name: vm
+    help: VM in which to execute the command
+    required: true
+# The command string to pass to the target VM.
+catch_all: true 
+footer: |
+  The target VM does not mandatorily need to belong to the active identity, if there is one.
+  If it does not belongs to another non-active identity, risk will take care of:
+    - Closing the active identity in the vault
+    - Opening the new one
+  After this, the target VM is launched with the command arguments.

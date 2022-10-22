@@ -45,7 +45,7 @@ _qrun () {
     local full_command=(qvm-run --pass-io "$vm" xterm -e "$xterm_command")
 
     _verbose "Running command: ${full_command[*]}"
-    
+
     # Split io like in _run, and store the return value
     # Note that we don't double quote the $full_command variable.
     {
@@ -72,10 +72,10 @@ _qvrun () {
     shift
     local full_command="$*"
 
-    _verbose "Running command: ${full_command[*]}"
+    _verbose "Running command: ${full_command}"
 
     # Run the command raw, so that we get the output as it is.
-    qvm-run --pass-io "$vm" "${full_command[*]}"
+    qvm-run --pass-io "$vm" "${full_command}"
 }
 
 # Checks the return code of a command, and if not successful,
@@ -109,11 +109,11 @@ function assertRunning {
         else
             #we don't attempt to start
             return 2
+            fi
         fi
-    fi
 
-    return 0
-}
+        return 0
+    }
 
 # start_vm [vm 1] ... [vm n]
 #Start the given VMs without executing any command.

@@ -39,11 +39,12 @@ _qrun () {
     local vm="$1"
     shift
     local command="$*"
-    local terminal="$(config_get "$VM_TERMINAL")"
+    local terminal shell_command full_command
 
     # Prepare the full command
-    local xterm_command='zsh -c "'"$command"'"'
-    local full_command=(qvm-run --pass-io "$vm" "$terminal" -e "$xterm_command")
+    terminal="$(config_get "$VM_TERMINAL")"
+    shell_command='zsh -c "'"$command"'"'
+    full_command=(qvm-run --pass-io "$vm" "$terminal" -e "$shell_command")
 
     _verbose "Running command: ${full_command[*]}"
 
@@ -53,7 +54,7 @@ _qrun () {
         IFS=$'\n' read -r -d '' COMMAND_STDERR;
         IFS=$'\n' read -r -d '' COMMAND_STDOUT;
         (IFS=$'\n' read -r -d '' _ERRNO_; exit "${_ERRNO_}");
-    } < <((printf '\0%s\0%d\0' "$(${full_command[@]})" "${?}" 1>&2) 2>&1)
+    } < <((printf '\0%s\0%d\0' "$( ${full_command[@]} )" "${?}" 1>&2) 2>&1)
 
     local ret="$?"
 
@@ -68,6 +69,7 @@ _qrun () {
     return $ret
 }
 
+# _qvrun is a simplified version of _qrun, without stdout/err split & store.
 _qvrun () {
     local vm="$1"
     shift

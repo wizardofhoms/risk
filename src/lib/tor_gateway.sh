@@ -11,10 +11,8 @@ create_tor_gateway ()
 
     local gw_template="$(config_get WHONIX_GW_TEMPLATE)"
 
-    local -a create_command
-    create_command+=(qvm-create --property netvm="$netvm" --label "$gw_label" --template "$gw_template")
-
-    _message "Creating TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_template)"
+    _verbose "Creating TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_template)"
+    _run qvm-create --property netvm="$netvm" --label "$gw_label" --template "$gw_template"
 
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
@@ -30,12 +28,22 @@ clone_tor_gateway ()
     local netvm="${3-$(config_get DEFAULT_NETVM)}"
     local gw_label="${4-yellow}"
 
-    create_command+=(qvm-clone "${gw_clone}" "${gw}")
+    _verbose "Cloning TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_clone)"
+    _run qvm-clone "${gw_clone}" "${gw}"
+    _catch "Failed to clone VM ${gw_clone}"
 
-    local label_command=(qvm-prefs "$gw" label "$gw_label")
-    local netvm_command=(qvm-prefs "$gw" netvm "$netvm")
+    # For now disposables are not allowed, since it would create too many VMs, 
+    # and complicate a bit the setup steps for VPNs. If the clone is a template
+    # for disposables, unset it
+    local disp_template
+    disp_template=$(qvm-prefs "${gw}" template_for_dispvms)
+    [[ "$disp_template" = "True" ]] && qvm-prefs "${gw}" template_for_dispvms False
 
-    _message "Cloning TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_clone)"
+    _message "Getting network from $netvm"
+    _run qvm-prefs "$gw" netvm "$netvm"
+
+    _verbose "Setting label to $gw_label"
+    _run qvm-prefs "$gw" label "$gw_label"
 
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"

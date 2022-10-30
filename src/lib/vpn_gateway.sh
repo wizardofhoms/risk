@@ -8,14 +8,12 @@ create_vpn_gateway ()
     local template="${4:=$(config_get VPN_TEMPLATE)}"
 
     _verbose "VPN gateway properties (name: $gw / netvm: $netvm / template: $template)"
-    qvm-create --property netvm="$netvm" --label "$gw_label" --template "$template"
+    _run qvm-create --property netvm="$netvm" --label "$gw_label" --template "$template"
 
     _message "Getting network from $netvm"
 
-    # Tag the VM with its owner
+    # Tag the VM with its owner, and add the gateway to the list of proxies
     _run qvm-tags "$gw" set "$IDENTITY"
-
-    # Add the gateway to the list of existing proxies for this identity
     echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
 }
 
@@ -39,16 +37,14 @@ clone_vpn_gateway ()
     disp_template=$(qvm-prefs "${gw}" template_for_dispvms)
     [[ "$disp_template" = "True" ]] && qvm-prefs "${gw}" template_for_dispvms False
 
-    # _message "Getting network from $netvm"
-    qvm-prefs "$gw" netvm "$netvm"
+    _message "Getting network from $netvm"
+    _run qvm-prefs "$gw" netvm "$netvm"
 
     _verbose "Setting label to $gw_label"
-    qvm-prefs "$gw" label "$gw_label"
+    _run qvm-prefs "$gw" label "$gw_label"
 
-    # Tag the VM with its owner
+    # Tag the VM with its owner, and add the gateway to the list of proxies
     _run qvm-tags "$gw" set "$IDENTITY"
-
-    # Add the gateway to the list of existing proxies for this identity
     echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
 }
 

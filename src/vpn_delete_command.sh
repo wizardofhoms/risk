@@ -28,10 +28,11 @@ if [[ $netvm == "$name" ]]; then
     _warning "Gateway $name is the default NetVM for identity clients !"
 
     # Check if we have a TOR gateway
-    local tor_gw
+    local tor_gw=$(identity_tor_gw)
 
     if [[ -n $tor_gw ]]; then
         _message -n "Updating the default identity NetVM to $tor_gw"
+        echo "$tor_gw" > "${IDENTITY_DIR}/net_vm" 
     else
         _message -n "The identity has no default NetVM anymore, please set it."
     fi
@@ -50,6 +51,5 @@ _catch "Failed to delete (fully or partially) VM $name"
 sed -i /"$name"/d "${IDENTITY_DIR}/autostart_vms"
 # And remove from proxy VMs 
 sed -i /"$name"/d "${IDENTITY_DIR}/proxy_vms"
-
 
 _message "Deleted $name"

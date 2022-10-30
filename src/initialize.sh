@@ -40,6 +40,9 @@ config_init
 typeset -g VAULT_VM=$(config_get VAULT_VM)
 typeset -g DEFAULT_NETVM=$(config_get DEFAULT_NETVM)
 
+typeset -gr DOM0_TERMINAL=$(config_get DOM0_TERMINAL)
+typeset -gr VM_TERMINAL=$(config_get VM_TERMINAL)
+
 # Working state variables --------------------------------------------------------------------------
 typeset -r IDENTITY            # The identity to use for this single risk execution
 typeset -g IDENTITY_DIR        # The directory where to store identity settings

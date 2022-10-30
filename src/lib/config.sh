@@ -69,6 +69,14 @@ DEFAULT_NETVM=sys-firewall
 ; starts. This path is the default one used by qubes-vpn-support installs.
 DEFAULT_VPN_CLIENT_CONF='/rw/config/vpn/vpn-client.conf'
 
+; General Application Settings =================================== #
+
+; Default terminal to use in Dom0
+DOM0_TERMINAL=xterm
+
+; Default terminal to use in AppVMs
+VM_TERMINAL=xterm
+
 EOF
   }
 }

@@ -39,10 +39,11 @@ _qrun () {
     local vm="$1"
     shift
     local command="$*"
+    local terminal="$(config_get "$VM_TERMINAL")"
 
     # Prepare the full command
     local xterm_command='zsh -c "'"$command"'"'
-    local full_command=(qvm-run --pass-io "$vm" xterm -e "$xterm_command")
+    local full_command=(qvm-run --pass-io "$vm" "$terminal" -e "$xterm_command")
 
     _verbose "Running command: ${full_command[*]}"
 
@@ -71,6 +72,9 @@ _qvrun () {
     local vm="$1"
     shift
     local full_command="$*"
+
+    # If we don't have any command arguments, we run the default terminal
+    [[ -z "$full_command" ]] && full_command="$VM_TERMINAL"
 
     _verbose "Running command: ${full_command}"
 

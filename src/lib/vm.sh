@@ -175,3 +175,36 @@ is_proxy_vm ()
 
     return $match
 }
+
+# Returns an array of all VMs
+all_vms ()
+{
+    local -a vms
+
+    while IFS= read -r VM_NAME ; do
+        vms+=("${VM_NAME}")
+    done < <(qvm-ls --raw-list | sort)
+
+    echo "${vms[@]}"
+}
+
+# check_not_netvm fails if the VM provides network to any other VM
+check_not_netvm ()
+{
+    local vm="$1" 
+    local vms connected_vms
+
+    # If it does not provide network at all, don't go further.
+    [[ $(qvm-prefs "$vm" provides_network) == "True" ]] || return 0
+
+    # Check if it provides network to any VM, and if yes, fail.
+    vms=( $(all_vms) )
+    for svm in "${vms[@]}" ; do
+        local netvm
+        if [[ "$(qvm-prefs "$svm" netvm)" == "$vm" ]]; then
+            connected_vms+=( "$svm" )
+        fi
+    done
+
+    [[ ${#connected_vms} -gt 0 ]] && _failure "VM $vm is netVM for [ ${connected_vms[*]} ] VMs"
+}

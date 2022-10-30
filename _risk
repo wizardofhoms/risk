@@ -208,11 +208,11 @@ _identity ()
                 ;;
             equip)
                 _arguments -C \
-                    '1:identity name:->name' \
                     "${_flags_base[@]}" \
                     "${_flags_vm_base[@]}" \
                     "${_flags_init_tor[@]}" \
                     "${_flags_init_web[@]}" \
+                    '1:identity name:' \
                     && ret=0
                 ;;
             start|open|delete)

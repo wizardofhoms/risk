@@ -114,3 +114,22 @@ get_next_vpn_name ()
 
     print "$base_name-vpn-$next_number"
 }
+
+# check_vm_is_proxy fails if the VM is not listed as an identity proxy.
+check_vm_is_proxy () 
+{
+    local name="$1"
+    local proxies
+
+    proxies=($(_identity_proxies))
+    for proxy in "${proxies[@]}" ; do
+        if [[ $proxy == "$name" ]]; then
+            found=true
+        fi
+    done
+
+    if [[ ! $found ]]; then
+        _message "VM $name is not listed as a VPN gateway. Aborting."
+        exit 1
+    fi
+}

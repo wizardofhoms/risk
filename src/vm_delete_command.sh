@@ -1,4 +1,4 @@
-local vm 
+local vm
 
 vm="${args[vm]}"
 
@@ -7,8 +7,18 @@ _set_identity
 # Check VM ownership 
 [[ "$(get_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
-# Check if the VM is the default NetVM for identity
+# Do not even attempt to delete if the VM provides network to another VM.
+check_not_netvm "$vm"
 
-# Check if it provides network to any VM, and if yes, fail.
+# If the VM is a gateway, just call the VPN command to do the work.
+if is_proxy_vm "$vm" ; then
+    risk_vpn_delete_command
+    return
+fi
 
-# Check if the VM is among netVMs, which is true if it provides network.
+# Remove from autostart enabled commands
+sed -i /"$vm"/d "${IDENTITY_DIR}/autostart_vms"
+
+# Finally, delete the VM, 
+_run qvm-remove "$vm"
+_catch "Failed to delete VM $vm:"

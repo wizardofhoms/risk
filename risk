@@ -2257,11 +2257,12 @@ _qrun () {
     local vm="$1"
     shift
     local command="$*"
-    local terminal="$(config_get "$VM_TERMINAL")"
+    local terminal shell_command full_command
 
     # Prepare the full command
-    local xterm_command='zsh -c "'"$command"'"'
-    local full_command=(qvm-run --pass-io "$vm" "$terminal" -e "$xterm_command")
+    terminal="$(config_get "$VM_TERMINAL")"
+    shell_command='zsh -c "'"$command"'"'
+    full_command=(qvm-run --pass-io "$vm" "$terminal" -e "$shell_command")
 
     _verbose "Running command: ${full_command[*]}"
 
@@ -2271,7 +2272,7 @@ _qrun () {
         IFS=$'\n' read -r -d '' COMMAND_STDERR;
         IFS=$'\n' read -r -d '' COMMAND_STDOUT;
         (IFS=$'\n' read -r -d '' _ERRNO_; exit "${_ERRNO_}");
-    } < <((printf '\0%s\0%d\0' "$(${full_command[@]})" "${?}" 1>&2) 2>&1)
+    } < <((printf '\0%s\0%d\0' "$( ${full_command[@]} )" "${?}" 1>&2) 2>&1)
 
     local ret="$?"
 
@@ -2286,15 +2287,14 @@ _qrun () {
     return $ret
 }
 
+# _qvrun is a simplified version of _qrun, without stdout/err split & store.
 _qvrun () {
     local vm="$1"
     shift
     local full_command="$*"
 
     # If we don't have any command arguments, we run the default terminal
-    if [[ -z "$full_command" ]]; then
-        full_command="$VM_TERMINAL"
-    fi
+    [[ -z "$full_command" ]] && full_command="$VM_TERMINAL"
 
     _verbose "Running command: ${full_command}"
 
@@ -2328,10 +2328,8 @@ create_tor_gateway ()
 
     local gw_template="$(config_get WHONIX_GW_TEMPLATE)"
 
-    local -a create_command
-    create_command+=(qvm-create --property netvm="$netvm" --label "$gw_label" --template "$gw_template")
-
-    _message "Creating TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_template)"
+    _verbose "Creating TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_template)"
+    _run qvm-create --property netvm="$netvm" --label "$gw_label" --template "$gw_template"
 
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
@@ -2347,12 +2345,23 @@ clone_tor_gateway ()
     local netvm="${3-$(config_get DEFAULT_NETVM)}"
     local gw_label="${4-yellow}"
 
-    create_command+=(qvm-clone "${gw_clone}" "${gw}")
+    _verbose "Cloning TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_clone)"
+    _run qvm-clone "${gw_clone}" "${gw}"
+    _catch "Failed to clone VM ${gw_clone}"
 
-    local label_command=(qvm-prefs "$gw" label "$gw_label")
-    local netvm_command=(qvm-prefs "$gw" netvm "$netvm")
+    # For now disposables are not allowed, since it would create too many VMs,
 
-    _message "Cloning TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_clone)"
+    # and complicate a bit the setup steps for VPNs. If the clone is a template
+    # for disposables, unset it
+    local disp_template
+    disp_template=$(qvm-prefs "${gw}" template_for_dispvms)
+    [[ "$disp_template" = "True" ]] && qvm-prefs "${gw}" template_for_dispvms False
+
+    _message "Getting network from $netvm"
+    _run qvm-prefs "$gw" netvm "$netvm"
+
+    _verbose "Setting label to $gw_label"
+    _run qvm-prefs "$gw" label "$gw_label"
 
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
@@ -2691,14 +2700,12 @@ create_vpn_gateway ()
     local template="${4:=$(config_get VPN_TEMPLATE)}"
 
     _verbose "VPN gateway properties (name: $gw / netvm: $netvm / template: $template)"
-    qvm-create --property netvm="$netvm" --label "$gw_label" --template "$template"
+    _run qvm-create --property netvm="$netvm" --label "$gw_label" --template "$template"
 
     _message "Getting network from $netvm"
 
-    # Tag the VM with its owner
+    # Tag the VM with its owner, and add the gateway to the list of proxies
     _run qvm-tags "$gw" set "$IDENTITY"
-
-    # Add the gateway to the list of existing proxies for this identity
     echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
 }
 
@@ -2724,16 +2731,14 @@ clone_vpn_gateway ()
     disp_template=$(qvm-prefs "${gw}" template_for_dispvms)
     [[ "$disp_template" = "True" ]] && qvm-prefs "${gw}" template_for_dispvms False
 
-    # _message "Getting network from $netvm"
-    qvm-prefs "$gw" netvm "$netvm"
+    _message "Getting network from $netvm"
+    _run qvm-prefs "$gw" netvm "$netvm"
 
     _verbose "Setting label to $gw_label"
-    qvm-prefs "$gw" label "$gw_label"
+    _run qvm-prefs "$gw" label "$gw_label"
 
-    # Tag the VM with its owner
+    # Tag the VM with its owner, and add the gateway to the list of proxies
     _run qvm-tags "$gw" set "$IDENTITY"
-
-    # Add the gateway to the list of existing proxies for this identity
     echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
 }
 
@@ -3669,10 +3674,12 @@ risk_vpn_delete_command() {
       _warning "Gateway $name is the default NetVM for identity clients !"
 
       # Check if we have a TOR gateway
-      local tor_gw
+      local tor_gw=$(identity_tor_gw)
 
       if [[ -n $tor_gw ]]; then
           _message -n "Updating the default identity NetVM to $tor_gw"
+          echo "$tor_gw" > "${IDENTITY_DIR}/net_vm"
+
       else
           _message -n "The identity has no default NetVM anymore, please set it."
       fi

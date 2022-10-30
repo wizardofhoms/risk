@@ -134,6 +134,12 @@ get_identity_label ()
     cat "${IDENTITY_DIR}/vm_label" 2>/dev/null
 }
 
+# Get the TOR gateway for the identity
+identity_tor_gw ()
+{
+    cat "${IDENTITY_DIR}/tor_gw" 2>/dev/null
+}
+
 # _identity_proxies returns an array of proxy VMs 
 # (VPNs and TOR gateways for the current identity)
 _identity_proxies ()

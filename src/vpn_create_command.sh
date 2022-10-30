@@ -2,15 +2,13 @@
 _set_identity 
 
 # Prepare some settings for this new VM
-local name netvm clone template label config
+local name netvm clone template label
 
 name="${args[vm]:-$(cat "${IDENTITY_DIR}/vm_name" 2>/dev/null)}"
 label="${args[--label]:=$(get_identity_label)}"
 netvm="$(config_or_flag "${args[--netvm]}" DEFAULT_NETVM)"
 clone="$(config_or_flag "${args[--from]}" VPN_VM)"
 template="$(config_or_flag "${args[--template]}" VPN_TEMPLATE)"
-config_vm="${args[--config-in]}"
-client_conf_path="$(config_or_flag "" DEFAULT_VPN_CLIENT_CONF)"
 
 
 # 0 - Last-time setup

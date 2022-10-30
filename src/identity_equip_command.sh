@@ -14,7 +14,7 @@ _set_identity "${args[identity]}"
 
 # Identity checks and basic setup ==========================================
 
-# Check the identity exists
+check_identity_exists "$IDENTITY"
 
 _message "Creating infrastructure for identity $IDENTITY"
 

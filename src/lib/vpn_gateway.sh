@@ -64,6 +64,9 @@ import_vpn_configs ()
     local config_vm="$2"
     local client_conf_path="$3"
 
+    local config_path
+    local new_path
+
     config_path=$(_qvrun "$config_vm" "zenity --file-selection --title='VPN configuration selection' 2>/dev/null")
     if [[ -z "$config_path" ]]; then
         _message "Canceling setup: no file selected in VM $config_vm"
@@ -73,7 +76,7 @@ import_vpn_configs ()
 
         # Now our configuration is the QubesIncoming directory of our VPN,
         # so we move it where the VPN will look for when starting.
-        local new_path="/home/user/QubesIncoming/${config_vm}/$(basename "$config_path")"
+        new_path="/home/user/QubesIncoming/${config_vm}/$(basename "$config_path")"
 
         # If the file is a zip file, unzip it in the configs directory
         # and immediately run the setup prompt to choose one.
@@ -103,7 +106,7 @@ get_next_vpn_name ()
     local base_name="$1"
 
     # First get the array of ProxyVMs names
-    local proxies=($(_identity_proxies))
+    local proxies=( $(_identity_proxies) )
 
     local next_number=1
 
@@ -113,5 +116,5 @@ get_next_vpn_name ()
         fi
     done
 
-    print "$1-vpn-$next_number"
+    print "$base_name-vpn-$next_number"
 }

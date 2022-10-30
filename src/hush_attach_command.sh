@@ -1,5 +1,6 @@
 
 local block vm
+local error_invalid_vm error_device
 
 block="${args[device]-$(config_get SDCARD_BLOCK)}"
 vm="${args[vault_vm]-$(config_get VAULT_VM)}"
@@ -7,13 +8,13 @@ vm="${args[vault_vm]-$(config_get VAULT_VM)}"
 # If the validations were not performed because 
 # we use a default environment variable for the
 # vault VM, perform them again here.
-local error_invalid_vm=$(validate_valid_vaultvm "$vm")
+error_invalid_vm=$(validate_valid_vaultvm "$vm")
 if [[ -n "$error_invalid_vm" ]]; then
     _failure "$error_invalid_vm"
 fi
 
 # Do the same for the hush device
-local error_device=$(validate_device "$block")
+error_device=$(validate_device "$block")
 if [[ -n "$error_device" ]]; then
     _failure "$error_device"
 fi
@@ -23,7 +24,7 @@ qvm-ls | grep Running | awk {'print $1'} | grep "^"${vm}"$" &> /dev/null
 if [ "$?" != "0" ]; then
     _verbose "Starting VM $vm"
     qvm-start "${vm}"
-	sleep 15
+	sleep 5 
 fi
 
 # finally attach the sdcard encrypted partition to the qube

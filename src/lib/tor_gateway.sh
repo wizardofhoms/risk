@@ -16,9 +16,9 @@ create_tor_gateway ()
 
     _message "Creating TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_template)"
 
-    # Tag the VM with its owner
+    # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
-
+    echo "$gw" >> "${IDENTITY_DIR}/tor_gw"
 }
 
 # very similar to create_tor_gateway, except that we clone an existing
@@ -37,6 +37,7 @@ clone_tor_gateway ()
 
     _message "Cloning TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_clone)"
 
-    # Tag the VM with its owner
+    # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
+    echo "$gw" >> "${IDENTITY_DIR}/tor_gw"
 }

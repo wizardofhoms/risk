@@ -7,7 +7,7 @@ create_browser_vm ()
     local web_label="${3-orange}"
     local ws_template="$(config_get WHONIX_WS_TEMPLATE)"
 
-    _message "Creating web VM (name: $web / netvm: $netvm / template: $ws_template)"
+    _info "Creating web VM (name: $web / netvm: $netvm / template: $ws_template)"
     qvm-create --property netvm="$netvm" --label "$web_label" --template "$ws_template"
     [[ ! $? -eq 0 ]] && _warning "Failed to create browser VM $web"
 
@@ -24,7 +24,7 @@ clone_browser_vm ()
     local netvm="${3-$(config_get DEFAULT_NETVM)}"
     local web_label="${4-orange}"
 
-    _message "Cloning web VM (name: $web / netvm: $netvm / template: $web_clone)"
+    _info "Cloning web VM (name: $web / netvm: $netvm / template: $web_clone)"
     qvm-clone "${web_clone}" "${web}"
     [[ ! $? -eq 0 ]] && _warning "Failed to clone browser VM $web" && return
 
@@ -43,7 +43,7 @@ create_split_browser_vm ()
     local web_label="${2-gray}"
     local split_template="$(config_get SPLIT_BROWSER_TEMPLATE)"
 
-    _message "Creating split-browser (name: $web / netvm: $netvm / template: $split_template)"
+    _info "Creating split-browser (name: $web / netvm: $netvm / template: $split_template)"
     qvm-create --property netvm=None --label "$web_label" --template "$split_template"
 
     qvm-tags "$web" set "$IDENTITY"
@@ -56,7 +56,7 @@ clone_split_browser_vm ()
     local web_clone="$2"
     local web_label="${3-gray}"
 
-    _message "Cloning split-browser VM (name: $web / netvm: $netvm / template: $web_clone)"
+    _info "Cloning split-browser VM (name: $web / netvm: $netvm / template: $web_clone)"
     qvm-clone "${web_clone}" "${web}"
 
     qvm-prefs "$web" label "$web_label"

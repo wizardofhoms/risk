@@ -1,19 +1,21 @@
 
 local block vm
 
-block="${args[device]-$(config_get BACKUP_BLOCK)}"
-vm="${args[vault_vm]-$(config_get VAULT_VM)}"
+block="${args['device']-$(config_get BACKUP_BLOCK)}"
+vm="${args['vault_vm']-$(config_get VAULT_VM)}"
+
+local error_invalid_vm error_device
 
 # If the validations were not performed because 
 # we use a default environment variable for the
 # vault VM, perform them again here.
-local error_invalid_vm=$(validate_vm_exits "$vm")
+error_invalid_vm=$(validate_vm_exits "$vm")
 if [[ -n "$error_invalid_vm" ]]; then
     _failure "$error_invalid_vm"
 fi
 
 # Do the same for the hush device
-local error_device=$(validate_device "$block")
+error_device=$(validate_device "$block")
 if [[ -n "$error_device" ]]; then
     _failure "$error_device"
 fi

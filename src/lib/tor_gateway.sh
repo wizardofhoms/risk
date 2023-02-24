@@ -39,7 +39,7 @@ clone_tor_gateway ()
     disp_template=$(qvm-prefs "${gw}" template_for_dispvms)
     [[ "$disp_template" = "True" ]] && qvm-prefs "${gw}" template_for_dispvms False
 
-    _message "Getting network from $netvm"
+    _info "Getting network from $netvm"
     _run qvm-prefs "$gw" netvm "$netvm"
 
     _verbose "Setting label to $gw_label"

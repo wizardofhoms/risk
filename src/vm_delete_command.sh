@@ -1,6 +1,6 @@
 local vm
 
-vm="${args[vm]}"
+vm="${args['vm']}"
 
 _set_identity
 

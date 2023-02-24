@@ -19,10 +19,10 @@ enable_vm_autostart ()
     done
 
     if [[ ! $already_enabled ]]; then
-        _message "Enabling VM ${name} to autostart"
+        _info "Enabling VM ${name} to autostart"
         echo "$name" >> "${IDENTITY_DIR}/autostart_vms"
     else
-        _message "VM ${name} is already enabled"
+        _info "VM ${name} is already enabled"
     fi
 }
 
@@ -30,7 +30,7 @@ enable_vm_autostart ()
 disable_vm_autostart ()
 {
     local name="$1"
-    _message "Disabling VM $name"
+    _info "Disabling VM $name"
     sed -i /"$name"/d "${IDENTITY_DIR}/autostart_vms"
 }
 

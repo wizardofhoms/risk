@@ -1,5 +1,5 @@
 
-_set_identity "${args[identity]}"
+_set_identity "${args['identity']}"
 
 # First check the identity is valid
 

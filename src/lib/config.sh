@@ -14,7 +14,7 @@
 config_init() {
   RISK_CONFIG_FILE=${RISK_CONFIG_FILE-${RISK_DIR}/config.ini}
   [[ -f "$RISK_CONFIG_FILE" ]] || { 
-      _message "Writing default configuration file to ${RISK_CONFIG_FILE}"
+      _info "Writing default configuration file to ${RISK_CONFIG_FILE}"
       cat << EOF > "$RISK_CONFIG_FILE" 
 ; RISKS Dom0 Configuration file
 

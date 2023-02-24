@@ -30,7 +30,7 @@ _set_active_identity ()
         rm "${RISK_IDENTITY_FILE}" || _warning "Failed to wipe identity file !"
 
         _verbose "Identity '${identity}' is now inactive, (name file deleted)"
-        _message "Identity '${identity}' is now INACTIVE"
+        _info "Identity '${identity}' is now INACTIVE"
         return
     fi
 
@@ -42,7 +42,7 @@ _set_active_identity ()
 	fi
 
     _verbose "Identity '${1}' is now active (name file written)"
-    _message "Identity '${1}' is now ACTIVE"
+    _info "Identity '${1}' is now ACTIVE"
 }
 
 # Returns 0 if an identity is unlocked, 1 if not.
@@ -91,7 +91,7 @@ check_no_active_identity ()
     if [[ -n $active_identity ]]; then
         # It might be the same
         if [[ $active_identity == "$1" ]]; then
-            _message "Identity $1 is already active"
+            _info "Identity $1 is already active"
             exit 0
         fi
 

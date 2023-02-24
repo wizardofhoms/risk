@@ -1,6 +1,6 @@
 local block vm
 
-block="${args[device]:-$(config_get BACKUP_BLOCK)}"
+block="${args['device']:-$(config_get BACKUP_BLOCK)}"
 
 # Always umount first
 _qrun "$VAULT_VM" risks backup umount

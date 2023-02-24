@@ -1,0 +1,18 @@
+name: qubes
+help: Strutured set of commands for managing Qubes in general
+
+commands:
+  - name: update
+    help: "Update one or more VM templates, by name patterns or filters"
+    args:
+      - name: vms 
+        help: An arbitrary list of VMs name patterns to update.
+        required: true 
+    flags:
+      - &verbose      
+        long: --verbose
+        short: -v
+        help: "Show verbose logging"
+      - long: --identity
+        short: -I
+        help: "Check for templates of all VMs belong to an identity"

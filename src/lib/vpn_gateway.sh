@@ -10,7 +10,7 @@ create_vpn_gateway ()
     _verbose "VPN gateway properties (name: $gw / netvm: $netvm / template: $template)"
     _run qvm-create --property netvm="$netvm" --label "$gw_label" --template "$template"
 
-    _message "Getting network from $netvm"
+    _info "Getting network from $netvm"
 
     # Tag the VM with its owner, and add the gateway to the list of proxies
     _run qvm-tags "$gw" set "$IDENTITY"
@@ -37,7 +37,7 @@ clone_vpn_gateway ()
     disp_template=$(qvm-prefs "${gw}" template_for_dispvms)
     [[ "$disp_template" = "True" ]] && qvm-prefs "${gw}" template_for_dispvms False
 
-    _message "Getting network from $netvm"
+    _info "Getting network from $netvm"
     _run qvm-prefs "$gw" netvm "$netvm"
 
     _verbose "Setting label to $gw_label"
@@ -65,7 +65,7 @@ import_vpn_configs ()
 
     config_path=$(_qvrun "$config_vm" "zenity --file-selection --title='VPN configuration selection' 2>/dev/null")
     if [[ -z "$config_path" ]]; then
-        _message "Canceling setup: no file selected in VM $config_vm"
+        _info "Canceling setup: no file selected in VM $config_vm"
     else
         _verbose "Copying file $config_path to VPN VM"
         _qvrun "$config_vm" qvm-copy-to-vm "$name" "$config_path"
@@ -87,7 +87,7 @@ import_vpn_configs ()
             _qvrun "$name" mv "$new_path" "$client_conf_path"
         fi
 
-        _message "Done transfering VPN client configuration to VM"
+        _info "Done transfering VPN client configuration to VM"
     fi
 
     # Add the gateway to the list of existing proxies for this identity
@@ -129,7 +129,7 @@ check_vm_is_proxy ()
     done
 
     if [[ ! $found ]]; then
-        _message "VM $name is not listed as a VPN gateway. Aborting."
+        _info "VM $name is not listed as a VPN gateway. Aborting."
         exit 1
     fi
 }

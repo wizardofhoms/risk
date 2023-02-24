@@ -18,6 +18,13 @@ strict: false
 # (every 2 leading spaces will be converted to a tab character)
 tab_indent: false 
 
+usage_colors:
+  caption: bold
+  command: red 
+  arg: blue
+  # flag: magenta
+  environment_variable: cyan
+
 # Set to 'production' or 'development':
 # - production    generate a smaller script, without file markers
 # - development   generate with file markers

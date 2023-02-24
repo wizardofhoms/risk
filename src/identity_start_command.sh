@@ -1,5 +1,5 @@
 
-_set_identity "${args[identity]}"
+_set_identity "${args['identity']}"
 
 # Get the name for VMs
 local name="$(cat "${IDENTITY_DIR}/vm_name")"

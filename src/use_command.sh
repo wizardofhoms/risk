@@ -2,7 +2,7 @@
 local vm arguments
 
 # Note that we concatenate all command arguments in a string (with *), to be passed to qvm-run
-vm="${args[vm]}"
+vm="${args['vm']}"
 arguments="${other_args[@]}"
 
 local owner active_identity
@@ -15,11 +15,11 @@ active_identity="$(_identity_active_or_specified)"
 # However if the VM does not belong the active identity, we must: 
 if [[ -n "$owner" ]] && [[ $owner != "$active_identity" ]]; then
     # Close the active identity
-    _message "Closing identity $active_identity"
+    _info "Closing identity $active_identity"
     risk_identity_close_command
 
     # Open the new one
-    args[identity]="$owner"
+    args['identity']="$owner"
     risk_identity_open_command
 fi
 

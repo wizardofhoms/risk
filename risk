@@ -34,6 +34,7 @@ risk_usage() {
   echo "  vpn        Create, configure, manage and use VPN gateways for an identity."
   echo "  vm         Manage generic VMs (identity settings, enable/disable, etc)"
   echo "  use        Execute a command in a VM belong to an identity."
+  echo "  qubes      Strutured set of commands for managing Qubes in general"
   echo
 
   # :command.long_usage
@@ -1602,6 +1603,87 @@ risk_use_usage() {
   fi
 }
 
+# :command.usage
+risk_qubes_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk qubes - Strutured set of commands for managing Qubes in general\n"
+    echo
+
+  else
+    printf "risk qubes - Strutured set of commands for managing Qubes in general\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  risk qubes [command]\n"
+  printf "  risk qubes [command] --help | -h\n"
+  echo
+  # :command.usage_commands
+  printf "Commands:\n"
+  echo "  update   Update one or more VM templates, by name patterns or filters"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_qubes_update_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk qubes update - Update one or more VM templates, by name patterns or filters\n"
+    echo
+
+  else
+    printf "risk qubes update - Update one or more VM templates, by name patterns or filters\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  risk qubes update VMS [options]\n"
+  printf "  risk qubes update --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_flags
+    # :flag.usage
+    echo "  --verbose, -v"
+    printf "    Show verbose logging\n"
+    echo
+
+    # :flag.usage
+    echo "  --identity, -I"
+    printf "    Check for templates of all VMs belong to an identity\n"
+    echo
+
+    # :command.usage_args
+    printf "Arguments:\n"
+
+    # :argument.usage
+    echo "  VMS"
+    printf "    An arbitrary list of VMs name patterns to update.\n"
+    echo
+
+  fi
+}
+
 # :command.normalize_input
 normalize_input() {
   local arg flags
@@ -2689,6 +2771,40 @@ is_proxy_vm ()
     return $match
 }
 
+# Returns an array of all VMs
+all_vms ()
+{
+    local -a vms
+
+    while IFS= read -r VM_NAME ; do
+        vms+=("${VM_NAME}")
+    done < <(qvm-ls --raw-list | sort)
+
+    echo "${vms[@]}"
+}
+
+# check_not_netvm fails if the VM provides network to any other VM
+check_not_netvm ()
+{
+    local vm="$1"
+
+    local vms connected_vms
+
+    # If it does not provide network at all, don't go further.
+    [[ $(qvm-prefs "$vm" provides_network) == "True" ]] || return 0
+
+    # Check if it provides network to any VM, and if yes, fail.
+    vms=( $(all_vms) )
+    for svm in "${vms[@]}" ; do
+        local netvm
+        if [[ "$(qvm-prefs "$svm" netvm)" == "$vm" ]]; then
+            connected_vms+=( "$svm" )
+        fi
+    done
+
+    [[ ${#connected_vms} -gt 0 ]] && _failure "VM $vm is netVM for [ ${connected_vms[*]} ] VMs"
+}
+
 # src/lib/vpn_gateway.sh
 
 # Creates a new VPN gateway from a TemplateVM
@@ -2811,6 +2927,26 @@ get_next_vpn_name ()
     done
 
     print "$base_name-vpn-$next_number"
+}
+
+# check_vm_is_proxy fails if the VM is not listed as an identity proxy.
+check_vm_is_proxy ()
+
+{
+    local name="$1"
+    local proxies
+
+    proxies=($(_identity_proxies))
+    for proxy in "${proxies[@]}" ; do
+        if [[ $proxy == "$name" ]]; then
+            found=true
+        fi
+    done
+
+    if [[ ! $found ]]; then
+        _message "VM $name is not listed as a VPN gateway. Aborting."
+        exit 1
+    fi
 }
 
 # src/lib/web.sh
@@ -3016,17 +3152,19 @@ risk_backup_attach_command() {
   block="${args[device]-$(config_get BACKUP_BLOCK)}"
   vm="${args[vault_vm]-$(config_get VAULT_VM)}"
 
+  local error_invalid_vm error_device
+
   # If the validations were not performed because
 
   # we use a default environment variable for the
   # vault VM, perform them again here.
-  local error_invalid_vm=$(validate_vm_exits "$vm")
+  error_invalid_vm=$(validate_vm_exits "$vm")
   if [[ -n "$error_invalid_vm" ]]; then
       _failure "$error_invalid_vm"
   fi
 
   # Do the same for the hush device
-  local error_device=$(validate_device "$block")
+  error_device=$(validate_device "$block")
   if [[ -n "$error_device" ]]; then
       _failure "$error_device"
   fi
@@ -3645,31 +3783,24 @@ risk_vpn_disable_command() {
 risk_vpn_delete_command() {
   # src/vpn_delete_command.sh
 
-  _set_identity
-
-  local name found proxies
+  local name
 
   name="${args[vm]}"
 
+  _set_identity
+
   # Check that the selected VM is indeed one of the identity
   # proxy VMs, so that we don't accidentally delete another one.
-  proxies=($(_identity_proxies))
-  for proxy in "${proxies[@]}" ; do
-      if [[ $proxy == "$name" ]]; then
-          found=true
-      fi
-  done
+  check_vm_is_proxy "$name"
 
-  if [[ ! $found ]]; then
-      _message "VM $name is not listed as a VPN gateway. Aborting."
-      exit 1
-  fi
+  # Do not even attempt to delete if the VM provides network to another VM.
+  check_not_netvm "$vm"
 
   _message "Deleting gateway VM $name"
 
   # If the VPN was the default NetVM for the identity,
   # update the NetVM to Whonix.
-  netvm="$(cat "${IDENTITY_DIR}/net_vm" 2>/dev/null)"
+  netvm="$(identity_default_netvm)"
   if [[ $netvm == "$name" ]]; then
       _warning "Gateway $name is the default NetVM for identity clients !"
 
@@ -3699,6 +3830,11 @@ risk_vpn_delete_command() {
   # And remove from proxy VMs
 
   sed -i /"$name"/d "${IDENTITY_DIR}/proxy_vms"
+
+  # Finally, delete the VM,
+
+  _run qvm-remove "$name"
+  _catch "Failed to delete VM $name:"
 
   _message "Deleted $name"
 
@@ -3768,6 +3904,9 @@ risk_vm_add_command() {
   if [[ "$(qvm-tags "$vm" provides_network)" == 'True' ]]; then
       _message "VM provides network. Treating it as a gateway VM"
 
+      # Add as a proxy VM
+      echo "$vm" > "${IDENTITY_DIR}/proxy_vms"
+
       # If the user specified to use it as the default netvm
       if [[ ${args[--set-default]} -eq 1 ]]; then
           echo "$vm" > "${IDENTITY_DIR}/net_vm"
@@ -3796,11 +3935,22 @@ risk_vm_delete_command() {
 
   [[ "$(get_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
-  # Check if the VM is the default NetVM for identity
+  # Do not even attempt to delete if the VM provides network to another VM.
+  check_not_netvm "$vm"
 
-  # Check if it provides network to any VM, and if yes, fail.
+  # If the VM is a gateway, just call the VPN command to do the work.
+  if is_proxy_vm "$vm" ; then
+      risk_vpn_delete_command
+      return
+  fi
 
-  # Check if the VM is among netVMs, which is true if it provides network.
+  # Remove from autostart enabled commands
+  sed -i /"$vm"/d "${IDENTITY_DIR}/autostart_vms"
+
+  # Finally, delete the VM,
+
+  _run qvm-remove "$vm"
+  _catch "Failed to delete VM $vm:"
 
 }
 
@@ -3871,6 +4021,47 @@ risk_use_command() {
   # At this point everything identity-related should be cleared and done.
   _qvrun "$vm" "${arguments[@]}"
   _catch "Failed to execute command in $vm:"
+
+}
+
+# :command.function
+risk_qubes_update_command() {
+  # src/qubes_update_command.sh
+  local vms="${args[vms]}"
+
+  get_all_qubes() {
+      local all_qubes
+      while read VM_NAME ; do
+          all_qubes+=("${VM_NAME}")
+      done < <(qvm-ls --raw-list | sort)
+
+      echo "${all_qubes[@]}"
+  }
+
+  local all_qubes
+  read -ra all_qubes < "$(get_all_qubes)"
+
+  get_all_templates() {
+      local templates=()
+
+      while read line ; do
+          IFS="|" read -r name class < "${qube}"
+          if [[ "$class" == "TemplateVM" ]]; then
+              templates+=( "$name" )
+          fi
+      done < ("$(qvm-ls --raw-data --fields name,class|sort)")
+
+      echo "${templates[@]}"
+  }
+
+  local targets
+  read -ra all_templates < "$(get_all_templates)"
+
+  for template in "${all_templates[@]}"; do
+      if [[ "$template" =~ .*"$*".* ]]; then
+          echo $template
+      fi
+  done
 
 }
 
@@ -3951,6 +4142,13 @@ parse_requirements() {
     action="use"
     shift
     risk_use_parse_requirements "$@"
+    shift $#
+    ;;
+
+  qubes )
+    action="qubes"
+    shift
+    risk_qubes_parse_requirements "$@"
     shift $#
     ;;
 
@@ -6518,6 +6716,133 @@ risk_use_parse_requirements() {
 
 }
 
+# :command.parse_requirements
+risk_qubes_parse_requirements() {
+  # :command.fixed_flags_filter
+  case "${1:-}" in
+  --help | -h )
+    long_usage=yes
+    risk_qubes_usage
+    exit
+    ;;
+
+  esac
+
+  # :command.command_filter
+  action=${1:-}
+
+  case $action in
+  -* )
+    ;;
+
+  update )
+    action="update"
+    shift
+    risk_qubes_update_parse_requirements "$@"
+    shift $#
+    ;;
+
+  # :command.command_fallback
+  "" )
+    risk_qubes_usage
+    exit 1
+    ;;
+
+  * )
+    printf "invalid command: %s\n" "$action"
+    exit 1
+    ;;
+
+  esac
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+    -?* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      # :command.parse_requirements_case_simple
+      printf "invalid argument: %s\n" "$key"
+      exit 1
+
+      ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
+risk_qubes_update_parse_requirements() {
+  # :command.fixed_flags_filter
+  case "${1:-}" in
+  --help | -h )
+    long_usage=yes
+    risk_qubes_update_usage
+    exit
+    ;;
+
+  esac
+
+  # :command.command_filter
+  action="qubes update"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+    # :flag.case
+    --verbose | -v )
+
+      # :flag.case_no_arg
+      args[--verbose]=1
+      shift
+      ;;
+
+    # :flag.case
+    --identity | -I )
+
+      # :flag.case_no_arg
+      args[--identity]=1
+      shift
+      ;;
+
+    -?* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      # :command.parse_requirements_case_simple
+      if [[ -z ${args[vms]+x} ]]; then
+
+        args[vms]=$1
+        shift
+      else
+        printf "invalid argument: %s\n" "$key"
+        exit 1
+      fi
+
+      ;;
+
+    esac
+  done
+
+  # :command.required_args_filter
+  if [[ -z ${args[vms]+x} ]]; then
+    printf "missing required argument: VMS\nusage: risk qubes update VMS [options]\n"
+    exit 1
+  fi
+
+}
+
 # :command.initialize
 initialize() {
   version="0.1.0"
@@ -6868,6 +7193,22 @@ run() {
       risk_use_usage
     else
       risk_use_command
+    fi
+
+  elif [[ $action == "qubes" ]]; then
+    if [[ ${args[--help]:-} ]]; then
+      long_usage=yes
+      risk_qubes_usage
+    else
+      risk_qubes_command
+    fi
+
+  elif [[ $action == "qubes update" ]]; then
+    if [[ ${args[--help]:-} ]]; then
+      long_usage=yes
+      risk_qubes_update_usage
+    else
+      risk_qubes_update_command
     fi
 
   elif [[ $action == "root" ]]; then

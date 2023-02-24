@@ -22,6 +22,7 @@ _risk ()
             (config) _config ;;
             (vm) _vm ;;
             (use) _use ;;
+            (qubes) _qubes ;;
         esac
     else
         local -a subcmds
@@ -34,6 +35,7 @@ _risk ()
             'config:Manage the global risk configuration settings from the CLI'
             'use:Execute a command in a VM belong to an identity'
             'vm:Manage generic VMs (identity settings, enable/disable, etc)'
+            'qubes:Strutured set of commands for managing Qubes in general'
         )
 
         _describe -t commands 'commands' subcmds
@@ -386,6 +388,7 @@ _vm ()
                 _arguments -C \
                     "${_flags_base[@]}" \
                     "${_flags_network[@]}" \
+                    '--set-default[Set this VM as the default NetVM for all client machines for identity (browser, messaging, etc)]' \
                     '1::VM to tag with identity settings:_known_vms' \
                     && ret=0
                 ;;
@@ -410,6 +413,43 @@ _vm ()
             esac
     esac
 }
+
+# Qubes management helper commands
+_qubes_commands () {
+    local -a subcmds 
+    subcmds=(
+        'update:Update one or more VM templates, by name patterns or filters'
+    )
+    _describe -t commands 'qubes commands' subcmds && ret=0
+}
+
+# Completion dispatcher for qubes commands
+# Completion dispatcher for vm command
+_qubes ()
+{
+    local ret=1
+    local line state
+
+    _arguments -C \
+        "1: :_qubes_commands" \
+        "*::arg:->args" \
+        && ret=0
+
+    # Arguments completion
+    case $state in
+        args)
+            case $line[1] in
+            update)
+                _arguments \
+                    "${_flags_base[@]}" \
+                    '1:Name or name pattern to use for select VMs:_known_vms' \
+                    && ret=0
+                ;;
+            esac
+    esac
+}
+
+
 
 # Flags =======================================================================================
 
@@ -491,8 +531,8 @@ _known_vms ()
     local ret=
     # VMS
     local VM_COMPLETIONS=()
-
     while IFS= read -r VM_NAME ; do
+
         VM_COMPLETIONS+=("${VM_NAME}")
     done < <(qvm-ls --raw-list | sort)
 

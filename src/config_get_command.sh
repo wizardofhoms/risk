@@ -1,6 +1,6 @@
 
 local key
 
-key="${args[key]}"
+key="${args['key']}"
 
 config_get "$key"

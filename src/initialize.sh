@@ -30,7 +30,7 @@ typeset -rg RISK_IDENTITIES_DIR="${RISK_DIR}/identities"     # Idendities store 
 typeset -rg RISK_IDENTITY_FILE="${RISK_DIR}/.identity"
 
 # Create the risk directory if needed
-[[ -e $RISK_DIR ]] || { mkdir -p $RISK_DIR && _message "Creating RISK directory in $RISK_DIR" }
+[[ -e $RISK_DIR ]] || { mkdir -p $RISK_DIR && _info "Creating RISK directory in $RISK_DIR" }
 [[ -e $RISK_IDENTITIES_DIR ]] || mkdir -p $RISK_IDENTITIES_DIR
 
 # Write the default configuration if it does not exist.

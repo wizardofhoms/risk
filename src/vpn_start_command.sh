@@ -1,7 +1,7 @@
 
-local name="${args[vm]}"
+local name="${args['vm']}"
 
-_message "Starting gateway $name in the background"
+_info "Starting gateway $name in the background"
 
 # First check all the network VMs that will be started
 # actually belong to the identity, otherwise we fail.
@@ -11,4 +11,4 @@ check_network_chain "$name"
 start_vm "$name"
 _catch "Failed to start $name"
 
-_message "Started VM $name"
+_info "Started VM $name"

@@ -1,7 +1,7 @@
 
 local name
 
-name="${args[vm]}"
+name="${args['vm']}"
 
 _set_identity 
 
@@ -12,7 +12,7 @@ check_vm_is_proxy "$name"
 # Do not even attempt to delete if the VM provides network to another VM.
 check_not_netvm "$vm"
 
-_message "Deleting gateway VM $name"
+_info "Deleting gateway VM $name"
 
 # If the VPN was the default NetVM for the identity,
 # update the NetVM to Whonix.
@@ -24,10 +24,10 @@ if [[ $netvm == "$name" ]]; then
     local tor_gw=$(identity_tor_gw)
 
     if [[ -n $tor_gw ]]; then
-        _message -n "Updating the default identity NetVM to $tor_gw"
+        _info -n "Updating the default identity NetVM to $tor_gw"
         echo "$tor_gw" > "${IDENTITY_DIR}/net_vm" 
     else
-        _message -n "The identity has no default NetVM anymore, please set it."
+        _info -n "The identity has no default NetVM anymore, please set it."
     fi
 fi
 
@@ -49,4 +49,4 @@ sed -i /"$name"/d "${IDENTITY_DIR}/proxy_vms"
 _run qvm-remove "$name"
 _catch "Failed to delete VM $name:"
 
-_message "Deleted $name"
+_info "Deleted $name"

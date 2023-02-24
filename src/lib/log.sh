@@ -113,7 +113,7 @@ function _msg()
 	return $returncode
 }
 
-function _message() {
+function _info() {
 	local notice="message"
 	[[ "$1" = "-n" ]] && shift && notice="inline"
     option_is_set -q || _msg "$notice" "$@"

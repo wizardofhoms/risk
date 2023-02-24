@@ -2,8 +2,8 @@
 local block vm
 local error_invalid_vm error_device
 
-block="${args[device]-$(config_get SDCARD_BLOCK)}"
-vm="${args[vault_vm]-$(config_get VAULT_VM)}"
+block="${args['device']-$(config_get SDCARD_BLOCK)}"
+vm="${args['vault_vm']-$(config_get VAULT_VM)}"
 
 # If the validations were not performed because 
 # we use a default environment variable for the
@@ -36,7 +36,7 @@ else
 fi
 
 # If user wants to mount it now, do it
-if [[ ${args[--mount]} -eq 1 ]]; then
-    _message "Mounting hush device"
+if [[ ${args['--mount']} -eq 1 ]]; then
+    _info "Mounting hush device"
     _qrun "$vm" risks hush mount
 fi

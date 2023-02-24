@@ -14,7 +14,7 @@ create_messenger_vm ()
     local -a create_command
     create_command+=(qvm-create --property netvm="$netvm" --label "$gw_label" --template "$ws_template")
 
-    _message "Creating messaging VM (name: $msg / netvm: $netvm / template: $ws_template)"
+    _info "Creating messaging VM (name: $msg / netvm: $netvm / template: $ws_template)"
 }
 
 # very similar to create_messenger_vm , except that we clone 
@@ -31,5 +31,5 @@ clone_messenger_vm ()
     local label_command=(qvm-prefs "$msg" label "$gw_label")
     local netvm_command=(qvm-prefs "$msg" netvm "$netvm")
 
-    _message "Cloning messaging VM (name: $msg / netvm: $netvm / template: $gw_clone)"
+    _info "Cloning messaging VM (name: $msg / netvm: $netvm / template: $gw_clone)"
 }

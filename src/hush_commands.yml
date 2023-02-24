@@ -15,9 +15,6 @@ commands:
         required: false
         validate: valid_vaultvm
     flags:
-      - long: --verbose
-        short: -v
-        help: "Show verbose logging"
       - long: --mount
         short: -m
         help: "Mount the hush device in the vault (prompts for password)"

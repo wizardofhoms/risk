@@ -1,7 +1,3 @@
 
 name: slam 
 help: "Close identity, infrastructure and detach hush/backup at once"
-flags:
-  - long: --verbose
-    short: -v
-    help: "Show verbose logging"

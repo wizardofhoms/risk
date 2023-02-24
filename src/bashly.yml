@@ -2,6 +2,11 @@ name: risk
 help: RISKS Dom0 management application
 version: 0.1.0
 
+flags:
+  - long: --verbose
+    short: -v
+    help: "Show verbose logging"
+
 commands:
 - import: src/config_commands.yml
   # Drives/partitions
@@ -16,3 +21,10 @@ commands:
 - import: src/use_commands.yml
   # Qubes
 - import: src/qubes_commands.yml
+
+- name: help
+  help: Show help about a command
+  args:
+  - name: command
+    help: Help subject
+

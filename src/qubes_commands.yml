@@ -9,10 +9,6 @@ commands:
         help: An arbitrary list of VMs name patterns to update.
         required: true 
     flags:
-      - &verbose      
-        long: --verbose
-        short: -v
-        help: "Show verbose logging"
       - long: --identity
         short: -I
         help: "Check for templates of all VMs belong to an identity"

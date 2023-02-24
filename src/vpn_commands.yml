@@ -9,10 +9,6 @@ commands:
         help: "(optional) name to use for this VM (=> name-vpn)"
         required: false 
     flags:
-      - &verbose      
-        long: --verbose
-        short: -v
-        help: "Show verbose logging"
       - long: --name
         short: -N
         help: "Use a different name for naming identity VMs"
@@ -59,7 +55,6 @@ commands:
         required: true
         validate: vm_exists
     flags:
-      - *verbose
       - *vpn_config
       - *set_default
       - *netvm
@@ -74,8 +69,6 @@ commands:
         help: "gateway VM to start"
         required: true
         validate: vm_exists
-    flags:
-      - *verbose
 
   - name: stop 
     help: Stop a VPN gateway
@@ -84,8 +77,6 @@ commands:
         help: "gateway VM to stop"
         required: true
         validate: vm_exists
-    flags:
-      - *verbose
 
   - name: enable 
     help: Automatically start a VPN gateway when starting the identity.
@@ -94,8 +85,6 @@ commands:
         help: "gateway VM to enable autostart for"
         required: true
         validate: vm_exists
-    flags:
-      - *verbose
 
   - name: disable 
     help: "Do not autostart this VM when the identity is started"
@@ -104,8 +93,6 @@ commands:
         help: "gateway VM to disable autostart for"
         required: true
         validate: vm_exists
-    flags:
-      - *verbose
 
   - name: delete
     help: Delete a VPN gateway
@@ -114,5 +101,3 @@ commands:
         help: "gateway VM to delete"
         required: true
         validate: vm_exists
-    flags:
-      - *verbose

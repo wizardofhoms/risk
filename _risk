@@ -15,34 +15,48 @@ _risk ()
         shift words
         # Run the completion for the subcommand
         case "${cmd}" in
-            (hush) _hush ;;
-            (backup) _backup ;;
-            (identity) _identity ;;
-            (vpn) _vpn ;;
-            (config) _config ;;
-            (vm) _vm ;;
-            (use) _use ;;
-            (qubes) _qubes ;;
+            (help)      _help ;;
+            (hush)      _hush ;;
+            (backup)    _backup ;;
+            (identity)  _identity ;;
+            (vpn)       _vpn ;;
+            (config)    _config ;;
+            (vm)        _vm ;;
+            (use)       _use ;;
+            (qubes)     _qubes ;;
         esac
     else
-        local -a subcmds
-        subcmds=(
-            'hush:Attach or detach the hush partition to vault'
-            'backup:Attach or detach a backup partition to vault'
-            'identity:Create, manage and use identities and/or use their machines'
-            'vpn:Create, configure, manage and use VPN gateways for an identity'
-            'slam:Close identity and/or associated stores in the vault only, and detach hush/backup'
-            'config:Manage the global risk configuration settings from the CLI'
-            'use:Execute a command in a VM belong to an identity'
-            'vm:Manage generic VMs (identity settings, enable/disable, etc)'
-            'qubes:Strutured set of commands for managing Qubes in general'
-        )
-
-        _describe -t commands 'commands' subcmds
+        local ret=1
+        local line state
+        _arguments -C \
+            "${_flags_base[@]}" \
+            '(- : *)'--version}'[Print risk version and exit]'
+            "1: :_risk_commands" \
+            && ret=0
     fi
 }
 
 # Subcomands ==================================================================================
+
+# Completes subcommands of the risk CLI.
+_risk_commands ()
+{
+    local -a subcmds
+    subcmds=(
+        'help:Show help about a command'
+        'hush:Attach or detach the hush partition to vault'
+        'backup:Attach or detach a backup partition to vault'
+        'identity:Create, manage and use identities and/or use their machines'
+        'vpn:Create, configure, manage and use VPN gateways for an identity'
+        'slam:Close identity and/or associated stores in the vault only, and detach hush/backup'
+        'config:Manage the global risk configuration settings from the CLI'
+        'use:Execute a command in a VM belong to an identity'
+        'vm:Manage generic VMs (identity settings, enable/disable, etc)'
+        'qubes:Strutured set of commands for managing Qubes in general'
+    )
+
+    _describe -t commands 'commands' subcmds
+}
 
 # Completes the commands for config
 _config_commands ()
@@ -104,7 +118,6 @@ _hush ()
 
     # Register subcommands and argument patterns
     _arguments -C \
-        "${_flags_base[@]}" \
         "1: :_hush_commands" \
         "*::arg:->args" \
         && ret=0
@@ -115,7 +128,6 @@ _hush ()
             case $line[1] in
             attach)
                 _arguments \
-                    "${_flags_base[@]}" \
                     '(--mount -m)'{-m,--mount}'[Mount the hush device in the vault (prompts for password)]' \
                     '1:hush block device:_block_devices' \
                     '2:vault VM:($(_known_vms))' \
@@ -123,7 +135,6 @@ _hush ()
                 ;;
             detach)
                 _arguments \
-                    "${_flags_base[@]}" \
                     '1:hush block device:_block_devices' \
                     && ret=0
                 ;;
@@ -161,14 +172,12 @@ _backup ()
             case $line[1] in
             attach)
                 _arguments \
-                    "${_flags_base[@]}" \
                     '1:backup block device:_block_devices' \
                     '2:vault VM:($(_known_vms))' \
                     && ret=0
                 ;;
             detach)
                 _arguments \
-                    "${_flags_base[@]}" \
                     '1:backup block device:_block_devices' \
                     && ret=0
                 ;;
@@ -210,7 +219,6 @@ _identity ()
                 ;;
             equip)
                 _arguments -C \
-                    "${_flags_base[@]}" \
                     "${_flags_vm_base[@]}" \
                     "${_flags_init_tor[@]}" \
                     "${_flags_init_web[@]}" \
@@ -219,13 +227,7 @@ _identity ()
                 ;;
             start|open|delete)
                 _arguments \
-                    "${_flags_base[@]}" \
                     '1:identity name:' \
-                    && ret=0
-                ;;
-            *)
-                _arguments \
-                    "${_flags_base[@]}" \
                     && ret=0
                 ;;
             esac
@@ -242,7 +244,6 @@ _identity_create ()
         "2:email recipient:->recipient" \
         "3:key expiry:->duration" \
         '(- : *)--only[Only create the identity in the vault: do not create any machines]' \
-        "${_flags_base[@]}" \
         '(-b --backup)'{-b,--backup}'[Device file of the backup drive (whole drive without partition number, eg. /dev/sdb)]:path to backup device in vault:($(_vault_devices))' \
         "${_flags_vm_base[@]}" \
         "${_flags_init_tor[@]}" \
@@ -296,7 +297,6 @@ _vpn ()
             case $line[1] in
             create)
                 _arguments -C \
-                    "${_flags_base[@]}" \
                     "${_flags_vm_base[@]}" \
                     "${_flags_create_base[@]}" \
                     "${_flags_network[@]}" \
@@ -306,13 +306,11 @@ _vpn ()
                 ;;
             delete)
                 _arguments \
-                    "${_flags_base[@]}" \
                     '1:VPN gateway name:_identity_vpns' \
                     && ret=0
                 ;;
             setup)
                 _arguments \
-                    "${_flags_base[@]}" \
                     "${_flags_vpn[@]}" \
                     "${_flags_network[@]}" \
                     '1:VPN gateway name:_identity_vpns' \
@@ -320,23 +318,19 @@ _vpn ()
                 ;;
             enable)
                 _arguments \
-                    "${_flags_base[@]}" \
                     '1:VPN gateway name:_disabled_vpns' \
                     && ret=0
                 ;;
             disable)
                 _arguments \
-                    "${_flags_base[@]}" \
                     '1:VPN gateway name:_enabled_vpns' \
                     && ret=0
                 ;;
             start) _arguments \
-                    "${_flags_base[@]}" \
                     '1:VPN gateway name:_halted_identity_vpns' \
                     && ret=0
                 ;;
             stop) _arguments \
-                    "${_flags_base[@]}" \
                     '1:VPN gateway name:_running_identity_vpns' \
                     && ret=0
                 ;;
@@ -386,7 +380,6 @@ _vm ()
             case $line[1] in
             add)
                 _arguments -C \
-                    "${_flags_base[@]}" \
                     "${_flags_network[@]}" \
                     '--set-default[Set this VM as the default NetVM for all client machines for identity (browser, messaging, etc)]' \
                     '1::VM to tag with identity settings:_known_vms' \
@@ -394,19 +387,16 @@ _vm ()
                 ;;
             delete)
                 _arguments \
-                    "${_flags_base[@]}" \
                     '1:VM to delete:_identity_vms' \
                     && ret=0
                 ;;
             enable)
                 _arguments \
-                    "${_flags_base[@]}" \
                     '1:VM to enable for autostart:_disabled_identity_vms' \
                     && ret=0
                 ;;
             disable)
                 _arguments \
-                    "${_flags_base[@]}" \
                     '1:Disable an identity VM to autostart:_enabled_identity_vms' \
                     && ret=0
                 ;;
@@ -441,7 +431,6 @@ _qubes ()
             case $line[1] in
             update)
                 _arguments \
-                    "${_flags_base[@]}" \
                     '1:Name or name pattern to use for select VMs:_known_vms' \
                     && ret=0
                 ;;

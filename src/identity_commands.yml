@@ -15,10 +15,6 @@ commands:
         required: true
         help: Human readable, or GPG-compliant expiry duration to use for the GPG subkeys (eg. '1 year', '1 week', etc)
     flags:
-      - &verbose      
-        long: --verbose
-        short: -v
-        help: "Show verbose logging"
       - &prefix
         long: --prefix
         short: -P
@@ -64,7 +60,6 @@ commands:
         help: "Identity for which to setup infrastructure"
         required: true
     flags:
-      - *verbose
       - *prefix
       - *label
       - *no_gw
@@ -78,8 +73,6 @@ commands:
       - name: identity
         help: "Identity to delete along with machines"
         required: true
-    flags:
-      - *verbose
       
   - name: open
     help: Simply open the identity store in the vault
@@ -87,13 +80,9 @@ commands:
       - name: identity
         help: "Identity to open in the vault"
         required: true
-    flags:
-      - *verbose
 
   - name: close 
     help: Simply close the identity store in the vault
-    flags:
-      - *verbose
 
   - name: start
     help: Start the identity in the vault and all of its enabled VMs
@@ -101,13 +90,9 @@ commands:
       - name: identity
         help: "Identity to start"
         required: true
-    flags:
-      - *verbose
   
   - name: stop
     help: Stops all machines belonging to an identity, and close its vault if active.
-    flags:
-      - *verbose
 
   # Hidden commands
   - name: current

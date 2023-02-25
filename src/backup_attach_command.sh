@@ -9,7 +9,7 @@ local error_invalid_vm error_device
 # If the validations were not performed because 
 # we use a default environment variable for the
 # vault VM, perform them again here.
-error_invalid_vm=$(validate_vm_exits "$vm")
+error_invalid_vm=$(validate_vm_exists "$vm")
 if [[ -n "$error_invalid_vm" ]]; then
     _failure "$error_invalid_vm"
 fi
@@ -21,7 +21,7 @@ if [[ -n "$error_device" ]]; then
 fi
 
 # is the vm running?
-qvm-ls | grep Running | awk {'print $1'} | grep "^"${vm}"$" &> /dev/null
+qvm-ls | grep Running | awk {'print $1'} | grep '^'"${vm}"'$' &> /dev/null
 if [ "$?" != "0" ]; then
     _verbose "Starting VM $vm"
     qvm-start "${vm}"

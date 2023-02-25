@@ -20,7 +20,7 @@ if [[ -n "$error_device" ]]; then
 fi
 
 # is the vm running?
-qvm-ls | grep Running | awk {'print $1'} | grep "^"${vm}"$" &> /dev/null
+qvm-ls | grep Running | awk {'print $1'} | grep '^'"${vm}"'$' &> /dev/null
 if [ "$?" != "0" ]; then
     _verbose "Starting VM $vm"
     qvm-start "${vm}"

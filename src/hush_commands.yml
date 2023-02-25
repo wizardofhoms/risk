@@ -21,3 +21,11 @@ commands:
 
   - name: detach
     help: "Detach the hush device from its current qube, making sure it's not in a read-write state"
+    args:
+      - name: device
+        help: "(optional) qubes path to device to use as backup (defaults to BACKUP_BLOCK)"
+        required: false
+      - name: vault_vm 
+        help: "(optional) qube to use as vault VM (defaults to VAULT_VM)"
+        required: false
+        validate: valid_vaultvm

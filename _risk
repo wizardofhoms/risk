@@ -30,7 +30,7 @@ _risk ()
         local line state
         _arguments -C \
             "${_flags_base[@]}" \
-            '(- : *)'--version}'[Print risk version and exit]'
+            '(- : *)'--version'[Print risk version and exit]' \
             "1: :_risk_commands" \
             && ret=0
     fi
@@ -130,13 +130,10 @@ _hush ()
                 _arguments \
                     '(--mount -m)'{-m,--mount}'[Mount the hush device in the vault (prompts for password)]' \
                     '1:hush block device:_block_devices' \
-                    '2:vault VM:($(_known_vms))' \
-                    && ret=0
+                    '2:vault VM:($(_known_vms))'
                 ;;
             detach)
-                _arguments \
-                    '1:hush block device:_block_devices' \
-                    && ret=0
+                _arguments '1:hush block device:_block_devices_attached'
                 ;;
             esac
     esac
@@ -173,13 +170,10 @@ _backup ()
             attach)
                 _arguments \
                     '1:backup block device:_block_devices' \
-                    '2:vault VM:($(_known_vms))' \
-                    && ret=0
+                    '2:vault VM:($(_known_vms))'
                 ;;
             detach)
-                _arguments \
-                    '1:backup block device:_block_devices' \
-                    && ret=0
+                _arguments '1:backup block device:_block_devices_attached'
                 ;;
             esac
     esac
@@ -414,7 +408,6 @@ _qubes_commands () {
 }
 
 # Completion dispatcher for qubes commands
-# Completion dispatcher for vm command
 _qubes ()
 {
     local ret=1
@@ -504,6 +497,21 @@ _block_devices ()
     _describe -t arguments 'block devices' blocks && ret=0
 }
 
+# Completes attached block devices
+_block_devices_attached () 
+{
+    local -a devices=("${(@f)$(qvm-block list)}")
+    for device in "${devices[@]}"; do
+        id=$(echo $device | awk 'END {print $1}' | sed 's/\:/\\:/g') 
+        desc=$(echo $device | awk 'END {print $2}'| sed 's/\:/\\:/g') 
+        vm=$(echo $device | awk 'END {print $4}'| sed 's/\:/\\:/g') 
+
+        [[ "$vm" == "$(risk config get VAULT_VM)" ]] && blocks+=("$id:${desc}")
+    done
+
+    _describe -t arguments 'block devices' blocks && ret=0
+}
+
 # Completes device partitions directly in vault VM.
 _vault_devices ()
 {
@@ -531,59 +539,46 @@ _known_vms ()
 # Returns all the VMs belonging to the active identity
 _identity_vms ()
 {
-    # Proxies
-    local identity_dir proxies vms
-
-    # Get the list of gateways, either for active identity or all
-    identity_dir="$(_identity_dir)"
-    read -d '' -r -A proxies <"${identity_dir}/proxy_vms"
-    
-    # Other clients 
-    read -d '' -r -A vms <"${identity_dir}/client_vms"
+    proxies=($(_identity_proxies))
+    vms=($(_identity_clients))
 
     _alternative "proxies:proxies:($proxies)"
-    _alternative "other VMs:other VMs:($proxies)"
+    _alternative "other VMs:other VMs:($vms)"
 }
 
 # Returns all identity enabled VMs
 _enabled_identity_vms ()
 {
-    local identity_dir="$(_identity_dir)"
-    read -d '' -r -A vms <"${identity_dir}/autostart_vms"
+    vms=($(_identity_enabled_vms))
 
-    read -d '' -r -A proxies <"${identity_dir}/proxy_vms"
+    proxies=($(_identity_proxies))
     enabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -u))
-    _alternative "enabled VPNs:enabled VPNs:($enabled_vpns)"
+    [[ -n $enabled_vpns ]] &&  _alternative "enabled VPNs:enabled VPNs:($enabled_vpns)"
 
-    read -d '' -r -A client_vms <"${identity_dir}/client_vms"
+    client_vms=($(_identity_clients))
     enabled_vms=($(echo "${client_vms[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -u))
-    _alternative "enabled VMs:enabled VMs:($enabled_vms)"
+    [[ -n $enabled_vms ]] && _alternative "enabled VMs:enabled VMs:($enabled_vms)"
 }
 
 # Returns all identity disabled VMs
 _disabled_identity_vms ()
 {
-    # Enabled VMs
-    local identity_dir="$(_identity_dir)"
-    read -d '' -r -A vms <"${identity_dir}/autostart_vms"
+    vms=($(_identity_enabled_vms))
 
-    read -d '' -r -A proxies <"${identity_dir}/proxy_vms"
+    proxies=($(_identity_proxies))
     disabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
-    _alternative "disabled VPNs:disabled VPNs:($enabled_vpns)"
+    [[ -n $disabled_vpns ]] && _alternative "disabled VPNs:disabled VPNs:($disabled_vpns)"
     
-    read -d '' -r -A client_vms <"${identity_dir}/client_vms"
+    client_vms=($(_identity_clients))
     disabled_vms=($(echo "${client_vms[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
-    _alternative "disabled VMs:disabled VMs:($disabled_vms)"
+    [[ -n $disabled_vms ]] && _alternative "disabled VMs:disabled VMs:($disabled_vms)"
 }
 
 # Returns the list of running VPN gateways for the active identity.
 _running_identity_vpns ()
 {
-    local identity_dir proxies running_proxies
-
     # Get the list of gateways, either for active identity or all
-    identity_dir="$(_identity_dir)"
-    read -d '' -r -A proxies <"${identity_dir}/proxy_vms"
+    proxies=($(_identity_proxies))
     
     # Diff it with the list of running VMs
     read -d '' -r -A running_all < <(qvm-ls --raw-list --running)
@@ -600,11 +595,8 @@ _running_identity_vpns ()
 # Returns all VPNs for the active identity that are powered off.
 _halted_identity_vpns ()
 {
-    local identity_dir proxies halted_proxies
-
     # Get the list of gateways, either for active identity or all
-    identity_dir="$(_identity_dir)"
-    read -d '' -r -A proxies <"${identity_dir}/proxy_vms"
+    proxies=($(_identity_proxies))
     
     # Diff it with the list of running VMs
     read -d '' -r -A halted_all < <(qvm-ls --raw-list --halted)
@@ -621,8 +613,8 @@ _halted_identity_vpns ()
 # Returns all proxy VMs for the active identity, running or not.
 _identity_vpns ()
 {
-    local identity_dir="$(_identity_dir)"
-    read -d '' -r -A proxies <"${identity_dir}/proxy_vms"
+    proxies=($(_identity_proxies))
+
     if [[ "${#proxies[@]}" -eq 0 ]]; then
         _message "no VPN gateways for identity"
     else
@@ -633,9 +625,8 @@ _identity_vpns ()
 # Returns all VMs that are marked autostart for the identity.
 _enabled_vpns ()
 {
-    local identity_dir="$(_identity_dir)"
-    read -d '' -r -A vms <"${identity_dir}/autostart_vms"
-    read -d '' -r -A proxies <"${identity_dir}/proxy_vms"
+    vms=($(_identity_enabled_vms))
+    proxies=($(_identity_proxies))
 
     # Diff both
     enabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -u))
@@ -650,10 +641,8 @@ _enabled_vpns ()
 # Returns all VMs that are marked autostart for the identity.
 _disabled_vpns ()
 {
-    # Enabled VMs
-    local identity_dir="$(_identity_dir)"
-    read -d '' -r -A vms <"${identity_dir}/autostart_vms"
-    read -d '' -r -A proxies <"${identity_dir}/proxy_vms"
+    vms=($(_identity_enabled_vms))
+    proxies=($(_identity_proxies))
     
     # Diff both
     disabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
@@ -708,9 +697,35 @@ _identity_dir ()
     # Get the vault vm, and then the identity  directory
     local vault_vm active_identity identity_dir
     vault_vm=$(risk config get VAULT_VM)
-    active_identity=$(qvm-run --pass-io "$vault_vm" 'cat .identity' 2>/dev/null)
+    active_identity=$(qvm-run --pass-io "$vault_vm" 'risks identity' 2>/dev/null)
     identity_dir="${HOME}/.risk/identities/${active_identity}"
     print ${identity_dir}
+}
+
+# Returns an array of identity proxies
+_identity_proxies ()
+{
+    local identity_dir="$(_identity_dir)"
+    proxy_vms=$("${identity_dir}/proxy_vms" 2>/dev/null)
+    read -d '' -r -A proxies <<< "$proxy_vms"
+    print "${proxies[@]}"
+}
+
+# Returns a list of all identity client VMs (excluding proxies)
+_identity_clients ()
+{
+    local identity_dir="$(_identity_dir)"
+    clients=$("${identity_dir}/client_vms" 2>/dev/null)
+    read -d '' -r -A client_vms <<< "$clients"
+    print "${client_vms[@]}"
+}
+
+# Returns an array of identity enabled vms 
+_identity_enabled_vms ()
+{
+    local identity_dir="$(_identity_dir)"
+    autostart=$("${identity_dir}/autostart_vms" 2>/dev/null)
+    read -d '' -r -A vms <<< "$autostart"
 }
 
 

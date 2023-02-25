@@ -15,7 +15,7 @@ check_no_active_identity "$IDENTITY"
 # 3 - Send commands to vault
 _info "Opening identity $IDENTITY"
 
-_qrun "$vault_vm" risks open identity "$IDENTITY"
+_qrun_term "$vault_vm" risks identity open "$IDENTITY"
 _catch "Failed to open identity"
 
 _info "Identity $IDENTITY is active"

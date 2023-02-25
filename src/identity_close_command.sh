@@ -10,7 +10,7 @@ fi
 
 _info "Closing identity $active_identity"
 
-_qrun "$vault_vm" risks close identity "$active_identity"
+_qrun_term "$vault_vm" risks close identity "$active_identity"
 _catch "Failed to close identity $active_identity"
 
 _info "Identity $active_identity is closed"

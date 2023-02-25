@@ -61,11 +61,11 @@ if [[ -n "$pendrive" ]]; then
 fi
 
 # Create it
-_qrun "$VAULT_VM" risks create identity "$name" "$email" "$expiry" "${backup_args[@]}" 
+_qrun_term "$VAULT_VM" risks create identity "$name" "$email" "$expiry" "${backup_args[@]}" 
 _catch "Failed to create identity in vault"
 
 # And open it
-_qrun "$VAULT_VM" risks open identity "$name"
+_qrun_term "$VAULT_VM" risks open identity "$name"
 _catch "Failed to open identity in vault"
 
 # If the user only wanted to create the identity in the vault, exit.

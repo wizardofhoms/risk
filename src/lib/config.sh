@@ -74,8 +74,14 @@ DEFAULT_VPN_CLIENT_CONF='/rw/config/vpn/vpn-client.conf'
 ; Default terminal to use in Dom0
 DOM0_TERMINAL=xterm
 
+; Default shell to use in Dom0
+DOM0_SHELL=bash
+
 ; Default terminal to use in AppVMs
 VM_TERMINAL=xterm
+
+; Default shell to use in AppVMs 
+VM_SHELL=bash
 
 EOF
   }

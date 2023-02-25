@@ -144,8 +144,14 @@ function _failure()
 	typeset -i exitcode=${exitv:-1}
 
     _msg failure "$@"
+
+    # Trim the message from any risks/risq header and print
     if [[ -n "$COMMAND_STDERR" ]]; then
-        _msg inline "$COMMAND_STDERR"
+        stderr=$(sed -r 's/^(risks|risq) \[[^][]*\]//' <<< "${COMMAND_STDERR}")
+        stderr=$(sed -r 's/^(risks|risq)[ ]{1,}>//' <<< "${stderr}")
+        stderr=$(sed -r 's/^[ ]{1,}//' <<< "${stderr}")
+
+        _msg inline "$stderr"
     fi
 
 	# Be sure we forget the secrets we were told

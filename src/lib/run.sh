@@ -35,16 +35,18 @@ _run ()
 # run a command in a qube
 # $1 - Qube name
 # $@ - Command string to run
-_qrun () {
-    local vm="$1"
-    shift
+_qrun () 
+{
+    local vm="$1" ; shift
     local command="$*"
-    local terminal shell_command full_command
+    local terminal shell shell_command full_command
 
     # Prepare the full command
-    terminal="$(config_get "$VM_TERMINAL")"
-    shell_command='zsh -c "'"$command"'"'
-    full_command=(qvm-run --pass-io "$vm" "$terminal" -e "$shell_command")
+    terminal="$(config_get VM_TERMINAL)"
+    shell="$(config_get VM_SHELL)"
+    # shell_command='zsh -c "'"$command"'"'
+    shell_command="${shell} -c '$command'"
+    full_command=(qvm-run --pass-io "$vm" "$shell_command")
 
     _verbose "Running command: ${full_command[*]}"
 
@@ -54,7 +56,7 @@ _qrun () {
         IFS=$'\n' read -r -d '' COMMAND_STDERR;
         IFS=$'\n' read -r -d '' COMMAND_STDOUT;
         (IFS=$'\n' read -r -d '' _ERRNO_; exit "${_ERRNO_}");
-    } < <((printf '\0%s\0%d\0' "$( ${full_command[@]} )" "${?}" 1>&2) 2>&1)
+    } < <((printf '\0%s\0%d\0' "$( "${full_command[@]}" )" "${?}" 1>&2) 2>&1)
 
     local ret="$?"
 
@@ -70,18 +72,35 @@ _qrun () {
 }
 
 # _qvrun is a simplified version of _qrun, without stdout/err split & store.
-_qvrun () {
+_qvrun () 
+{
     local vm="$1"
     shift
-    local full_command="$*"
+    local command="$*"
 
     # If we don't have any command arguments, we run the default terminal
-    [[ -z "$full_command" ]] && full_command="$VM_TERMINAL"
+    [[ -z "$command" ]] && command="$VM_TERMINAL"
 
-    _verbose "Running command: ${full_command}"
+    _verbose "Running command: ${command}"
 
     # Run the command raw, so that we get the output as it is.
-    qvm-run --pass-io "$vm" "${full_command}"
+    qvm-run --pass-io "$vm" "${command}"
+}
+
+# _qrun_term spawns a terminal on a target qube, with an associated command to run.
+_qrun_term () 
+{
+    local vm="$1" ; shift
+    local command="$*"
+    local terminal shell shell_command
+
+    # Prepare the full command
+    terminal="$(config_get VM_TERMINAL)"
+    shell="$(config_get VM_SHELL)"
+    shell_command="${shell} -c '$command'"
+
+    # Run the raw command, so that we get the output as it is.
+    qvm-run --pass-io "$vm" "$terminal" -e "$shell_command"
 }
 
 # Checks the return code of a command, and if not successful,

@@ -423,9 +423,8 @@ _qubes ()
         args)
             case $line[1] in
             update)
-                _arguments \
-                    '1:Name or name pattern to use for select VMs:_known_vms' \
-                    && ret=0
+                _domain_vm_keywords
+                _known_vms
                 ;;
             esac
     esac
@@ -533,7 +532,7 @@ _known_vms ()
         VM_COMPLETIONS+=("${VM_NAME}")
     done < <(qvm-ls --raw-list | sort)
 
-    _arguments -C "*:VMs:($VM_COMPLETIONS)" && ret=0
+    _alternative "VMs:VMs:($VM_COMPLETIONS)"
 }
 
 # Returns all the VMs belonging to the active identity
@@ -541,6 +540,9 @@ _identity_vms ()
 {
     proxies=($(_identity_proxies))
     vms=($(_identity_clients))
+
+    [[ -z "${proxies}" ]] && [[ -z "${vms}" ]] \
+        && _message "No VMs belong to this identity" && return
 
     _alternative "proxies:proxies:($proxies)"
     _alternative "other VMs:other VMs:($vms)"
@@ -558,14 +560,20 @@ _enabled_identity_vms ()
     client_vms=($(_identity_clients))
     enabled_vms=($(echo "${client_vms[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -u))
     [[ -n $enabled_vms ]] && _alternative "enabled VMs:enabled VMs:($enabled_vms)"
+
+    [[ -z "${enabled_vpns}" ]] && [[ -z "${enabled_vms}" ]] \
+        && _message "No enabled VMs for this identity" && return
 }
 
 # Returns all identity disabled VMs
 _disabled_identity_vms ()
 {
     vms=($(_identity_enabled_vms))
-
     proxies=($(_identity_proxies))
+
+    [[ -z "${proxies}" ]] && [[ -z "${vms}" ]] \
+        && _message "No VMs belong to this identity" && return
+
     disabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
     [[ -n $disabled_vpns ]] && _alternative "disabled VPNs:disabled VPNs:($disabled_vpns)"
     
@@ -679,6 +687,15 @@ _structured_vms ()
     other_vms=($(echo "${proxies[@]}" "${all_vms[@]}" | tr ' ' '\n' | sort | uniq -u))
     other_vms=($(echo "${client_vms[@]}" "${other_vms[@]}" | tr ' ' '\n' | sort | uniq -u))
     _alternative "other VMs:other VMs:($other_vms)"
+}
+
+# completes a list of VM distribution names, domains or other keywords
+# to be used for commands such as risk qubes update whonix debian, etc.
+_domain_vm_keywords ()
+{
+    # Add common distributions
+    distros=(debian fedora whonix ks dom0 torbrowser cacher)
+    _alternative "tools & distributions:tools & distributions:($distros)"
 }
 
 # Returns the keys found in the risk global configuration

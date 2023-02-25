@@ -1,2 +1,3 @@
 disable=SC2148 # No need to add shebang to all files
 disable=SC2168 # Single files can use local since they are wrapped into functions later
+disable=SC2181 # Allow ourselves to use $? to check failed commands, allows shorter lines

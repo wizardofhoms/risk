@@ -9,6 +9,32 @@ section='risk'
 # operation, we padd them, for clearer/better aesthetics.
 section_padding=0
 
+# Last log level used. Inline logging uses this.
+last_level="message"
+
+# maps levels to their display color
+declare -A log_colors
+log_colors=(
+    [verbose]="blue"
+    [message]="white"
+    [warning]="yellow"
+    [success]="green"
+    [failure]="red"
+)
+
+# maps levels to notice characters.
+declare -A log_chars
+log_chars=(
+    [inline]=" > "
+    [verbose]="[D]"
+    [message]=" . "
+    [warning]="[W]"
+    [success]="(*)"
+    [failure]="[E]"
+)
+
+## Functions ##
+
 # Simple way of setting the section and to update the padding
 _in_section ()
 {
@@ -17,8 +43,6 @@ _in_section ()
         section_padding="$2"
     fi
 }
-
-## Functions ##
 
 function is_verbose_set () {
     if [[ "${args['--verbose']}" -eq 1 ]]; then
@@ -36,7 +60,7 @@ function _msg()
     if [[ ${#@} -lt 3 ]]; then
         local progname="$section"
         if [[ -z "$progname" ]]; then
-            progname='risks'
+            progname='risk'
         fi
         local msg="$2"
     else
@@ -54,42 +78,34 @@ function _msg()
 	# 	msg=${(S)msg//::$(($i - 2))*::/$*[$i]}
 	# done
 
+    # Apply log chars & color
+    local pcolor=${log_colors[$1]}
+    local pchars=${log_chars[$1]}
+
+    # Use the display of last message when inline
+    [[ "$1" == "inline" ]] && { pcolor=${log_colors[$last_level]}; pchars=${log_chars[inline]} }
+    last_level="$1"
 
 	local command="print -P"
-	local pchars=""
-	local pcolor="normal"
 	local fd=2
 	local -i returncode
 
 	case "$1" in
 		inline)
-			command+=" -n"; pchars=" > "; pcolor="yellow"
-			;;
-		message)
-			pchars=" . "; pcolor="white"
-			;;
-		verbose)
-			pchars="[D]"; pcolor="blue"
-			;;
-		success)
-			pchars="(*)"; pcolor="green"
-			;;
-		warning)
-			pchars="[W]"; pcolor="yellow"
+			command+=" -n"
 			;;
 		failure)
-			pchars="[E]"; pcolor="red"
 			returncode=1
 			;;
 		print)
 			progname=""
 			fd=1
 			;;
-		*)
-			pchars="[F]"; pcolor="red"
-			msg="Developer oops!  Usage: _msg MESSAGE_TYPE \"MESSAGE_CONTENT\""
-			returncode=127
-			;;
+		# *)
+		# 	pchars="[F]"; pcolor="red"
+		# 	msg="Developer oops!  Usage: _msg MESSAGE_TYPE \"MESSAGE_CONTENT\""
+		# 	returncode=127
+			# ;;
 	esac
 
 	[[ -n $_MSG_FD_OVERRIDE ]] && fd=$_MSG_FD_OVERRIDE
@@ -104,8 +120,8 @@ function _msg()
 
     # Else, print to stdout, with colors
 	if [[ -t $fd ]]; then
-       [[ -n "$progname" ]] && progname="$fg[magenta]$progname$reset_color"
-       [[ -n "$pchars" ]] && pchars="$fg_bold[$pcolor]$pchars$reset_color"
+       [[ -n "$progname" ]] && progname="${fg[magenta]}$progname$reset_color"
+       [[ -n "$pchars" ]] && pchars="${fg_bold[$pcolor]}$pchars$reset_color"
        msg="$fg[$pcolor]$msg$reset_color"
 	fi
 

@@ -21,7 +21,7 @@ _in_section ()
 ## Functions ##
 
 function is_verbose_set () {
-    if [[ "${args[--verbose]}" -eq 1 ]]; then
+    if [[ "${args['--verbose']}" -eq 1 ]]; then
         return 0
     else
         return 1

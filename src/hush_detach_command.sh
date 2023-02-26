@@ -10,7 +10,7 @@ _qrun "$vm" risks hush umount
 _catch "Failed to unmount hush device ($block)"
 
 # detach the sdcard encrypted partition to the qube
-if qvm-block detach "${vm}" "${block}"; then
+if qvm-block detach "${vm}" "${block}" &>/dev/null ; then
 	_success "Block ${block} has been detached from ${vm}"
 else
 	_failure "Block ${block} can not be detached from ${vm}"

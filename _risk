@@ -130,10 +130,12 @@ _hush ()
                 _arguments \
                     '(--mount -m)'{-m,--mount}'[Mount the hush device in the vault (prompts for password)]' \
                     '1:hush block device:_block_devices' \
-                    '2:vault VM:($(_known_vms))'
+                    '2:vault VM:_known_vms'
                 ;;
             detach)
-                _arguments '1:hush block device:_block_devices_attached'
+                _arguments \
+                    '1:hush block device:_block_devices_attached' \
+                    '2:vault VM:_known_vms'
                 ;;
             esac
     esac
@@ -170,10 +172,12 @@ _backup ()
             attach)
                 _arguments \
                     '1:backup block device:_block_devices' \
-                    '2:vault VM:($(_known_vms))'
+                    '2:vault VM:_known_vms'
                 ;;
             detach)
-                _arguments '1:backup block device:_block_devices_attached'
+                _arguments \
+                    '1:backup block device:_block_devices_attached' \
+                    '2:vault VM:_known_vms'
                 ;;
             esac
     esac
@@ -485,7 +489,9 @@ _block_devices ()
 {
     local -a blocks
 
-    local -a devices=("${(@f)$(qvm-block list)}")
+    IFS=$'\n' devices=($(qvm-block list))
+    IFS=$'\t\n'
+
     for device in "${devices[@]}"; do
         id=$(echo $device | awk 'END {print $1}' | sed 's/\:/\\:/g') 
         desc=$(echo $device | awk 'END {print $2}'| sed 's/\:/\\:/g') 
@@ -499,13 +505,18 @@ _block_devices ()
 # Completes attached block devices
 _block_devices_attached () 
 {
-    local -a devices=("${(@f)$(qvm-block list)}")
+    local -a blocks
+
+    IFS=$'\n' devices=($(qvm-block list))
+    IFS=$'\t\n'
+
     for device in "${devices[@]}"; do
         id=$(echo $device | awk 'END {print $1}' | sed 's/\:/\\:/g') 
         desc=$(echo $device | awk 'END {print $2}'| sed 's/\:/\\:/g') 
         vm=$(echo $device | awk 'END {print $4}'| sed 's/\:/\\:/g') 
 
-        [[ "$vm" == "$(risk config get VAULT_VM)" ]] && blocks+=("$id:${desc}")
+        [[ -n "$vm" ]] && blocks+=("$id:${desc}")
+        # [[ "$vm" == "$(risk config get VAULT_VM)" ]] && blocks+=("$id:${desc}")
     done
 
     _describe -t arguments 'block devices' blocks && ret=0

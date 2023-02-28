@@ -208,3 +208,68 @@ check_not_netvm ()
 
     [[ ${#connected_vms} -gt 0 ]] && _failure "VM $vm is netVM for [ ${connected_vms[*]} ] VMs"
 }
+
+# get_updatable_vms returns all templates and standalone VMs
+get_updatable_vms () 
+{
+    local templates=() 
+    while read line ; do
+        IFS="|" read -r name class <<< "${line}"
+        if [[ "$class" == "TemplateVM" ]]; then
+            templates+=( "$name" )
+        elif [[ "$class" == "StandaloneVM" ]]; then
+            templates+=( "$name" )
+        fi
+    done < <(qvm-ls --raw-data --fields name,class | sort)
+
+    echo "${templates[@]}"
+}
+
+# Returns the template used by a given AppVM
+get_update_vm_template ()
+{
+    qvm-ls | grep "$(qubes-prefs updatevm)" | grep "TemplateVM" | awk '{print $1}'
+}
+
+# get_vm_args returns a list of VMs that either explicitly named in the array 
+# arguments, or those belonging to some "group keyword" of this same array.
+get_vm_args ()
+{
+    local vms=("$@")
+    local all_vms=()
+    local can_update=()
+    local updatevm
+
+    # Return if our only argument is empty
+
+    # All updatable VMs, except the updater one
+    read -rA can_update <<< "$(get_updatable_vms)"
+    updatevm="$(get_update_vm_template)"
+    can_update=( ${can_update:#$~updatevm} )
+
+    for word in "${vms[@]}"; do
+        case "${word}" in
+            # First check for group keywords
+            all)
+                all_vms+=( "${updatevm}" )
+                all_vms+=( "${can_update[@]}" )
+                ;;
+            cacher)
+                all_vms+=( "${updatevm}" )
+                ;;
+            torbrowser)
+                ;;
+            dom0)
+                ;;
+            # Else return the VM name itself
+            *)
+                for vm in "${can_update[@]}"; do
+                    [[ "${vm}" =~ ${word} ]] && all_vms+=( "${vm}" )
+                done
+                ;;
+        esac
+        
+    done
+
+    echo "${all_vms[@]}"
+}

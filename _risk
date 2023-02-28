@@ -24,6 +24,7 @@ _risk ()
             (vm)        _vm ;;
             (use)       _use ;;
             (qubes)     _qubes ;;
+            (url)       _url ;;
         esac
     else
         local ret=1
@@ -53,6 +54,7 @@ _risk_commands ()
         'use:Execute a command in a VM belong to an identity'
         'vm:Manage generic VMs (identity settings, enable/disable, etc)'
         'qubes:Strutured set of commands for managing Qubes in general'
+        'url:Browse, bookmark, verify and manage URLS/links'
     )
 
     _describe -t commands 'commands' subcmds
@@ -195,6 +197,7 @@ _identity_commands ()
         'start:Start the identity in the vault and all of its enabled VMs'
         'stop:Stops all machines belonging to an identity, and close its vault if active.'
         'equip:Creates the default infrastructure for an already exiting identity'
+        'restrict:Forbid VMs not belonging to the identity from split/copy features when not active '
     )
     _describe -t commands 'identity commands' subcmds && ret=0
 }
@@ -434,6 +437,55 @@ _qubes ()
     esac
 }
 
+# url management helper commands
+_url_commands () 
+{
+    local -a subcmds 
+    subcmds=(
+        'open:Open a target URL into a target VM, or bookmarks with no arguments'
+        'verify:Verify the authenticity/signatures and reputation of an onion URL'
+        'bookmark:Add an onion to the user/system bookmarks without verifying it'
+        'blacklist:Add an onion to the system list of blacklisted onions'
+        'news:refresh the authenticity files, refered links and current news for an onion'
+    )
+    _describe -t commands 'url commands' subcmds && ret=0
+}
+
+# Completion dispatcher for url commands
+_url ()
+{
+    local ret=1
+    local line state
+
+    _arguments -C \
+        "1: :_url_commands" \
+        "*::arg:->args" \
+        && ret=0
+
+    # Arguments completion
+    case $state in
+        args)
+            case $line[1] in
+                verify)
+                    _arguments -C \
+                        '1:url/onion:' \
+                        && ret=0
+                    ;;
+                bookmark)
+                    _arguments -C \
+                        '(-u --user)'{-u,--user}'[Add to identity bookmarks]' \
+                        '(-s --system)'{-s,--system}'[Add to system-wide (all identities) bookmarks]' \
+                        '1:url/onion:' \
+                        '2:URL name:' \
+                        && ret=0
+                    ;;
+                open|blacklist|news)
+                    _identity_bookmarks
+                    _system_bookmarks
+                ;;
+            esac
+    esac
+}
 
 
 # Flags =======================================================================================
@@ -515,7 +567,7 @@ _block_devices_attached ()
         desc=$(echo $device | awk 'END {print $2}'| sed 's/\:/\\:/g') 
         vm=$(echo $device | awk 'END {print $4}'| sed 's/\:/\\:/g') 
 
-        [[ -n "$vm" ]] && blocks+=("$id:${desc}")
+        [[ -n "$vm" ]] && blocks+=("$id:${desc} [=> ${vm}]")
         # [[ "$vm" == "$(risk config get VAULT_VM)" ]] && blocks+=("$id:${desc}")
     done
 
@@ -715,6 +767,16 @@ _config_keys ()
     local keys
     keys=( $(risk config keys) )
     _arguments -C "1:configuration keys:($keys)"
+}
+
+# Completes all bookmarks saved for the current identity
+_identity_bookmarks ()
+{
+}
+
+# Completes all bookmarks saved for the current identity
+_system_bookmarks ()
+{
 }
 
 # Utils =======================================================================================

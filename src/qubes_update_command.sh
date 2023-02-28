@@ -1,34 +1,24 @@
-local vms="${args['vms']}"
+local vm_args
 
-get_all_qubes() {
-    local all_qubes
-    while read VM_NAME ; do
-        all_qubes+=("${VM_NAME}")
-    done < <(qvm-ls --raw-list | sort)
+# Analyze the arguments and extract all VMs
+# corresponding to those names/groups.
+local vms=()
+read -rA vms <<< $(get_vm_args "${args['vms']}" "${other_args[@]}")
 
-    echo "${all_qubes[@]}"
-}
+# Update VMs
+if [[ -n "${vms[*]}" ]]; then
+    _info "Updating following VMs:" 
+    for template in "${vms[@]}"; do
+            _info "$template"
+    done
 
-local all_qubes
-read -ra all_qubes < "$(get_all_qubes)"
+    printf -v targets '%s,' "${vms[@]}"
+    _run sudo qubesctl --skip-dom0 --targets "${targets%,}" state.apply update.qubes-vm
+fi
 
-get_all_templates() {
-    local templates=() 
-    while read line ; do
-        IFS="|" read -r name class < "${qube}"
-        if [[ "$class" == "TemplateVM" ]]; then
-            templates+=( "$name" )
-        fi
-    done < ("$(qvm-ls --raw-data --fields name,class|sort)")
+# Update dom0 if required
+if [[ ${args['vms']} == dom0 ]] || [[ ${other_args[(r)dom0]} == dom0 ]]; then
+    _info "Updating dom0"
+    sudo qubes-dom0-update
+fi
 
-    echo "${templates[@]}"
-}
-
-local targets
-read -ra all_templates < "$(get_all_templates)"
-
-for template in "${all_templates[@]}"; do
-    if [[ "$template" =~ .*"$*".* ]]; then
-        echo $template
-    fi
-done

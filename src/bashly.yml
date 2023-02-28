@@ -19,6 +19,7 @@ commands:
 - import: src/vpn_commands.yml
 - import: src/vm_commands.yml
 - import: src/use_commands.yml
+- import: src/url_commands.yml
   # Qubes
 - import: src/qubes_commands.yml
 

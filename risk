@@ -34,6 +34,7 @@ risk_usage() {
   printf "  %s   Create, configure, manage and use VPN gateways for an identity.\n" "$(red "vpn")     "
   printf "  %s   Manage generic VMs (identity settings, enable/disable, etc)\n" "$(red "vm")      "
   printf "  %s   Execute a command in a VM belong to an identity.\n" "$(red "use")     "
+  printf "  %s   Browse, bookmark, verify and manage URLS/links\n" "$(red "url")     "
   printf "  %s   Strutured set of commands for managing Qubes in general\n" "$(red "qubes")   "
   printf "  %s   Show help about a command\n" "$(red "help")    "
   echo
@@ -529,13 +530,14 @@ risk_identity_usage() {
   echo
   # :command.usage_commands
   printf "%s\n" "$(bold "Commands:")"
-  printf "  %s   Creates associated VMs for an identity (joe-gw, joe-vpn, joe-msg, joe-web)\n" "$(red "create")"
-  printf "  %s   Creates the infrastructure for an already exiting identity.\n" "$(red "equip") "
-  printf "  %s   Destroys an identity and all its associated machines and data\n" "$(red "delete")"
-  printf "  %s   Simply open the identity store in the vault\n" "$(red "open")  "
-  printf "  %s   Simply close the identity store in the vault\n" "$(red "close") "
-  printf "  %s   Start the identity in the vault and all of its enabled VMs\n" "$(red "start") "
-  printf "  %s   Stops all machines belonging to an identity, and close its vault if active.\n" "$(red "stop")  "
+  printf "  %s   Creates associated VMs for an identity (joe-gw, joe-vpn, joe-msg, joe-web)\n" "$(red "create")  "
+  printf "  %s   Creates the infrastructure for an already exiting identity.\n" "$(red "equip")   "
+  printf "  %s   Destroys an identity and all its associated machines and data\n" "$(red "delete")  "
+  printf "  %s   Simply open the identity store in the vault\n" "$(red "open")    "
+  printf "  %s   Simply close the identity store in the vault\n" "$(red "close")   "
+  printf "  %s   Start the identity in the vault and all of its enabled VMs\n" "$(red "start")   "
+  printf "  %s   Stops all machines belonging to an identity, and close its vault if active.\n" "$(red "stop")    "
+  printf "  %s   Forbid VMs not belonging to the identity from split/copy features when not active\n" "$(red "restrict")"
   echo
 
   # :command.long_usage
@@ -861,6 +863,35 @@ risk_identity_stop_usage() {
   printf "%s\n" "$(bold "Usage:")"
   printf "  risk identity stop\n"
   printf "  risk identity stop --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_identity_restrict_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk identity restrict - Forbid VMs not belonging to the identity from split/copy features when not active\n"
+    echo
+
+  else
+    printf "risk identity restrict - Forbid VMs not belonging to the identity from split/copy features when not active\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk identity restrict\n"
+  printf "  risk identity restrict --help | -h\n"
   echo
 
   # :command.long_usage
@@ -1540,6 +1571,239 @@ risk_use_usage() {
 }
 
 # :command.usage
+risk_url_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk url - Browse, bookmark, verify and manage URLS/links\n"
+    echo
+
+  else
+    printf "risk url - Browse, bookmark, verify and manage URLS/links\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk url COMMAND\n"
+  printf "  risk url [COMMAND] --help | -h\n"
+  echo
+  # :command.usage_commands
+  printf "%s\n" "$(bold "Commands:")"
+  printf "  %s   Open a target URL into a target VM, or bookmarks with no arguments.\n" "$(red "open")     "
+  printf "  %s   Verify the authenticity/signatures and reputation of an onion URL.\n" "$(red "verify")   "
+  printf "  %s   Add an onion to the user/system bookmarks without verifying it.\n" "$(red "bookmark") "
+  printf "  %s   Add an onion to the system list of blacklisted onions\n" "$(red "blacklist")"
+  printf "  %s   refresh the authenticity files, refered links and current news for an onion.\n" "$(red "news")     "
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_url_open_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk url open - Open a target URL into a target VM, or bookmarks with no arguments.\n"
+    echo
+
+  else
+    printf "risk url open - Open a target URL into a target VM, or bookmarks with no arguments.\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk url open [URL]\n"
+  printf "  risk url open --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "%s\n" "$(bold "Arguments:")"
+
+    # :argument.usage
+    printf "  %s\n" "$(blue "URL")"
+    printf "    URL to browse\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_url_verify_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk url verify - Verify the authenticity/signatures and reputation of an onion URL.\n"
+    echo
+
+  else
+    printf "risk url verify - Verify the authenticity/signatures and reputation of an onion URL.\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk url verify [URL]\n"
+  printf "  risk url verify --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "%s\n" "$(bold "Arguments:")"
+
+    # :argument.usage
+    printf "  %s\n" "$(blue "URL")"
+    printf "    URL to browse\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_url_bookmark_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk url bookmark - Add an onion to the user/system bookmarks without verifying it.\n"
+    echo
+
+  else
+    printf "risk url bookmark - Add an onion to the user/system bookmarks without verifying it.\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk url bookmark [URL] [OPTIONS]\n"
+  printf "  risk url bookmark --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_flags
+    # :flag.usage
+    printf "  %s\n" "--user, -u"
+    printf "    Add to identity bookmarks\n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "--system, -s"
+    printf "    Add to system-wide (all identities) bookmarks\n"
+    echo
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "%s\n" "$(bold "Arguments:")"
+
+    # :argument.usage
+    printf "  %s\n" "$(blue "URL")"
+    printf "    URL to browse\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_url_blacklist_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk url blacklist - Add an onion to the system list of blacklisted onions\n"
+    echo
+
+  else
+    printf "risk url blacklist - Add an onion to the system list of blacklisted onions\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk url blacklist [URL]\n"
+  printf "  risk url blacklist --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "%s\n" "$(bold "Arguments:")"
+
+    # :argument.usage
+    printf "  %s\n" "$(blue "URL")"
+    printf "    URL to browse\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_url_news_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk url news - refresh the authenticity files, refered links and current news for an onion.\n"
+    echo
+
+  else
+    printf "risk url news - refresh the authenticity files, refered links and current news for an onion.\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk url news [URL]\n"
+  printf "  risk url news --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "%s\n" "$(bold "Arguments:")"
+
+    # :argument.usage
+    printf "  %s\n" "$(blue "URL")"
+    printf "    URL to browse\n"
+    echo
+
+  fi
+}
+
+# :command.usage
 risk_qubes_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk qubes - Strutured set of commands for managing Qubes in general\n"
@@ -1585,7 +1849,7 @@ risk_qubes_update_usage() {
   fi
 
   printf "%s\n" "$(bold "Usage:")"
-  printf "  risk qubes update VMS [OPTIONS]\n"
+  printf "  risk qubes update VMS [OPTIONS] [...]\n"
   printf "  risk qubes update --help | -h\n"
   echo
 
@@ -2838,6 +3102,73 @@ check_not_netvm ()
     [[ ${#connected_vms} -gt 0 ]] && _failure "VM $vm is netVM for [ ${connected_vms[*]} ] VMs"
 }
 
+# get_updatable_vms returns all templates and standalone VMs
+get_updatable_vms ()
+
+{
+    local templates=()
+
+    while read line ; do
+        IFS="|" read -r name class <<< "${line}"
+        if [[ "$class" == "TemplateVM" ]]; then
+            templates+=( "$name" )
+        elif [[ "$class" == "StandaloneVM" ]]; then
+            templates+=( "$name" )
+        fi
+    done < <(qvm-ls --raw-data --fields name,class | sort)
+
+    echo "${templates[@]}"
+}
+
+get_update_vm_template ()
+{
+    qvm-ls | grep "$(qubes-prefs updatevm)" | grep "TemplateVM" | awk '{print $1}'
+}
+
+# get_vm_args returns a list of VMs that either explicitly named in the array
+
+# arguments, or those belonging to some "group keyword" of this same array.
+get_vm_args ()
+{
+    local vms=("$@")
+    local all_vms=()
+    local can_update=()
+    local updatevm
+
+    # Return if our only argument is empty
+
+    # All updatable VMs, except the updater one
+    read -rA can_update <<< "$(get_updatable_vms)"
+    updatevm="$(get_update_vm_template)"
+    can_update=( ${can_update:#$~updatevm} )
+
+    for word in "${vms[@]}"; do
+        case "${word}" in
+            # First check for group keywords
+            all)
+                all_vms+=( "${updatevm}" )
+                all_vms+=( "${can_update[@]}" )
+                ;;
+            cacher)
+                all_vms+=( "${updatevm}" )
+                ;;
+            torbrowser)
+                ;;
+            dom0)
+                ;;
+            # Else return the VM name itself
+            *)
+                for vm in "${can_update[@]}"; do
+                    [[ "${vm}" =~ ${word} ]] && all_vms+=( "${vm}" )
+                done
+                ;;
+        esac
+
+    done
+
+    echo "${all_vms[@]}"
+}
+
 # src/lib/vpn_gateway.sh
 
 # Creates a new VPN gateway from a TemplateVM
@@ -3592,6 +3923,16 @@ risk_identity_stop_command() {
 }
 
 # :command.function
+risk_identity_restrict_command() {
+  # src/identity_restrict_command.sh
+  echo "# this file is located in 'src/identity_restrict_command.sh'"
+  echo "# code for 'risk identity restrict' goes here"
+  echo "# you can edit it freely and regenerate (it will not be overwritten)"
+  inspect_args
+
+}
+
+# :command.function
 risk_identity_current_command() {
   # src/identity_current_command.sh
   # Simply print the active identity in the vault
@@ -4059,43 +4400,82 @@ risk_use_command() {
 }
 
 # :command.function
+risk_url_open_command() {
+  # src/url_open_command.sh
+  echo "# this file is located in 'src/url_open_command.sh'"
+  echo "# code for 'risk url open' goes here"
+  echo "# you can edit it freely and regenerate (it will not be overwritten)"
+  inspect_args
+
+}
+
+# :command.function
+risk_url_verify_command() {
+  # src/url_verify_command.sh
+  echo "# this file is located in 'src/url_verify_command.sh'"
+  echo "# code for 'risk url verify' goes here"
+  echo "# you can edit it freely and regenerate (it will not be overwritten)"
+  inspect_args
+
+}
+
+# :command.function
+risk_url_bookmark_command() {
+  # src/url_bookmark_command.sh
+  echo "# this file is located in 'src/url_bookmark_command.sh'"
+  echo "# code for 'risk url bookmark' goes here"
+  echo "# you can edit it freely and regenerate (it will not be overwritten)"
+  inspect_args
+
+}
+
+# :command.function
+risk_url_blacklist_command() {
+  # src/url_blacklist_command.sh
+  echo "# this file is located in 'src/url_blacklist_command.sh'"
+  echo "# code for 'risk url blacklist' goes here"
+  echo "# you can edit it freely and regenerate (it will not be overwritten)"
+  inspect_args
+
+}
+
+# :command.function
+risk_url_news_command() {
+  # src/url_news_command.sh
+  echo "# this file is located in 'src/url_news_command.sh'"
+  echo "# code for 'risk url news' goes here"
+  echo "# you can edit it freely and regenerate (it will not be overwritten)"
+  inspect_args
+
+}
+
+# :command.function
 risk_qubes_update_command() {
   # src/qubes_update_command.sh
-  local vms="${args['vms']}"
+  local vm_args
 
-  get_all_qubes() {
-      local all_qubes
-      while read VM_NAME ; do
-          all_qubes+=("${VM_NAME}")
-      done < <(qvm-ls --raw-list | sort)
+  # Analyze the arguments and extract all VMs
+  # corresponding to those names/groups.
+  local vms=()
+  read -rA vms <<< $(get_vm_args "${args['vms']}" "${other_args[@]}")
 
-      echo "${all_qubes[@]}"
-  }
+  # Update VMs
+  if [[ -n "${vms[*]}" ]]; then
+      _info "Updating following VMs:"
 
-  local all_qubes
-  read -ra all_qubes < "$(get_all_qubes)"
+      for template in "${vms[@]}"; do
+              _info "$template"
+      done
 
-  get_all_templates() {
-      local templates=()
+      printf -v targets '%s,' "${vms[@]}"
+      _run sudo qubesctl --skip-dom0 --targets "${targets%,}" state.apply update.qubes-vm
+  fi
 
-      while read line ; do
-          IFS="|" read -r name class < "${qube}"
-          if [[ "$class" == "TemplateVM" ]]; then
-              templates+=( "$name" )
-          fi
-      done < ("$(qvm-ls --raw-data --fields name,class|sort)")
-
-      echo "${templates[@]}"
-  }
-
-  local targets
-  read -ra all_templates < "$(get_all_templates)"
-
-  for template in "${all_templates[@]}"; do
-      if [[ "$template" =~ .*"$*".* ]]; then
-          echo $template
-      fi
-  done
+  # Update dom0 if required
+  if [[ ${args['vms']} == dom0 ]] || [[ ${other_args[(r)dom0]} == dom0 ]]; then
+      _info "Updating dom0"
+      sudo qubes-dom0-update
+  fi
 
 }
 
@@ -4213,6 +4593,13 @@ parse_requirements() {
       action="use"
       shift
       risk_use_parse_requirements "$@"
+      shift $#
+      ;;
+
+    url)
+      action="url"
+      shift
+      risk_url_parse_requirements "$@"
       shift $#
       ;;
 
@@ -5099,6 +5486,13 @@ risk_identity_parse_requirements() {
       shift $#
       ;;
 
+    restrict)
+      action="restrict"
+      shift
+      risk_identity_restrict_parse_requirements "$@"
+      shift $#
+      ;;
+
     current)
       action="current"
       shift
@@ -5702,6 +6096,50 @@ risk_identity_stop_parse_requirements() {
 
   # :command.command_filter
   action="identity stop"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        printf "invalid argument: %s\n" "$key" >&2
+        exit 1
+
+        ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
+risk_identity_restrict_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_identity_restrict_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="identity restrict"
 
   # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
@@ -6917,6 +7355,366 @@ risk_use_parse_requirements() {
 }
 
 # :command.parse_requirements
+risk_url_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_url_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action=${1:-}
+
+  case $action in
+    -*) ;;
+
+    open)
+      action="open"
+      shift
+      risk_url_open_parse_requirements "$@"
+      shift $#
+      ;;
+
+    verify)
+      action="verify"
+      shift
+      risk_url_verify_parse_requirements "$@"
+      shift $#
+      ;;
+
+    bookmark)
+      action="bookmark"
+      shift
+      risk_url_bookmark_parse_requirements "$@"
+      shift $#
+      ;;
+
+    blacklist)
+      action="blacklist"
+      shift
+      risk_url_blacklist_parse_requirements "$@"
+      shift $#
+      ;;
+
+    news)
+      action="news"
+      shift
+      risk_url_news_parse_requirements "$@"
+      shift $#
+      ;;
+
+    # :command.command_fallback
+    "")
+      risk_url_usage >&2
+      exit 1
+      ;;
+
+    *)
+      printf "invalid command: %s\n" "$action" >&2
+      exit 1
+      ;;
+
+  esac
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        printf "invalid argument: %s\n" "$key" >&2
+        exit 1
+
+        ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
+risk_url_open_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_url_open_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="url open"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        if [[ -z ${args['url']+x} ]]; then
+
+          args['url']=$1
+          shift
+        else
+          printf "invalid argument: %s\n" "$key" >&2
+          exit 1
+        fi
+
+        ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
+risk_url_verify_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_url_verify_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="url verify"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        if [[ -z ${args['url']+x} ]]; then
+
+          args['url']=$1
+          shift
+        else
+          printf "invalid argument: %s\n" "$key" >&2
+          exit 1
+        fi
+
+        ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
+risk_url_bookmark_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_url_bookmark_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="url bookmark"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+      # :flag.case
+      --user | -u)
+
+        # :flag.case_no_arg
+        args['--user']=1
+        shift
+        ;;
+
+      # :flag.case
+      --system | -s)
+
+        # :flag.case_no_arg
+        args['--system']=1
+        shift
+        ;;
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        if [[ -z ${args['url']+x} ]]; then
+
+          args['url']=$1
+          shift
+        else
+          printf "invalid argument: %s\n" "$key" >&2
+          exit 1
+        fi
+
+        ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
+risk_url_blacklist_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_url_blacklist_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="url blacklist"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        if [[ -z ${args['url']+x} ]]; then
+
+          args['url']=$1
+          shift
+        else
+          printf "invalid argument: %s\n" "$key" >&2
+          exit 1
+        fi
+
+        ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
+risk_url_news_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_url_news_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="url news"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        if [[ -z ${args['url']+x} ]]; then
+
+          args['url']=$1
+          shift
+        else
+          printf "invalid argument: %s\n" "$key" >&2
+          exit 1
+        fi
+
+        ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
 risk_qubes_parse_requirements() {
   # :command.fixed_flags_filter
   while [[ $# -gt 0 ]]; do
@@ -7016,21 +7814,27 @@ risk_qubes_update_parse_requirements() {
         shift
         ;;
 
+      --)
+        shift
+        other_args+=("$@")
+        break
+        ;;
+
       -?*)
-        printf "invalid option: %s\n" "$key" >&2
-        exit 1
+        other_args+=("$1")
+        shift
         ;;
 
       *)
         # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+        # :command.parse_requirements_case_catch_all
         if [[ -z ${args['vms']+x} ]]; then
 
           args['vms']=$1
           shift
         else
-          printf "invalid argument: %s\n" "$key" >&2
-          exit 1
+          other_args+=("$1")
+          shift
         fi
 
         ;;
@@ -7040,7 +7844,7 @@ risk_qubes_update_parse_requirements() {
 
   # :command.required_args_filter
   if [[ -z ${args['vms']+x} ]]; then
-    printf "missing required argument: VMS\nusage: risk qubes update VMS [OPTIONS]\n" >&2
+    printf "missing required argument: VMS\nusage: risk qubes update VMS [OPTIONS] [...]\n" >&2
     exit 1
   fi
 
@@ -7341,6 +8145,15 @@ run() {
       fi
       ;;
 
+    "identity restrict")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_identity_restrict_usage
+      else
+        risk_identity_restrict_command
+      fi
+      ;;
+
     "identity current")
       if [[ ${args['--help']:-} ]]; then
         long_usage=yes
@@ -7482,6 +8295,60 @@ run() {
         risk_use_usage
       else
         risk_use_command
+      fi
+      ;;
+
+    "url")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_url_usage
+      else
+        risk_url_command
+      fi
+      ;;
+
+    "url open")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_url_open_usage
+      else
+        risk_url_open_command
+      fi
+      ;;
+
+    "url verify")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_url_verify_usage
+      else
+        risk_url_verify_command
+      fi
+      ;;
+
+    "url bookmark")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_url_bookmark_usage
+      else
+        risk_url_bookmark_command
+      fi
+      ;;
+
+    "url blacklist")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_url_blacklist_usage
+      else
+        risk_url_blacklist_command
+      fi
+      ;;
+
+    "url news")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_url_news_usage
+      else
+        risk_url_news_command
       fi
       ;;
 

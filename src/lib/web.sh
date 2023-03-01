@@ -6,13 +6,22 @@ create_browser_vm ()
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
     local web_label="${3-orange}"
     local ws_template="$(config_get WHONIX_WS_TEMPLATE)"
+    local template_disp="$(qvm-prefs "${ws_template}" template_for_dispvms)"
+    local class
 
-    _info "Creating web VM (name: $web / netvm: $netvm / template: $ws_template)"
-    qvm-create --property netvm="$netvm" --label "$web_label" --template "$ws_template"
+    # Disposable settings
+    # If the template used is a disposable_template,
+    # this means we must create a named disposable VM.
+    [[ "${template_disp}" == True ]] && class=(--class DispVM)
+    
+    # Generate the VM, regardess of it being a named disposable or not.
+    _info "Creating web browsing VM (name: $web / netvm: $netvm / template: $ws_template)"
+    qvm-create --property netvm="$netvm" --label "$web_label" --template "$ws_template" "${class[@]}"
     [[ ! $? -eq 0 ]] && _warning "Failed to create browser VM $web"
 
     # Mark this VM as a disposable template, and tag it with our identity
-    qvm-prefs "${web}" template_for_dispvms True
+    [[ "${template_disp}" == False ]] || qvm-prefs "${web}" template_for_dispvms True
+
     qvm-tags "$web" set "$IDENTITY"
 }
 
@@ -24,15 +33,17 @@ clone_browser_vm ()
     local netvm="${3-$(config_get DEFAULT_NETVM)}"
     local web_label="${4-orange}"
 
-    _info "Cloning web VM (name: $web / netvm: $netvm / template: $web_clone)"
+    _info "Cloning web browsing VM (name: $web / netvm: $netvm / template: $web_clone)"
     qvm-clone "${web_clone}" "${web}"
     [[ ! $? -eq 0 ]] && _warning "Failed to clone browser VM $web" && return
 
     qvm-prefs "$web" label "$web_label"
     qvm-prefs "$web" netvm "$netvm"
 
-    # Mark this VM as a disposable template, and tag it with our identity
-    qvm-prefs "${web}" template_for_dispvms True
+    # Only mark this VM as disposable template when it's not one already.
+    [[ "$(qvm-prefs "${ws_template}" template_for_dispvms)" == False ]] \
+        && qvm-prefs "${web}" template_for_dispvms True
+    
     qvm-tags "$web" set "$IDENTITY"
 }
 

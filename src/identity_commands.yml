@@ -30,7 +30,7 @@ commands:
         short: -b
         help: "Device file of the backup drive (must be a whole drive without a partition number, eg. /dev/sdb)"
         validate: device
-      - long: --only
+      - long: --vault-only
         help: "Only create the identity in the vault: do not create any machines"
         # Tor gateway options
       - &no_gw
@@ -93,6 +93,9 @@ commands:
   
   - name: stop
     help: Stops all machines belonging to an identity, and close its vault if active.
+  
+  - name: restrict
+    help: Forbid VMs not belonging to the identity from split/copy features when not active 
 
   # Hidden commands
   - name: current

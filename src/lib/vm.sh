@@ -273,3 +273,60 @@ get_vm_args ()
 
     echo "${all_vms[@]}"
 }
+
+# get_active_window_vm returns the name of the VM owning the currently active window.
+get_active_window_vm ()
+{
+    local window_class parts vm
+    window_class="$(xdotool getwindowclassname "$(xdotool getactivewindow)")"
+
+    # No colon means dom0
+    if [[ ${window_class} == *:* ]]; then
+        parts=( ${(s[:])window_class} )
+        print "${parts[1]}"
+    else
+        print "dom0"
+    fi
+}
+
+# select_bookmark prompts the user with bookmarks, 
+# and returns the URL extracted from the selection.
+select_bookmark ()
+{
+    local bookmarks_command result
+
+    # bookmark_prompt=( $(bookmark_display_command) )
+    bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
+    qvm-run --pass-io "${vm}" "${bookmarks_command}"
+    result="$(qvm-run --pass-io "${vm}" cat bookmark)" 
+    print "$result" | awk '{print $2}'
+}
+
+# pop_bookmark prompts the user with bookmarks, returns the URL 
+# extracted from the selection and deletes the line in the file.
+# Returns the complete bookmark entry.
+pop_bookmark ()
+{
+    local bookmarks_command result bookmark_line vm
+    bookmark_file=".local/share/split-browser/bookmarks.tsv"
+    vm="$(config_get SPLIT_BROWSER)"
+
+    # Get the URL
+    bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
+    qvm-run --pass-io "${vm}" "${bookmarks_command}"
+    result=$( qvm-run --pass-io "${vm}" cat bookmark | awk '{print $2}')
+    qvm-run --pass-io "${vm}" "rm bookmark"
+
+    # Get the entire line, with the title and timestamp.
+    bookmark_line="$(qvm-run --pass-io "${vm}" "cat ${bookmark_file}")"
+    line="$(echo "${bookmark_line}" | grep "${result}")"
+
+    # Abort if the user did not select anything
+    [[ -z "${result}" ]] && return
+
+    # Remove the line from the file.
+    remove_command="sed -i '\#${result}#d' .local/share/split-browser/bookmarks.tsv"
+    qvm-run --pass-io "${vm}" "${remove_command}"
+
+    print "${line}"
+}

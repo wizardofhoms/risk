@@ -41,11 +41,11 @@ _info "Creating identity $IDENTITY and infrastructure"
 # If the user wants to use a different vm_name for the VMs
 vm_name="${args['--prefix']-$IDENTITY}"
 echo "$vm_name" > "${IDENTITY_DIR}/vm_name" 
-_info "Using vm_name '$name' as VM base name"
+_info "Using vm_name ${fg_bold[green]}'$name'${reset_color} as VM base name"
 
 label="${args['--label']}"
 echo "$vm_name" > "${IDENTITY_DIR}/vm_label" 
-_info "Using label '$label' as VM default label"
+_info "Using label ${fg_bold[green]}'$label'${reset_color} as VM default label"
 
 # Prepare the root NetVM for this identity
 netvm="${DEFAULT_NETVM}"
@@ -61,15 +61,15 @@ if [[ -n "$pendrive" ]]; then
 fi
 
 # Create it
-_qrun_term "$VAULT_VM" risks create identity "$name" "$email" "$expiry" "${backup_args[@]}" 
+_qrun_term "$VAULT_VM" risks identity create "$name" "$email" "$expiry" "${backup_args[@]}" 
 _catch "Failed to create identity in vault"
 
-# And open it
+# And open it, in case the last command backed up the identity, which closed it.
 _qrun_term "$VAULT_VM" risks open identity "$name"
 _catch "Failed to open identity in vault"
 
 # If the user only wanted to create the identity in the vault, exit.
-if [[ ${args['--only']} -eq 1 ]] ; then
+if [[ ${args['--vault-only']} -eq 1 ]] ; then
     _success "Successfully created identity $IDENTITY"
     _info "Skipping infrastructure setup" && exit
 fi
@@ -120,6 +120,8 @@ else
     create_split_browser_vm "$split_web" "$label"
 fi
 
+# Per-identity bookmarks file in vault management tomb.
+create_bookmark_user_file
 
 ## All done ##
 _success "Successfully initialized infrastructure for identity $IDENTITY"

@@ -1675,7 +1675,7 @@ risk_url_verify_usage() {
 
     # :argument.usage
     printf "  %s\n" "$(blue "URL")"
-    printf "    URL to browse\n"
+    printf "    URL to verify\n"
     echo
 
   fi
@@ -1723,7 +1723,7 @@ risk_url_bookmark_usage() {
 
     # :argument.usage
     printf "  %s\n" "$(blue "URL")"
-    printf "    URL to browse\n"
+    printf "    URL to bookmark (optional, if empty the split-bookmarks file is opened, or\n    the user is prompted for URL/info)\n"
     echo
 
   fi
@@ -1760,7 +1760,7 @@ risk_url_blacklist_usage() {
 
     # :argument.usage
     printf "  %s\n" "$(blue "URL")"
-    printf "    URL to browse\n"
+    printf "    URL to blacklist\n"
     echo
 
   fi
@@ -1797,7 +1797,7 @@ risk_url_news_usage() {
 
     # :argument.usage
     printf "  %s\n" "$(blue "URL")"
-    printf "    URL to browse\n"
+    printf "    URL to fetch news for\n"
     echo
 
   fi
@@ -2294,18 +2294,14 @@ check_no_active_identity ()
 # Checks that an identity exists in the vault
 check_identity_exists ()
 {
-    local encryption_key        # The supposed key for the identity we want to verify
-    local encrypted_identity    # The corresponding identity encrypted name
-
-    encryption_key="print ""$1"" | spectre -q -n -s 0 -F n -t n -u ""$1"" 'file_encryption_key'"
-    encrypted_identity_command="print ""$encryption_key"" | spectre -q -n -s 0 -F n -t n -u ""$1"" ""$1"""
-
     # Get the resulting encrypted name
-    encrypted_identity="$(_qvrun "$VAULT_VM" "$encrypted_identity_command")"
+    local encrypted_identity
+
+    encrypted_identity="$(_encrypt_filename "${IDENTITY}")"
 
     # And check the directory exists
-    _qvrun "$VAULT" "ls /home/user/.graveyard/$encrypted_identity"
-    _catch "Invalid identity: $1 does not exists in vault"
+    _qvrun "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
+    _catch "Invalid identity: $1 does not exists in ${VAULT_VM}"
 }
 
 # Returns the name of the identity to which a VM belongs.
@@ -2402,6 +2398,10 @@ log_chars=(
 _in_section ()
 {
     section="$1"
+    if [[ "${#1}" -gt "${section_padding}" ]]; then
+        section_padding="${#1}"
+    fi
+
     if [[ -n "${2}" ]]; then
         section_padding="$2"
     fi
@@ -2719,10 +2719,10 @@ function _catch ()
 # set identity to produce an random name to use as a file/directory name.
 _encrypt_filename ()
 {
-    local encryption_key_cmd="printf '$1' | spectre -q -n -s 0 -F n -t n -u '$1' 'file_encryption_key'"
+    local encryption_key_cmd="echo '$1' | spectre -q -n -s 0 -F n -t n -u '$1' 'file_encryption_key'"
     encryption_key="$(qvm-run --pass-io "$VAULT_VM" "$encryption_key_cmd")"
 
-    local encrypted_identity_command="printf '$encryption_key' | spectre -q -n -s 0 -F n -t n -u '$IDENTITY' '$1'"
+    local encrypted_identity_command="echo '$encryption_key' | spectre -q -n -s 0 -F n -t n -u '$IDENTITY' '$1'"
 
     # -q            Quiet: just output the password/filename
     # -n            Don't append a newline to the password output
@@ -2747,12 +2747,14 @@ create_tor_gateway ()
 
     local gw_template="$(config_get WHONIX_GW_TEMPLATE)"
 
-    _verbose "Creating TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_template)"
-    _run qvm-create --property netvm="$netvm" --label "$gw_label" --template "$gw_template"
+    _info "Creating TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_template)"
+    _run qvm-create "${gw}" --property netvm="$netvm" --label "$gw_label" --template "$gw_template"
+    _run qvm-prefs "$gw" provides_network true
 
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
-    echo "$gw" >> "${IDENTITY_DIR}/tor_gw"
+    echo "$gw" > "${IDENTITY_DIR}/tor_gw"
+    echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
 
 # very similar to create_tor_gateway, except that we clone an existing
@@ -2764,7 +2766,7 @@ clone_tor_gateway ()
     local netvm="${3-$(config_get DEFAULT_NETVM)}"
     local gw_label="${4-yellow}"
 
-    _verbose "Cloning TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_clone)"
+    _info "Cloning TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_clone)"
     _run qvm-clone "${gw_clone}" "${gw}"
     _catch "Failed to clone VM ${gw_clone}"
 
@@ -2774,7 +2776,9 @@ clone_tor_gateway ()
     # for disposables, unset it
     local disp_template
     disp_template=$(qvm-prefs "${gw}" template_for_dispvms)
-    [[ "$disp_template" = "True" ]] && qvm-prefs "${gw}" template_for_dispvms False
+    if [[ "$disp_template" = "True" ]]; then
+        qvm-prefs "${gw}" template_for_dispvms False
+    fi
 
     _info "Getting network from $netvm"
     _run qvm-prefs "$gw" netvm "$netvm"
@@ -2784,7 +2788,8 @@ clone_tor_gateway ()
 
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
-    echo "$gw" >> "${IDENTITY_DIR}/tor_gw"
+    echo "$gw" > "${IDENTITY_DIR}/tor_gw"
+    echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
 
 # src/lib/utils.sh
@@ -3401,26 +3406,33 @@ check_vm_is_proxy ()
 create_browser_vm ()
 {
     local web="${1}-web"
-    local netvm="${2-$(config_get DEFAULT_NETVM)}"
+    local web_netvm="${2-$(config_get DEFAULT_NETVM)}"
     local web_label="${3-orange}"
     local ws_template="$(config_get WHONIX_WS_TEMPLATE)"
-    local template_disp="$(qvm-prefs "${ws_template}" template_for_dispvms)"
-    local class
+    local template_disp="$(qvm-prefs "${ws_template}" template_for_dispvms 2>/dev/null)"
 
-    # Disposable settings
+    _info "Creating web browsing VM (name: $web / netvm: $web_netvm / template: $ws_template)"
+    local create_command=(qvm-create "${web}" --property netvm="$web_netvm" --label="$web_label" --template="$ws_template")
+
     # If the template used is a disposable_template,
     # this means we must create a named disposable VM.
-    [[ "${template_disp}" == True ]] && class=(--class DispVM)
+    if [[ "${template_disp}" == True ]]; then
+        create_command+=(--class DispVM)
+    fi
 
-    # Generate the VM, regardess of it being a named disposable or not.
-    _info "Creating web browsing VM (name: $web / netvm: $netvm / template: $ws_template)"
-    qvm-create --property netvm="$netvm" --label "$web_label" --template "$ws_template" "${class[@]}"
-    [[ ! $? -eq 0 ]] && _warning "Failed to create browser VM $web"
+    # Generate the VM
+    "${create_command[@]}"
+    if [[ $? -gt 0 ]]; then
+
+        _warning "Failed to create browser VM $web" && return
+    fi
 
     # Mark this VM as a disposable template, and tag it with our identity
-    [[ "${template_disp}" == False ]] || qvm-prefs "${web}" template_for_dispvms True
+    if [[ "${template_disp}" != True ]]; then
+        qvm-prefs "${web}" template_for_dispvms True
+    fi
 
-    qvm-tags "$web" set "$IDENTITY"
+    _run qvm-tags "$web" set "$IDENTITY"
 }
 
 # Clone a web browsing VM from an existing one
@@ -3432,17 +3444,21 @@ clone_browser_vm ()
     local web_label="${4-orange}"
 
     _info "Cloning web browsing VM (name: $web / netvm: $netvm / template: $web_clone)"
-    qvm-clone "${web_clone}" "${web}"
-    [[ ! $? -eq 0 ]] && _warning "Failed to clone browser VM $web" && return
+    _run qvm-clone "${web_clone}" "${web}"
+    if [[ $? -gt 0 ]] ; then
+        _warning "Failed to clone browser VM $web" && return
+    fi
 
-    qvm-prefs "$web" label "$web_label"
-    qvm-prefs "$web" netvm "$netvm"
+    _run qvm-prefs "$web" label "$web_label"
+    _run qvm-prefs "$web" netvm "$netvm"
 
     # Only mark this VM as disposable template when it's not one already.
-    [[ "$(qvm-prefs "${ws_template}" template_for_dispvms)" == False ]] \
-        && qvm-prefs "${web}" template_for_dispvms True
+    if [[ "$(qvm-prefs "${ws_template}" template_for_dispvms 2>/dev/null)" == False ]]; then
+        _run qvm-prefs "${web}" template_for_dispvms True
+    fi
 
-    qvm-tags "$web" set "$IDENTITY"
+    _run qvm-tags "$web" set "$IDENTITY"
+    echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
 # Create a split-browser VM from a template
@@ -3456,6 +3472,7 @@ create_split_browser_vm ()
     qvm-create --property netvm=None --label "$web_label" --template "$split_template"
 
     qvm-tags "$web" set "$IDENTITY"
+    echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
 # Clone an existing split-browser VM, and change its dispvms
@@ -3493,7 +3510,7 @@ create_bookmark_system_file ()
 # create_bookmark_system_file writes and encrypts a file to store per-user bookmarks.
 create_bookmark_user_file ()
 {
-    local filename="$(encrypt_filename "bookmarks.tsv")"
+    local filename="$(_encrypt_filename "bookmarks.tsv")"
     bookmarks_path="/home/user/.tomb/mgmt/${filename}"
     _qvrun "$VAULT_VM" "touch ${bookmarks_path}"
 }
@@ -3792,12 +3809,12 @@ risk_identity_create_command() {
   _info "Using label ${fg_bold[green]}'$label'${reset_color} as VM default label"
 
   # Prepare the root NetVM for this identity
-  netvm="${DEFAULT_NETVM}"
+  config_get DEFAULT_NETVM > "${IDENTITY_DIR}/net_vm"
 
   # Create identity in vault =================================================
 
   # Simply pass the arguments to the vault
-  _info "Creating identity in vault"
+  _in_section "identity" 8 && _info "Creating identity in vault"
 
   if [[ -n "$pendrive" ]]; then
       backup_args=(--backup "$pendrive")
@@ -3820,50 +3837,33 @@ risk_identity_create_command() {
 
   # Network VMs ==============================================================
   _in_section "network" && _info "Creating network VMs:"
+  gw_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
   # 1 - Tor gateway, if not explicitly disabled
   if [[ ${args['--no-gw']} -eq 0 ]]; then
-      gw_netvm="$netvm"
-
-      # We either clone the gateway from an existing one,
-      # or we create it from a template.
       if [[ -n ${args['--clone-gw-from']} ]]; then
           clone="${args['--clone-gw-from']}"
           clone_tor_gateway "$vm_name" "$clone" "$gw_netvm" "$label"
       else
           create_tor_gateway "$vm_name" "$gw_netvm" "$label"
       fi
-
-      # Set it as the netvm for this identity, and for the rest of the VMs
-      echo "$vm_name" > "${IDENTITY_DIR}/net_vm"
-
   else
       _info "Skipping TOR gateway"
   fi
 
   # Browser VMs ==============================================================
   _in_section "web" && _info "Creating browsing VMs:"
+  web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
   # Browser VMs are disposable, but we make a template for this identity,
   # since we might  either modify stuff in there, and we need them at least
 
   # to have a different network route.
   if [[ -n ${args['--clone-web-from']} ]]; then
-      web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
-
       clone="${args['--clone-web-from']}"
       clone_browser_vm "$vm_name" "$clone" "$web_netvm" "$label"
   else
       create_browser_vm "$vm_name" "$web_netvm" "$label"
-  fi
-
-  # Split-browser has its own dispVMs and bookmarks
-  local split_web="${vm_name}-split-web"
-  if [[ -n ${args['--clone-split-from']} ]]; then
-      clone="${args['--clone-split-from']}"
-      clone_split_browser_vm "$split_web" "$clone" "$label"
-  else
-      create_split_browser_vm "$split_web" "$label"
   fi
 
   # Per-identity bookmarks file in vault management tomb.
@@ -3882,7 +3882,6 @@ risk_identity_equip_command() {
   # Other variables
   local vm_name           # Default prefix to use for newly created vm (eg. 'joe' => joe-vpn, joe-web)
   local label             # Default label color to use for all VMs, varies if not specified
-  local netvm             # Entry NetVM for the identity
   local gw_netvm          # NetVM for the tor gateway
   local web_netvm         # NetVM for the Web browser VM
   local clone             # A variable that might be overritten several times, used to assign a VM to clone.
@@ -3894,7 +3893,7 @@ risk_identity_equip_command() {
 
   check_identity_exists "$IDENTITY"
 
-  _info "Creating infrastructure for identity $IDENTITY"
+  _in_section "identity" 8 && _info "Creating infrastructure for identity $IDENTITY"
 
   # Make a directory for this identity, and store the associated VM name
   [[ -e ${IDENTITY_DIR} ]] || mkdir -p "$IDENTITY_DIR"
@@ -3905,64 +3904,47 @@ risk_identity_equip_command() {
 
   _info "Using vm_name '$name' as VM base name"
 
-  label="${args['--label']}"
+  label="${args['--label']-orange}"
   echo "$vm_name" > "${IDENTITY_DIR}/vm_label"
 
   _info "Using label '$label' as VM default label"
 
   # Prepare the root NetVM for this identity
-  netvm="${DEFAULT_NETVM}"
+  config_get DEFAULT_NETVM > "${IDENTITY_DIR}/net_vm"
 
   # Network VMs ==============================================================
-  _in_section "network" && _info "Creating network VMs:"
+  _in_section "network" && _info "Creating network VMs"
+  gw_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
   # 1 - Tor gateway, if not explicitly disabled
   if [[ ${args['--no-gw']} -eq 0 ]]; then
-      gw_netvm="$netvm"
-
-      # We either clone the gateway from an existing one,
-      # or we create it from a template.
       if [[ -n ${args['--clone-gw-from']} ]]; then
           clone="${args['--clone-gw-from']}"
           clone_tor_gateway "$vm_name" "$clone" "$gw_netvm" "$label"
       else
           create_tor_gateway "$vm_name" "$gw_netvm" "$label"
       fi
-
-      # Set it as the netvm for this identity, and for the rest of the VMs
-      echo "$vm_name" > "${IDENTITY_DIR}/net_vm"
-
   else
       _info "Skipping TOR gateway"
   fi
 
-  # At this point we should know the vm_name of the VM to be used as NetVM
-  # for the subsquent machines, such as web browsing and messaging VMs.
-
   # Browser VMs ==============================================================
-  _in_section "web" && _info "Creating browsing VMs:"
+  _in_section "web" && _info "Creating browsing VMs"
+  web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
   # Browser VMs are disposable, but we make a template for this identity,
   # since we might  either modify stuff in there, and we need them at least
 
   # to have a different network route.
   if [[ -n ${args['--clone-web-from']} ]]; then
-      web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
-
       clone="${args['--clone-web-from']}"
       clone_browser_vm "$vm_name" "$clone" "$web_netvm" "$label"
   else
       create_browser_vm "$vm_name" "$web_netvm" "$label"
   fi
 
-  # Split-browser has its own dispVMs and bookmarks
-  local split_web="${vm_name}-split-web"
-  if [[ -n ${args['--clone-split-from']} ]]; then
-      clone="${args['--clone-split-from']}"
-      clone_split_browser_vm "$split_web" "$clone" "$label"
-  else
-      create_split_browser_vm "$split_web" "$label"
-  fi
+  # Per-identity bookmarks file in vault management tomb.
+  create_bookmark_user_file
 
   _success "Successfully initialized infrastructure for identity $IDENTITY"
 
@@ -3996,7 +3978,7 @@ risk_identity_delete_command() {
 risk_identity_open_command() {
   # src/identity_open_command.sh
 
-  local sdcard_block vault_vm
+  local sdcard_block vault_vm browser_vm
 
   sdcard_block="$(config_get SDCARD_BLOCK)"
   vault_vm="$(config_get VAULT_VM)"
@@ -4012,9 +3994,15 @@ risk_identity_open_command() {
 
   # 3 - Send commands to vault
   _info "Opening identity $IDENTITY"
-
   _qrun_term "$vault_vm" risks identity open "$IDENTITY"
   _catch "Failed to open identity"
+
+  # Set the identity browser VM, if any, as the disposable VM of split-browser backend.
+  browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
+  if [[ -n "${browser_vm}" ]]; then
+      _info "Setting identity browser VM with split-browser"
+      qvm-prefs "$(config_get SPLIT_BROWSER)" --set default_dispvm "${browser_vm}"
+  fi
 
   _info "Identity $IDENTITY is active"
 

@@ -3,26 +3,32 @@
 create_browser_vm ()
 {
     local web="${1}-web"
-    local netvm="${2-$(config_get DEFAULT_NETVM)}"
+    local web_netvm="${2-$(config_get DEFAULT_NETVM)}"
     local web_label="${3-orange}"
     local ws_template="$(config_get WHONIX_WS_TEMPLATE)"
-    local template_disp="$(qvm-prefs "${ws_template}" template_for_dispvms)"
-    local class
+    local template_disp="$(qvm-prefs "${ws_template}" template_for_dispvms 2>/dev/null)"
 
-    # Disposable settings
+    _info "Creating web browsing VM (name: $web / netvm: $web_netvm / template: $ws_template)"
+    local create_command=(qvm-create "${web}" --property netvm="$web_netvm" --label="$web_label" --template="$ws_template")
+
     # If the template used is a disposable_template,
     # this means we must create a named disposable VM.
-    [[ "${template_disp}" == True ]] && class=(--class DispVM)
+    if [[ "${template_disp}" == True ]]; then
+        create_command+=(--class DispVM)
+    fi
     
-    # Generate the VM, regardess of it being a named disposable or not.
-    _info "Creating web browsing VM (name: $web / netvm: $netvm / template: $ws_template)"
-    qvm-create --property netvm="$netvm" --label "$web_label" --template "$ws_template" "${class[@]}"
-    [[ ! $? -eq 0 ]] && _warning "Failed to create browser VM $web"
+    # Generate the VM
+    "${create_command[@]}"
+    if [[ $? -gt 0 ]]; then 
+        _warning "Failed to create browser VM $web" && return
+    fi
 
     # Mark this VM as a disposable template, and tag it with our identity
-    [[ "${template_disp}" == False ]] || qvm-prefs "${web}" template_for_dispvms True
+    if [[ "${template_disp}" != True ]]; then
+        qvm-prefs "${web}" template_for_dispvms True
+    fi
 
-    qvm-tags "$web" set "$IDENTITY"
+    _run qvm-tags "$web" set "$IDENTITY"
 }
 
 # Clone a web browsing VM from an existing one
@@ -34,17 +40,21 @@ clone_browser_vm ()
     local web_label="${4-orange}"
 
     _info "Cloning web browsing VM (name: $web / netvm: $netvm / template: $web_clone)"
-    qvm-clone "${web_clone}" "${web}"
-    [[ ! $? -eq 0 ]] && _warning "Failed to clone browser VM $web" && return
+    _run qvm-clone "${web_clone}" "${web}"
+    if [[ $? -gt 0 ]] ; then
+        _warning "Failed to clone browser VM $web" && return
+    fi
 
-    qvm-prefs "$web" label "$web_label"
-    qvm-prefs "$web" netvm "$netvm"
+    _run qvm-prefs "$web" label "$web_label"
+    _run qvm-prefs "$web" netvm "$netvm"
 
     # Only mark this VM as disposable template when it's not one already.
-    [[ "$(qvm-prefs "${ws_template}" template_for_dispvms)" == False ]] \
-        && qvm-prefs "${web}" template_for_dispvms True
+    if [[ "$(qvm-prefs "${ws_template}" template_for_dispvms 2>/dev/null)" == False ]]; then
+        _run qvm-prefs "${web}" template_for_dispvms True
+    fi
     
-    qvm-tags "$web" set "$IDENTITY"
+    _run qvm-tags "$web" set "$IDENTITY"
+    echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
 # Create a split-browser VM from a template
@@ -58,6 +68,7 @@ create_split_browser_vm ()
     qvm-create --property netvm=None --label "$web_label" --template "$split_template"
 
     qvm-tags "$web" set "$IDENTITY"
+    echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
 # Clone an existing split-browser VM, and change its dispvms
@@ -95,7 +106,7 @@ create_bookmark_system_file ()
 # create_bookmark_system_file writes and encrypts a file to store per-user bookmarks.
 create_bookmark_user_file ()
 {
-    local filename="$(encrypt_filename "bookmarks.tsv")"
+    local filename="$(_encrypt_filename "bookmarks.tsv")"
     bookmarks_path="/home/user/.tomb/mgmt/${filename}"
     _qvrun "$VAULT_VM" "touch ${bookmarks_path}"
 }

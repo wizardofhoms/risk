@@ -102,18 +102,13 @@ check_no_active_identity ()
 # Checks that an identity exists in the vault
 check_identity_exists ()
 {
-    local encryption_key        # The supposed key for the identity we want to verify
-    local encrypted_identity    # The corresponding identity encrypted name
-
-    encryption_key="print ""$1"" | spectre -q -n -s 0 -F n -t n -u ""$1"" 'file_encryption_key'"
-    encrypted_identity_command="print ""$encryption_key"" | spectre -q -n -s 0 -F n -t n -u ""$1"" ""$1"""
-
     # Get the resulting encrypted name
-    encrypted_identity="$(_qvrun "$VAULT_VM" "$encrypted_identity_command")"
+    local encrypted_identity 
+    encrypted_identity="$(_encrypt_filename "${IDENTITY}")"
 
     # And check the directory exists
-    _qvrun "$VAULT" "ls /home/user/.graveyard/$encrypted_identity"
-    _catch "Invalid identity: $1 does not exists in vault"
+    _qvrun "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
+    _catch "Invalid identity: $1 does not exists in ${VAULT_VM}"
 }
 
 # Returns the name of the identity to which a VM belongs.

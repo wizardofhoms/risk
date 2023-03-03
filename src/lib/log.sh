@@ -39,6 +39,10 @@ log_chars=(
 _in_section ()
 {
     section="$1"
+    if [[ "${#1}" -gt "${section_padding}" ]]; then
+        section_padding="${#1}"
+    fi
+
     if [[ -n "${2}" ]]; then
         section_padding="$2"
     fi

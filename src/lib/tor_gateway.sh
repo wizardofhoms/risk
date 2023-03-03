@@ -11,12 +11,14 @@ create_tor_gateway ()
 
     local gw_template="$(config_get WHONIX_GW_TEMPLATE)"
 
-    _verbose "Creating TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_template)"
-    _run qvm-create --property netvm="$netvm" --label "$gw_label" --template "$gw_template"
+    _info "Creating TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_template)"
+    _run qvm-create "${gw}" --property netvm="$netvm" --label "$gw_label" --template "$gw_template"
+    _run qvm-prefs "$gw" provides_network true 
 
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
-    echo "$gw" >> "${IDENTITY_DIR}/tor_gw"
+    echo "$gw" > "${IDENTITY_DIR}/tor_gw"
+    echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
 
 # very similar to create_tor_gateway, except that we clone an existing
@@ -28,7 +30,7 @@ clone_tor_gateway ()
     local netvm="${3-$(config_get DEFAULT_NETVM)}"
     local gw_label="${4-yellow}"
 
-    _verbose "Cloning TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_clone)"
+    _info "Cloning TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_clone)"
     _run qvm-clone "${gw_clone}" "${gw}"
     _catch "Failed to clone VM ${gw_clone}"
 
@@ -37,7 +39,9 @@ clone_tor_gateway ()
     # for disposables, unset it
     local disp_template
     disp_template=$(qvm-prefs "${gw}" template_for_dispvms)
-    [[ "$disp_template" = "True" ]] && qvm-prefs "${gw}" template_for_dispvms False
+    if [[ "$disp_template" = "True" ]]; then
+        qvm-prefs "${gw}" template_for_dispvms False
+    fi
 
     _info "Getting network from $netvm"
     _run qvm-prefs "$gw" netvm "$netvm"
@@ -47,5 +51,6 @@ clone_tor_gateway ()
 
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
-    echo "$gw" >> "${IDENTITY_DIR}/tor_gw"
+    echo "$gw" > "${IDENTITY_DIR}/tor_gw"
+    echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }

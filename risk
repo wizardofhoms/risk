@@ -590,7 +590,7 @@ risk_identity_create_usage() {
     echo
 
     # :flag.usage
-    printf "  %s\n" "--only"
+    printf "  %s\n" "--vault-only"
     printf "    Only create the identity in the vault: do not create any machines\n"
     echo
 
@@ -1849,7 +1849,7 @@ risk_qubes_update_usage() {
   fi
 
   printf "%s\n" "$(bold "Usage:")"
-  printf "  risk qubes update VMS [OPTIONS] [...]\n"
+  printf "  risk qubes update [VMS] [OPTIONS] [...]\n"
   printf "  risk qubes update --help | -h\n"
   echo
 
@@ -2069,6 +2069,10 @@ VM_TERMINAL=xterm
 
 VM_SHELL=bash
 
+; Browser & Bookmarks Settings =================================== #
+; Custom command to use to spawn dmenu with bookmarks
+BOOKMARKS_DMENU_COMMAND=
+
 EOF
   }
 }
@@ -2242,7 +2246,7 @@ _identity_active ()
 {
     local active_identity
 
-    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity' 2>/dev/null)
+    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
     if [[ -z "${active_identity}" ]]; then
         return 1
 	fi
@@ -2262,7 +2266,7 @@ _identity_active_or_specified ()
     local active_identity
 
     if [[ -z "${1}" ]] ; then
-        active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity' 2>/dev/null)
+        active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
         if [[ -z "${active_identity}" ]]; then
             return 1
         fi
@@ -2279,7 +2283,7 @@ _identity_active_or_specified ()
 # check that no identity is active in the vault, and fail if there is.
 check_no_active_identity ()
 {
-    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity' 2>/dev/null)
+    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
     if [[ -n $active_identity ]]; then
         # It might be the same
         if [[ $active_identity == "$1" ]]; then
@@ -2712,6 +2716,27 @@ function _catch ()
     fi
 }
 
+# src/lib/secrets.sh
+
+# _encrypt_filename takes a filename as input, and uses the currently
+
+# set identity to produce an random name to use as a file/directory name.
+_encrypt_filename ()
+{
+    local encryption_key_cmd="printf '$1' | spectre -q -n -s 0 -F n -t n -u '$1' 'file_encryption_key'"
+    encryption_key="$(qvm-run --pass-io "$VAULT_VM" "$encryption_key_cmd")"
+
+    local encrypted_identity_command="printf '$encryption_key' | spectre -q -n -s 0 -F n -t n -u '$IDENTITY' '$1'"
+
+    # -q            Quiet: just output the password/filename
+    # -n            Don't append a newline to the password output
+    # -s 0          Read passphrase from stdinput (fd 0)
+    # -F n          No config file output
+    # -t n          Output a nine characters name, without symbols
+    # -u ${user}    User for which to produce the password/name
+    print "$(qvm-run --pass-io "$VAULT_VM" "$encrypted_identity_command")"
+}
+
 # src/lib/tor_gateway.sh
 
 # Creates a new TOR Whonix gateway AppVM.
@@ -3120,6 +3145,7 @@ get_updatable_vms ()
     echo "${templates[@]}"
 }
 
+# Returns the template used by a given AppVM
 get_update_vm_template ()
 {
     qvm-ls | grep "$(qubes-prefs updatevm)" | grep "TemplateVM" | awk '{print $1}'
@@ -3167,6 +3193,66 @@ get_vm_args ()
     done
 
     echo "${all_vms[@]}"
+}
+
+# get_active_window_vm returns the name of the VM owning the currently active window.
+get_active_window_vm ()
+{
+    local window_class parts vm
+    window_class="$(xdotool getwindowclassname "$(xdotool getactivewindow)")"
+
+    # No colon means dom0
+    if [[ ${window_class} == *:* ]]; then
+        parts=( ${(s[:])window_class} )
+        print "${parts[1]}"
+    else
+        print "dom0"
+    fi
+}
+
+# select_bookmark prompts the user with bookmarks,
+
+# and returns the URL extracted from the selection.
+select_bookmark ()
+{
+    local bookmarks_command result
+
+    # bookmark_prompt=( $(bookmark_display_command) )
+    bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
+    qvm-run --pass-io "${vm}" "${bookmarks_command}"
+    result="$(qvm-run --pass-io "${vm}" cat bookmark)"
+
+    print "$result" | awk '{print $2}'
+}
+
+# pop_bookmark prompts the user with bookmarks, returns the URL
+
+# extracted from the selection and deletes the line in the file.
+# Returns the complete bookmark entry.
+pop_bookmark ()
+{
+    local bookmarks_command result bookmark_line vm
+    bookmark_file=".local/share/split-browser/bookmarks.tsv"
+    vm="$(config_get SPLIT_BROWSER)"
+
+    # Get the URL
+    bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
+    qvm-run --pass-io "${vm}" "${bookmarks_command}"
+    result=$( qvm-run --pass-io "${vm}" cat bookmark | awk '{print $2}')
+    qvm-run --pass-io "${vm}" "rm bookmark"
+
+    # Get the entire line, with the title and timestamp.
+    bookmark_line="$(qvm-run --pass-io "${vm}" "cat ${bookmark_file}")"
+    line="$(echo "${bookmark_line}" | grep "${result}")"
+
+    # Abort if the user did not select anything
+    [[ -z "${result}" ]] && return
+
+    # Remove the line from the file.
+    remove_command="sed -i '\#${result}#d' .local/share/split-browser/bookmarks.tsv"
+    qvm-run --pass-io "${vm}" "${remove_command}"
+
+    print "${line}"
 }
 
 # src/lib/vpn_gateway.sh
@@ -3322,13 +3408,22 @@ create_browser_vm ()
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
     local web_label="${3-orange}"
     local ws_template="$(config_get WHONIX_WS_TEMPLATE)"
+    local template_disp="$(qvm-prefs "${ws_template}" template_for_dispvms)"
+    local class
 
-    _info "Creating web VM (name: $web / netvm: $netvm / template: $ws_template)"
-    qvm-create --property netvm="$netvm" --label "$web_label" --template "$ws_template"
+    # Disposable settings
+    # If the template used is a disposable_template,
+    # this means we must create a named disposable VM.
+    [[ "${template_disp}" == True ]] && class=(--class DispVM)
+
+    # Generate the VM, regardess of it being a named disposable or not.
+    _info "Creating web browsing VM (name: $web / netvm: $netvm / template: $ws_template)"
+    qvm-create --property netvm="$netvm" --label "$web_label" --template "$ws_template" "${class[@]}"
     [[ ! $? -eq 0 ]] && _warning "Failed to create browser VM $web"
 
     # Mark this VM as a disposable template, and tag it with our identity
-    qvm-prefs "${web}" template_for_dispvms True
+    [[ "${template_disp}" == False ]] || qvm-prefs "${web}" template_for_dispvms True
+
     qvm-tags "$web" set "$IDENTITY"
 }
 
@@ -3340,15 +3435,17 @@ clone_browser_vm ()
     local netvm="${3-$(config_get DEFAULT_NETVM)}"
     local web_label="${4-orange}"
 
-    _info "Cloning web VM (name: $web / netvm: $netvm / template: $web_clone)"
+    _info "Cloning web browsing VM (name: $web / netvm: $netvm / template: $web_clone)"
     qvm-clone "${web_clone}" "${web}"
     [[ ! $? -eq 0 ]] && _warning "Failed to clone browser VM $web" && return
 
     qvm-prefs "$web" label "$web_label"
     qvm-prefs "$web" netvm "$netvm"
 
-    # Mark this VM as a disposable template, and tag it with our identity
-    qvm-prefs "${web}" template_for_dispvms True
+    # Only mark this VM as disposable template when it's not one already.
+    [[ "$(qvm-prefs "${ws_template}" template_for_dispvms)" == False ]] \
+        && qvm-prefs "${web}" template_for_dispvms True
+
     qvm-tags "$web" set "$IDENTITY"
 }
 
@@ -3379,6 +3476,78 @@ clone_split_browser_vm ()
     qvm-prefs "$web" netvm None
 
     qvm-tags "$web" set "$IDENTITY"
+}
+
+# create_bookmark_system_file writes and encrypts a file to store all-users bookmarks.
+create_bookmark_system_file ()
+{
+    local filename="bookmarks.tsv"
+
+    # A hush device should be mounted.
+
+    # If the file exists, return
+
+    # Ask for a password to use, or generate a random seed to use for the encryption.
+
+    # Get an encrypted name for the file.
+
+    # And create it.
+}
+
+# create_bookmark_system_file writes and encrypts a file to store per-user bookmarks.
+create_bookmark_user_file ()
+{
+    local filename="$(encrypt_filename "bookmarks.tsv")"
+    bookmarks_path="/home/user/.tomb/mgmt/${filename}"
+    _qvrun "$VAULT_VM" "touch ${bookmarks_path}"
+}
+
+# create_bookmark_system_file writes and encrypts a file for blacklisted links.
+create_links_blacklist_file ()
+{
+    echo
+}
+
+# bookmark_system_file_exists returns 0 if the file exists, or 1.
+bookmark_system_file_exists ()
+{
+    echo
+    # _qvrun "$VAULT" "ls /home/user/.graveyard/$encrypted_identity"
+}
+
+# bookmark_display_command returns a command string
+
+# to use as the dmenu displayer of a bookmarks file.
+bookmark_display_command ()
+{
+    # This command will not work if qubes-split-browser is not installed in the split-browser VM
+
+    local window_focus_command='_NET_WM_NAME="Split Browser" x11-unoverride-redirect stdbuf -oL'
+
+    if [[ -n "$(config_get BOOKMARKS_DMENU_COMMAND)" ]]; then
+        echo "${window_focus_command} $(config_get BOOKMARKS_DMENU_COMMAND)"
+    else
+        echo "${window_focus_command} dmenu -i -l 20 -b -p 'RISKS Bookmark'"
+    fi
+}
+
+# split_bookmark_file_is_empty returns 0 if no bookmark
+
+# file exists in split-browser or if it is empty.
+split_bookmark_file_is_empty ()
+{
+    local split_command contents
+    split_command=( qvm-run --pass-io "$(config_get SPLIT_BROWSER)" "cat .local/share/split-browser/bookmarks.tsv" )
+    if ! "${split_command[@]}" &>/dev/null; then
+        return 0
+    fi
+
+    contents="$("${split_command[@]}")"
+    if [[ -z "${contents}" ]]; then
+        return 0
+    fi
+
+    return 1
 }
 
 # :command.command_functions
@@ -3619,12 +3788,12 @@ risk_identity_create_command() {
   vm_name="${args['--prefix']-$IDENTITY}"
   echo "$vm_name" > "${IDENTITY_DIR}/vm_name"
 
-  _info "Using vm_name '$name' as VM base name"
+  _info "Using vm_name ${fg_bold[green]}'$name'${reset_color} as VM base name"
 
   label="${args['--label']}"
   echo "$vm_name" > "${IDENTITY_DIR}/vm_label"
 
-  _info "Using label '$label' as VM default label"
+  _info "Using label ${fg_bold[green]}'$label'${reset_color} as VM default label"
 
   # Prepare the root NetVM for this identity
   netvm="${DEFAULT_NETVM}"
@@ -3639,16 +3808,16 @@ risk_identity_create_command() {
   fi
 
   # Create it
-  _qrun_term "$VAULT_VM" risks create identity "$name" "$email" "$expiry" "${backup_args[@]}"
+  _qrun_term "$VAULT_VM" risks identity create "$name" "$email" "$expiry" "${backup_args[@]}"
 
   _catch "Failed to create identity in vault"
 
-  # And open it
+  # And open it, in case the last command backed up the identity, which closed it.
   _qrun_term "$VAULT_VM" risks open identity "$name"
   _catch "Failed to open identity in vault"
 
   # If the user only wanted to create the identity in the vault, exit.
-  if [[ ${args['--only']} -eq 1 ]] ; then
+  if [[ ${args['--vault-only']} -eq 1 ]] ; then
       _success "Successfully created identity $IDENTITY"
       _info "Skipping infrastructure setup" && exit
   fi
@@ -3700,6 +3869,9 @@ risk_identity_create_command() {
   else
       create_split_browser_vm "$split_web" "$label"
   fi
+
+  # Per-identity bookmarks file in vault management tomb.
+  create_bookmark_user_file
 
   _success "Successfully initialized infrastructure for identity $IDENTITY"
 
@@ -3828,13 +4000,14 @@ risk_identity_delete_command() {
 risk_identity_open_command() {
   # src/identity_open_command.sh
 
-  local sdcard_block="$(config_get SDCARD_BLOCK)"
-  local vault_vm="$(config_get VAULT_VM)"
+  local sdcard_block vault_vm
+
+  sdcard_block="$(config_get SDCARD_BLOCK)"
+  vault_vm="$(config_get VAULT_VM)"
 
   _set_identity "${args['identity']}"
 
   # 1 - Check that hush is mounted on vault
-  # TODO: change this, since it only checks for the default vault VM
   check_is_device_attached "${sdcard_block}" "${vault_vm}"
 
   # 2 - Check that no identity is currently opened
@@ -4422,10 +4595,48 @@ risk_url_verify_command() {
 # :command.function
 risk_url_bookmark_command() {
   # src/url_bookmark_command.sh
-  echo "# this file is located in 'src/url_bookmark_command.sh'"
-  echo "# code for 'risk url bookmark' goes here"
-  echo "# you can edit it freely and regenerate (it will not be overwritten)"
-  inspect_args
+
+  local active_vm         # The VM owning the focused window
+  local bookmark_entry    # Complete entry (date/url/title)
+  local url               # The URL to bookmark
+  local title             # The URL page title to use if/when prompting the user for input.
+
+  _set_identity ""
+
+  url="${args['url']}"
+  split_vm="$(config_get SPLIT_BROWSER)"
+  active_vm="$(get_active_window_vm)"
+
+  if [[ -z "${url}" ]]; then
+      if split_bookmark_file_is_empty; then
+          _info "No bookmarks file in ${split_vm}, prompting user to enter it."
+          zenity_prompt="zenity --text 'URL Bookmark' --forms --add-entry='URL' --add-entry='Page Title' --separator=\$'\t'"
+          result="$(qvm-run --pass-io "${active_vm}" "${zenity_prompt}")"
+          url="$( echo "${result}" | cut -f 1 -d $'\t')"
+          title="$( echo "${result}" | cut -f 2- -d $'\t')"
+      else
+          _info "No URL argument, starting dmenu with bookmarks list in ${split_vm}"
+          bookmark_entry="$(pop_bookmark)"
+          url="$( echo "${bookmark_entry}" | awk '{print $2}' )"
+          title="$( echo "${bookmark_entry}" | awk '{print $3}' )"
+      fi
+  fi
+
+  # We either have an entry, or some information to build one, otherwise abort.
+  if [[ -z "${bookmark_entry}" ]] ; then
+      if [[ -z "${url}" ]]; then
+          _info "No bookmark entry or URL selected or entered, aborting." && return
+      fi
+      bookmark_entry="$(date --rfc-3339=seconds)"$'\t'"$url"$'\t'"$title"
+  fi
+
+  _info "Transfering entry to vault bookmarks file."
+  bookmarks_path="/home/user/.tomb/mgmt/$(_encrypt_filename 'bookmarks.tsv')"
+
+  if ! qvm-run --pass-io "${VAULT_VM}" "cat ${bookmarks_path} | grep ${url}" &>/dev/null; then
+  # grep -m 1 -F -- \$'\t'${url}\$'\t'"
+      qvm-run --pass-io "${VAULT_VM}" "echo '${bookmark_entry}' >> ${bookmarks_path}"
+  fi
 
 }
 
@@ -4452,12 +4663,14 @@ risk_url_news_command() {
 # :command.function
 risk_qubes_update_command() {
   # src/qubes_update_command.sh
-  local vm_args
-
   # Analyze the arguments and extract all VMs
   # corresponding to those names/groups.
   local vms=()
   read -rA vms <<< $(get_vm_args "${args['vms']}" "${other_args[@]}")
+
+  # Otherwise use templates of identity VMs
+  # if [[ "${args['--identity']}" -eq 1 ]]; then
+  # fi
 
   # Update VMs
   if [[ -n "${vms[*]}" ]]; then
@@ -4476,6 +4689,8 @@ risk_qubes_update_command() {
       _info "Updating dom0"
       sudo qubes-dom0-update
   fi
+
+  # If torbrowser update is required, get identity browsing VM template and update
 
 }
 
@@ -5600,10 +5815,10 @@ risk_identity_create_parse_requirements() {
         ;;
 
       # :flag.case
-      --only)
+      --vault-only)
 
         # :flag.case_no_arg
-        args['--only']=1
+        args['--vault-only']=1
         shift
         ;;
 
@@ -7841,12 +8056,6 @@ risk_qubes_update_parse_requirements() {
 
     esac
   done
-
-  # :command.required_args_filter
-  if [[ -z ${args['vms']+x} ]]; then
-    printf "missing required argument: VMS\nusage: risk qubes update VMS [OPTIONS] [...]\n" >&2
-    exit 1
-  fi
 
 }
 

@@ -83,6 +83,10 @@ VM_TERMINAL=xterm
 ; Default shell to use in AppVMs 
 VM_SHELL=bash
 
+; Browser & Bookmarks Settings =================================== #
+; Custom command to use to spawn dmenu with bookmarks
+BOOKMARKS_DMENU_COMMAND=
+
 EOF
   }
 }

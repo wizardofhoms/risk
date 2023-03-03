@@ -1,0 +1,42 @@
+name: url
+help: Browse, bookmark, verify and manage URLS/links
+
+commands:
+  - name: open
+    help: Open a target URL into a target VM, or bookmarks with no arguments.
+    args:
+      - name: url
+        help: URL to browse
+        required: false
+  - name: verify
+    help: Verify the authenticity/signatures and reputation of an onion URL.
+    args:
+      - name: url
+        help: URL to browse
+        required: false
+  - name: bookmark
+    help: Add an onion to the user/system bookmarks without verifying it.
+    args:
+      - name: url
+        help: URL to browse
+        required: false
+    flags:
+      - long: --user
+        short: -u
+        help: Add to identity bookmarks
+      - long: --system
+        short: -s
+        help: Add to system-wide (all identities) bookmarks
+
+  - name: blacklist
+    help: Add an onion to the system list of blacklisted onions
+    args:
+      - name: url
+        help: URL to browse
+        required: false
+  - name: news 
+    help: refresh the authenticity files, refered links and current news for an onion.
+    args:
+      - name: url
+        help: URL to browse
+        required: false

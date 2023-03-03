@@ -241,14 +241,14 @@ _identity_create ()
     local line state
 
     _arguments -C \
-        '1:identity name:->name' \
-        "2:email recipient:->recipient" \
-        "3:key expiry:->duration" \
-        '(- : *)--only[Only create the identity in the vault: do not create any machines]' \
+        '--vault-only[Only create the identity in the vault: do not create any machines]' \
         '(-b --backup)'{-b,--backup}'[Device file of the backup drive (whole drive without partition number, eg. /dev/sdb)]:path to backup device in vault:($(_vault_devices))' \
         "${_flags_vm_base[@]}" \
         "${_flags_init_tor[@]}" \
         "${_flags_init_web[@]}" \
+        '1:identity name:->name' \
+        "2:email recipient:->recipient" \
+        "3:key expiry:->duration" \
         && ret=0
 
     # Indications for the create identity command

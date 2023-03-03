@@ -50,7 +50,7 @@ _identity_active ()
 {
     local active_identity
 
-    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity' 2>/dev/null)
+    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
     if [[ -z "${active_identity}" ]]; then
         return 1
 	fi
@@ -70,7 +70,7 @@ _identity_active_or_specified ()
     local active_identity
 
     if [[ -z "${1}" ]] ; then
-        active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity' 2>/dev/null)
+        active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
         if [[ -z "${active_identity}" ]]; then
             return 1
         fi
@@ -87,7 +87,7 @@ _identity_active_or_specified ()
 # check that no identity is active in the vault, and fail if there is.
 check_no_active_identity ()
 {
-    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity' 2>/dev/null)
+    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
     if [[ -n $active_identity ]]; then
         # It might be the same
         if [[ $active_identity == "$1" ]]; then

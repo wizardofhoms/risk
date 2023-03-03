@@ -8,7 +8,7 @@ commands:
     args:
       - name: vms 
         help: An arbitrary list of VMs name patterns to update.
-        required: true 
+        required: false 
     flags:
       - long: --identity
         short: -I

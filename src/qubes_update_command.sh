@@ -1,9 +1,11 @@
-local vm_args
-
 # Analyze the arguments and extract all VMs
 # corresponding to those names/groups.
 local vms=()
 read -rA vms <<< $(get_vm_args "${args['vms']}" "${other_args[@]}")
+
+# Otherwise use templates of identity VMs
+# if [[ "${args['--identity']}" -eq 1 ]]; then
+# fi
 
 # Update VMs
 if [[ -n "${vms[*]}" ]]; then
@@ -22,3 +24,4 @@ if [[ ${args['vms']} == dom0 ]] || [[ ${other_args[(r)dom0]} == dom0 ]]; then
     sudo qubes-dom0-update
 fi
 
+# If torbrowser update is required, get identity browsing VM template and update

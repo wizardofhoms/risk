@@ -19,10 +19,6 @@ _qrun_term "$vault_vm" risks identity open "$IDENTITY"
 _catch "Failed to open identity"
 
 # Set the identity browser VM, if any, as the disposable VM of split-browser backend.
-browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
-if [[ -n "${browser_vm}" ]]; then
-    _info "Setting identity browser VM with split-browser"
-    qvm-prefs "$(config_get SPLIT_BROWSER)" --set default_dispvm "${browser_vm}"
-fi
+set_identity_split_browser_disp
 
 _info "Identity $IDENTITY is active"

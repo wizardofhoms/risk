@@ -45,6 +45,12 @@ _set_active_identity ()
     _info "Identity '${1}' is now ACTIVE"
 }
 
+# get_active_identity returns the name of the vault active identity.
+get_active_identity ()
+{
+    qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null
+}
+
 # Returns 0 if an identity is unlocked, 1 if not.
 _identity_active () 
 {

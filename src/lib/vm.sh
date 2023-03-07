@@ -330,3 +330,11 @@ pop_bookmark ()
 
     print "${line}"
 }
+
+# get_browser_vm_from requires a VM name to be passed as argument.
+# If this VM is a disposable based on the identity's browser VM,
+# the argument is returned, otherwise the identity's browser VM.
+get_browser_vm_from ()
+{
+    echo
+}

@@ -73,6 +73,13 @@ commands:
       - name: identity
         help: "Identity to delete along with machines"
         required: true
+
+  - name: nake 
+    help: Delete the VMs belonging to an identity, but not the identity in the vault.
+    args:
+      - name: identity
+        help: "Identity for which to delete machines"
+        required: true
       
   - name: open
     help: Simply open the identity store in the vault

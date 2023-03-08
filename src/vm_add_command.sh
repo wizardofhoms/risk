@@ -3,13 +3,13 @@ local vm vm_owner
 
 vm="${args['vm']}"
 
-_set_identity
+identity_set
 
 # We need a valid identity
-check_identity_exists "$IDENTITY"
+identity_check_exists "$IDENTITY"
 
 # Check VM ownership
-vm_owner=$(get_vm_owner "$vm")
+vm_owner=$(_vm_owner "$vm")
 
 # If already belongs to an identity, ask for confirmation to update the settings.
 if [[ -n "$vm_owner" ]] && [[ "$vm_owner" != "$IDENTITY" ]]; then
@@ -31,12 +31,12 @@ _catch "Failed to tag VM with identity"
 # or with the netvm flag, which has precedence.
 if [[ "$(qvm-tags "$vm" netvm)" != 'None' ]]; then
     _info "VM is networked. Updating its network VM"
-    local netvm="$(identity_default_netvm)"
+    local netvm="$(_identity_default_netvm)"
 
     # If the user overrode the default netVM, check that it belongs
     # to the identity, or ask confirmation.
     if [[ -n "${args['--netvm']}" ]]; then
-        netvm_owner=$(get_vm_owner "${args['--netvm']}")
+        netvm_owner=$(_vm_owner "${args['--netvm']}")
         if [[ "$vm_owner" != "$IDENTITY" ]]; then
             _warning "Network VM $vm already belongs to $vm_owner"
             printf >&2 '%s ' "Do you really want to use this VM as netvm for $vm? (YES/n)"

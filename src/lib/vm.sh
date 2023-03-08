@@ -1,6 +1,23 @@
 
+# Refactors:
+# _vm_owner > _vm_owner
+# enable_vm_autostart > vm_enable_autostart
+# disable_vm_autostart > vm_disable_autostart
+# assertRunning > vm_asset_running
+# start_vm > vm_start
+# shutdown_vm > vm_shutdown
+# shutdown_identity_vms > vm_shutdown_identity
+# delete_identity_vms > vm_delete_identity
+# delete_vm > vm_delete
+# is_proxy_vm > vm_is_proxy
+# all_vms > _vm_list_all
+# get_updatable_vms > _vm_list_updatable
+# get_update_vm_template > _vm_template
+# get_vm_args > _vm_args
+# get_active_window_vm > _vm_focus
+
 # Returns the name of the identity to which a VM belongs.
-get_vm_owner ()
+_vm_owner ()
 {
     print "$(qvm-tags "$1" "$RISK_VM_OWNER_TAG" 2>/dev/null)"
 }
@@ -136,7 +153,7 @@ check_valid_netvm ()
     local tor_gw
 
     # Or if the owner is either non-existant or not the good one, we must fail.
-    owner="$(get_vm_owner "$vm")"
+    owner="$(_vm_owner "$vm")"
     [[ -n "$owner" ]] || _failure "VM $vm has no RISKS owner. Aborting" 
     [[ "$owner" == "$IDENTITY" ]] || _failure "VM $vm does not belong to identity $IDENTITY"
 
@@ -145,7 +162,7 @@ check_valid_netvm ()
     [[ -z "$netvm" ]] && return 0
 
     # If the VM is the whonix gateway for the identity, we are done with the chain
-    [[ "$vm" == "$(identity_tor_gw)" ]] && return 0
+    [[ "$vm" == "$(_identity_tor_gateway)" ]] && return 0
 
     # We also return if its the sys-firewall, which does not belong to any identity.
     [[ "$vm" == "$(config_get DEFAULT_NETVM)" ]] && return 0
@@ -289,52 +306,126 @@ get_active_window_vm ()
     fi
 }
 
-# select_bookmark prompts the user with bookmarks, 
-# and returns the URL extracted from the selection.
-select_bookmark ()
+# shutdown_identity_vms powers off all running VMs belonging to the identity.
+shutdown_identity_vms ()
 {
-    local bookmarks_command result
+    local clients proxies tor_gateway browser_vm net_vm other_vms
 
-    # bookmark_prompt=( $(bookmark_display_command) )
-    bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
-    qvm-run --pass-io "${vm}" "${bookmarks_command}"
-    result="$(qvm-run --pass-io "${vm}" cat bookmark)" 
-    print "$result" | awk '{print $2}'
+    # Client VMs
+    read -rA clients < <(_identity_client_vms)
+    for vm in "${clients[@]}" ; do
+        if [[ -z "${vm}" ]]; then
+            continue
+        fi
+        _info "Shutting down $vm"
+        shutdown_vm "$vm"
+    done
+
+    # Browser VMs (disposables to find from template/tag)
+    browser_vm="$(_identity_browser_vm)"
+    if [[ -n "${browser_vm}" ]]; then
+        _info "Shutting down $browser_vm"
+        shutdown_vm "$browser_vm"
+    fi
+
+    # Proxy VMs
+    read -rA proxies < <(_identity_client_vms)
+    for vm in "${proxies[@]}" ; do
+        if [[ -z "${vm}" ]]; then
+            continue
+        fi
+        _info "Shutting down $vm"
+        shutdown_vm "$vm"
+    done
+
+    # Tor gateway.
+    tor_gateway="$(_identity_tor_gateway)"
+    if [[ -n "${tor_gateway}" ]]; then
+        _info "Shutting down $tor_gateway"
+        shutdown_vm "$tor_gateway"
+    fi
+
+    # Other VMs that are tagged with the identity.
+    read -rA other_vms < <(all_vms)
+    for vm in "${other_vms[@]}" ; do
+        if [[ -z "${vm}" ]]; then
+            continue
+        fi
+
+        if [[ "$(_vm_owner "${vm}")" == "${IDENTITY}" ]]; then
+            _info "Shutting down $vm"
+            shutdown_vm "$vm"
+        fi
+    done
 }
 
-# pop_bookmark prompts the user with bookmarks, returns the URL 
-# extracted from the selection and deletes the line in the file.
-# Returns the complete bookmark entry.
-pop_bookmark ()
+# delete_identity_vms deletes all VMs belonging to an identity.
+delete_identity_vms ()
 {
-    local bookmarks_command result bookmark_line vm
-    bookmark_file=".local/share/split-browser/bookmarks.tsv"
-    vm="$(config_get SPLIT_BROWSER)"
+    local clients proxies tor_gateway browser_vm net_vm other_vms
 
-    # Get the URL
-    bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
-    qvm-run --pass-io "${vm}" "${bookmarks_command}"
-    result=$( qvm-run --pass-io "${vm}" cat bookmark | awk '{print $2}')
-    qvm-run --pass-io "${vm}" "rm bookmark"
+    # Client VMs
+    read -rA clients < <(_identity_client_vms)
+    for client in "${clients[@]}"; do
+        delete_vm "${client}" "client_vms"
+    done
 
-    # Get the entire line, with the title and timestamp.
-    bookmark_line="$(qvm-run --pass-io "${vm}" "cat ${bookmark_file}")"
-    line="$(echo "${bookmark_line}" | grep "${result}")"
+    # Browser VM
+    browser_vm="$(_identity_browser_vm)"
+    if [[ -n "${browser_vm}" ]]; then
+        delete_vm "${browser_vm}" "browser_vm"
+    fi
+    
+    # Proxy VMs
+    read -rA proxies < <(_identity_client_vms)
+    for proxy in "${proxies[@]}"; do
+        delete_vm "${proxy}" "proxy_vms"
+    done
 
-    # Abort if the user did not select anything
-    [[ -z "${result}" ]] && return
+    # Tor gateway.
+    tor_gateway="$(_identity_tor_gateway)"
+    if [[ -n "${tor_gateway}" ]]; then
+        delete_vm "${tor_gateway}" "tor_gw"
+    fi
 
-    # Remove the line from the file.
-    remove_command="sed -i '\#${result}#d' .local/share/split-browser/bookmarks.tsv"
-    qvm-run --pass-io "${vm}" "${remove_command}"
-
-    print "${line}"
+    # Net VM
+    
+    # Other VMs that are tagged with the identity.
+    read -rA other_vms < <(all_vms)
+    for vm in "${other_vms[@]}"; do
+        if [[ "$(_vm_owner "${vm}")" == "${IDENTITY}" ]]; then
+            delete_vm "${vm}"
+        fi
+    done
 }
 
-# get_browser_vm_from requires a VM name to be passed as argument.
-# If this VM is a disposable based on the identity's browser VM,
-# the argument is returned, otherwise the identity's browser VM.
-get_browser_vm_from ()
+# delete_vm deletes a VM belonging to the identity, and removes its from the 
+# specified file. If this file is empty after this, it is deleted here.
+# $1 - VM name.
+# $2 - The file to search under ${IDENTITY_DIR}/ for deletion.
+delete_vm ()
 {
-    echo
+    local vm="${1}"
+    local file="${2}"
+
+    if [[ -z "${vm}" ]]; then
+        return
+    fi
+
+    # Attempt to delete: if fails, return without touching the specified file.
+    _info "Deleting VM ${vm}"
+    _run qvm-remove --force --verbose "${vm}"
+    if [[ $? -gt 0 ]]; then
+        return
+    fi
+
+    if [[ -z "${file}" ]]; then
+        return
+    fi
+
+    # Delete the VM from the file
+    sed -i "/${vm}/d" "${IDENTITY_DIR}/${file}"
+    if [[ -z "$(cat "${IDENTITY_DIR}/${file}")" ]]; then
+        rm "${IDENTITY_DIR}/${file}"
+    fi
 }

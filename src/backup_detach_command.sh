@@ -5,7 +5,7 @@ vm="${args['vault_vm']-$(config_get VAULT_VM)}"
 
 # Always umount first
 _info "Locking/unmounting backup device before detaching"
-_qrun "$vm" risks backup umount
+_run_qube "$vm" risks backup umount
 _catch "Failed to unmount backup device ($block)"
 
 # detach the backup device

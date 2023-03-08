@@ -17,7 +17,7 @@ local web_netvm         # NetVM for the Web browser VM
 local clone             # A variable that might be overritten several times, used to assign a VM to clone.
 
 # Propagate the identity and its settings (in the script only)
-_set_identity "${args['identity']}"
+identity_set "${args['identity']}"
 
 
 # Identity checks and basic setup ==========================================
@@ -28,7 +28,7 @@ if _identity_active ; then
 fi
 
 # or that the one we want to create does not exists already
-if check_identity_exists "$IDENTITY" ; then
+if identity_check_exists "$IDENTITY" ; then
     _failure "Identity $IDENTITY already exists"
 fi
 
@@ -60,11 +60,11 @@ if [[ -n "$pendrive" ]]; then
 fi
 
 # Create it
-_qrun_term "$VAULT_VM" risks identity create "$name" "$email" "$expiry" "${backup_args[@]}" 
+_run_qube_term "$VAULT_VM" risks identity create "$name" "$email" "$expiry" "${backup_args[@]}" 
 _catch "Failed to create identity in vault"
 
 # And open it, in case the last command backed up the identity, which closed it.
-_qrun_term "$VAULT_VM" risks open identity "$name"
+_run_qube_term "$VAULT_VM" risks open identity "$name"
 _catch "Failed to open identity in vault"
 
 # If the user only wanted to create the identity in the vault, exit.
@@ -81,9 +81,9 @@ gw_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 if [[ ${args['--no-gw']} -eq 0 ]]; then
     if [[ -n ${args['--clone-gw-from']} ]]; then
         clone="${args['--clone-gw-from']}"
-        clone_tor_gateway "$vm_name" "$clone" "$gw_netvm" "$label"
+        tor_gateway_clone "$vm_name" "$clone" "$gw_netvm" "$label"
     else
-        create_tor_gateway "$vm_name" "$gw_netvm" "$label"
+        tor_gateway_create "$vm_name" "$gw_netvm" "$label"
     fi
 else
     _info "Skipping TOR gateway"
@@ -98,13 +98,13 @@ web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 # to have a different network route.
 if [[ -n ${args['--clone-web-from']} ]]; then
     clone="${args['--clone-web-from']}"
-    clone_browser_vm "$vm_name" "$clone" "$web_netvm" "$label"
+    web_clone_browser_vm "$vm_name" "$clone" "$web_netvm" "$label"
 else
-    create_browser_vm "$vm_name" "$web_netvm" "$label"
+    web_create_browser_vm "$vm_name" "$web_netvm" "$label"
 fi
 
 # Per-identity bookmarks file in vault management tomb.
-create_bookmark_user_file
+web_create_identity_bookmarks
 
 ## All done ##
 _success "Successfully initialized infrastructure for identity $IDENTITY"

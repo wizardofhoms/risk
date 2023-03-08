@@ -3,20 +3,10 @@
 local active_identity
 active_identity=$(_identity_active_or_specified)
 
-_info "Stopping machines and identity $active_identity"
+_info "Stopping machines of identity $active_identity"
+shutdown_identity_vms
 
-# First shut down all client VMs
-read -ra client_vms "$(identity_client_vms)"
-for vm in "${client_vms[@]}" ; do
-    _info "Shutting down $vm"
-    shutdown_vm "$vm"
-done
-
-# Do the same for proxyVMs
-read -ra proxy_vms "$(identity_proxies)"
-for vm in "${proxy_vms[@]}" ; do
-    _info "Shutting down $vm"
-    shutdown_vm "$vm"
-done
+_info "Closing identity in vault"
+risk_identity_close_command
 
 _success "Done"

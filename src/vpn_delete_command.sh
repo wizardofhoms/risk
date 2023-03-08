@@ -3,11 +3,11 @@ local name
 
 name="${args['vm']}"
 
-_set_identity 
+identity_set 
 
 # Check that the selected VM is indeed one of the identity
 # proxy VMs, so that we don't accidentally delete another one.
-check_vm_is_proxy "$name"
+vpn_check_vm_is_proxy "$name"
 
 # Do not even attempt to delete if the VM provides network to another VM.
 check_not_netvm "$vm"
@@ -16,12 +16,12 @@ _info "Deleting gateway VM $name"
 
 # If the VPN was the default NetVM for the identity,
 # update the NetVM to Whonix.
-netvm="$(identity_default_netvm)"
+netvm="$(_identity_default_netvm)"
 if [[ $netvm == "$name" ]]; then
     _warning "Gateway $name is the default NetVM for identity clients !"
 
     # Check if we have a TOR gateway
-    local tor_gw=$(identity_tor_gw)
+    local tor_gw=$(_identity_tor_gateway)
 
     if [[ -n $tor_gw ]]; then
         _info -n "Updating the default identity NetVM to $tor_gw"

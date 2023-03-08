@@ -35,7 +35,7 @@ _run ()
 # run a command in a qube
 # $1 - Qube name
 # $@ - Command string to run
-_qrun () 
+_run_qube () 
 {
     local vm="$1" ; shift
     local command="$*"
@@ -71,8 +71,8 @@ _qrun ()
     return $ret
 }
 
-# _qvrun is a simplified version of _qrun, without stdout/err split & store.
-_qvrun () 
+# _run_exec is a simplified version of _run_qube, without stdout/err split & store.
+_run_exec () 
 {
     local vm="$1"
     shift
@@ -87,8 +87,8 @@ _qvrun ()
     qvm-run --pass-io "$vm" "${command}"
 }
 
-# _qrun_term spawns a terminal on a target qube, with an associated command to run.
-_qrun_term () 
+# _run_qube_term spawns a terminal on a target qube, with an associated command to run.
+_run_qube_term () 
 {
     local vm="$1" ; shift
     local command="$*"

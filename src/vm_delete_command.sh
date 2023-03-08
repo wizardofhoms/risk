@@ -2,10 +2,10 @@ local vm
 
 vm="${args['vm']}"
 
-_set_identity
+identity_set
 
 # Check VM ownership 
-[[ "$(get_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
+[[ "$(_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
 # Do not even attempt to delete if the VM provides network to another VM.
 check_not_netvm "$vm"

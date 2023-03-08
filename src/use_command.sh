@@ -6,7 +6,7 @@ vm="${args['vm']}"
 arguments="${other_args[@]}"
 
 local owner active_identity
-owner=$(get_vm_owner "$vm")
+owner=$(_vm_owner "$vm")
 active_identity="$(_identity_active_or_specified)"
 
 # If the VM does not belong to any identity, then we don't have
@@ -24,5 +24,5 @@ if [[ -n "$owner" ]] && [[ $owner != "$active_identity" ]]; then
 fi
 
 # At this point everything identity-related should be cleared and done.
-_qvrun "$vm" "${arguments[@]}"
+_run_exec "$vm" "${arguments[@]}"
 _catch "Failed to execute command in $vm:"

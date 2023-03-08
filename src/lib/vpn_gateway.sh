@@ -1,6 +1,6 @@
 
 # Creates a new VPN gateway from a TemplateVM
-create_vpn_gateway ()
+vpn_create ()
 {
     local gw="${1}"
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
@@ -18,7 +18,7 @@ create_vpn_gateway ()
 }
 
 # Creates a new VPN gateway from an existing VPN AppVM 
-clone_vpn_gateway ()
+vpn_clone ()
 {
     local gw="${1}"
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
@@ -54,7 +54,7 @@ clone_vpn_gateway ()
 # $1 - Name of VPN VM
 # $2 - Name of VM in which to browse for configuration
 # $ $3 - Path to the VPN client config to which one (only) should be copied, if not a zip file
-import_vpn_configs ()
+vpn_import_configs ()
 {
     local name="$1"
     local config_vm="$2"
@@ -63,12 +63,12 @@ import_vpn_configs ()
     local config_path
     local new_path
 
-    config_path=$(_qvrun "$config_vm" "zenity --file-selection --title='VPN configuration selection' 2>/dev/null")
+    config_path=$(_run_exec "$config_vm" "zenity --file-selection --title='VPN configuration selection' 2>/dev/null")
     if [[ -z "$config_path" ]]; then
         _info "Canceling setup: no file selected in VM $config_vm"
     else
         _verbose "Copying file $config_path to VPN VM"
-        _qvrun "$config_vm" qvm-copy-to-vm "$name" "$config_path"
+        _run_exec "$config_vm" qvm-copy-to-vm "$name" "$config_path"
 
         # Now our configuration is the QubesIncoming directory of our VPN,
         # so we move it where the VPN will look for when starting.
@@ -79,12 +79,12 @@ import_vpn_configs ()
         if [[ $new_path:t:e == "zip" ]]; then
             local configs_dir="/rw/config/vpn/configs" 
             _verbose "Unzipping files into $configs_dir"
-            _qvrun "$name" mkdir -p "$configs_dir" 
-            _qvrun "$name" unzip -j -d "$configs_dir" 
-            _qvrun "$name" /usr/local/bin/setup_VPN 
+            _run_exec "$name" mkdir -p "$configs_dir" 
+            _run_exec "$name" unzip -j -d "$configs_dir" 
+            _run_exec "$name" /usr/local/bin/setup_VPN 
         else
             _verbose "Copying file directly to the VPN client config path"
-            _qvrun "$name" mv "$new_path" "$client_conf_path"
+            _run_exec "$name" mv "$new_path" "$client_conf_path"
         fi
 
         _info "Done transfering VPN client configuration to VM"
@@ -94,10 +94,10 @@ import_vpn_configs ()
     echo "$gw" > "${IDENTITY_DIR}/proxy_vms"
 }
 
-# get_next_vpn_name returns a name for a new VPN VM, such as vpn-1,
+# vpn_next_vm_name returns a name for a new VPN VM, such as vpn-1,
 # where the number is the next value after the ones found in existing
 # VPN vms.
-get_next_vpn_name ()
+vpn_next_vm_name ()
 {
     local base_name="$1"
 
@@ -115,8 +115,8 @@ get_next_vpn_name ()
     print "$base_name-vpn-$next_number"
 }
 
-# check_vm_is_proxy fails if the VM is not listed as an identity proxy.
-check_vm_is_proxy () 
+# vpn_check_vm_is_proxy fails if the VM is not listed as an identity proxy.
+vpn_check_vm_is_proxy () 
 {
     local name="$1"
     local proxies

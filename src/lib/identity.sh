@@ -1,12 +1,15 @@
 
-# _set_identity is used to propagate our various IDENTITY related variables
+# Refactors
+# _identity_active > Remove ?
+
+# identity_set is used to propagate our various IDENTITY related variables
 # so that all functions that will be subsequently called can access them.
 #
 # This function also takes care of checking if there is already an active
 # identity that should be used, in case the argument is empty or none.
 #
 # $1 - The identity to use.
-_set_identity () 
+identity_set () 
 {
     local identity="$1"
 
@@ -22,7 +25,7 @@ _set_identity ()
 # Upon unlocking a given identity, sets the name as an ENV 
 # variable that we can use in further functions and commands.
 # $1 - The name to use. If empty, just resets the identity.
-_set_active_identity ()
+identity_set_active ()
 {
     # If the identity is empty, wipe the identity file
     if [[ -z ${1} ]] && [[ -e ${RISK_IDENTITY_FILE} ]]; then
@@ -45,8 +48,8 @@ _set_active_identity ()
     _info "Identity '${1}' is now ACTIVE"
 }
 
-# get_active_identity returns the name of the vault active identity.
-get_active_identity ()
+# identity_get_active returns the name of the vault active identity.
+identity_get_active ()
 {
     qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null
 }
@@ -91,7 +94,7 @@ _identity_active_or_specified ()
 }
 
 # check that no identity is active in the vault, and fail if there is.
-check_no_active_identity ()
+identity_check_none_active ()
 {
     active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
     if [[ -n $active_identity ]]; then
@@ -106,39 +109,45 @@ check_no_active_identity ()
 }
 
 # Checks that an identity exists in the vault
-check_identity_exists ()
+identity_check_exists ()
 {
     # Get the resulting encrypted name
     local encrypted_identity 
     encrypted_identity="$(_encrypt_filename "${IDENTITY}")"
 
     # And check the directory exists
-    _qvrun "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
+    _run_exec "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
     _catch "Invalid identity: $1 does not exists in ${VAULT_VM}"
 }
 
 # Returns the name of the identity to which a VM belongs.
-get_vm_owner ()
+_vm_owner ()
 {
     print "$(qvm-tags "$1" "$RISK_VM_OWNER_TAG" 2>/dev/null)"
 }
 
 # Returns the default network VM for the active identity
-identity_default_netvm ()
+_identity_default_netvm ()
 {
     cat "${IDENTITY_DIR}/netvm" 2>/dev/null
 }
 
 # Get the default VM label/color for an identity
-get_identity_label ()
+_identity_default_vm_label ()
 {
     cat "${IDENTITY_DIR}/vm_label" 2>/dev/null
 }
 
 # Get the TOR gateway for the identity
-identity_tor_gw ()
+_identity_tor_gateway ()
 {
     cat "${IDENTITY_DIR}/tor_gw" 2>/dev/null
+}
+
+# Get the browser VM for the identity
+_identity_browser_vm ()
+{
+    cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null
 }
 
 # _identity_proxies returns an array of proxy VMs 

@@ -38,5 +38,5 @@ fi
 # If user wants to mount it now, do it
 if [[ ${args['--mount']} -eq 1 ]]; then
     _info "Mounting hush device"
-    _qrun_term "$vm" risks hush mount
+    _run_qube_term "$vm" risks hush mount
 fi

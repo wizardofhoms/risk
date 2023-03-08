@@ -3,7 +3,7 @@
 # $1 - Name to use for new VM
 # $2 - Netvm for this gateway
 # $3 - Label
-create_tor_gateway ()
+tor_gateway_create ()
 {
     local gw="${1}-gw"
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
@@ -21,9 +21,9 @@ create_tor_gateway ()
     echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
 
-# very similar to create_tor_gateway, except that we clone an existing
+# very similar to tor_gateway_create, except that we clone an existing
 # gateway AppVM instead of creating a new one from a Template.
-clone_tor_gateway ()
+tor_gateway_clone ()
 {
     local gw="${1}-gw"
     local gw_clone="$2"

@@ -1,5 +1,5 @@
 
-_set_identity 
+identity_set 
 
 local name config_vm client_conf_path netvm
 
@@ -37,8 +37,8 @@ fi
 # Client VPN Configurations
 if [[ "${args['--choose']}" -eq 1 ]]; then
     # If we are asked to choose an existing configuration in the VM
-    _qvrun "$name" /usr/local/bin/setup_VPN 
+    _run_exec "$name" /usr/local/bin/setup_VPN 
 elif [[ -n "${args['--config-in']}" ]]; then
     # Or if we are asked to browse one or more configuration files in another VM.
-    import_vpn_configs "$name" "$config_vm" "$client_conf_path"
+    vpn_import_configs "$name" "$config_vm" "$client_conf_path"
 fi

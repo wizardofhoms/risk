@@ -1,5 +1,5 @@
 
-_set_identity 
+identity_set 
 
 local name="${args['vm']}"
 

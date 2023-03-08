@@ -1,11 +1,11 @@
 
-_set_identity 
+identity_set 
 
 # Prepare some settings for this new VM
 local name netvm clone template label
 
 name="${args['vm']:-$(cat "${IDENTITY_DIR}/vm_name" 2>/dev/null)}"
-label="${args['--label']:=$(get_identity_label)}"
+label="${args['--label']:=$(_identity_default_vm_label)}"
 netvm="$(config_or_flag "${args['--netvm']}" DEFAULT_NETVM)"
 clone="$(config_or_flag "${args['--from']}" VPN_VM)"
 template="$(config_or_flag "${args['--template']}" VPN_TEMPLATE)"
@@ -17,7 +17,7 @@ template="$(config_or_flag "${args['--template']}" VPN_TEMPLATE)"
 # either the configured default one, or the name of the identity. 
 # In this case, we add 'vpn-1' to it (number varying).
 if [[ -z "${args['vm']}" ]]; then
-    name="$(get_next_vpn_name "$name")"
+    name="$(vpn_next_vm_name "$name")"
 fi
 
 # 1 - Creation
@@ -26,10 +26,10 @@ fi
 # or we create it from a template.
 if [[ "${args['--clone']}" -eq 1 ]]; then
     _info "Cloning VPN gateway (from VM $clone)"
-    clone_vpn_gateway "$name" "$netvm" "$label" "$clone" 
+    vpn_clone "$name" "$netvm" "$label" "$clone" 
 else
     _info "Creating VPN gateway (from template $template)"
-    create_vpn_gateway "$name" "$netvm" "$label" "$template"
+    vpn_create "$name" "$netvm" "$label" "$template"
 fi
 
 # Tag the VM with its owner

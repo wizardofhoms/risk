@@ -12,7 +12,7 @@ risk_identity_stop_command
 
 # Delete all VMs belonging to the identity.
 _info "Deleting identity VMs"
-delete_identity_vms
+vm_delete_identity
 
 # Delete the identity data in the vault
 

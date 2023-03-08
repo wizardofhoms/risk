@@ -16,13 +16,13 @@ else
 fi
 
 # Start all enabled identity machines
-read -rA enabled_vms < <(_identity_autostart_vms)
+read -rA enabled_vms < <(_identity_autovm_starts)
 for vm in "${enabled_vms[@]}"; do
     if [[ -z "${vm}" ]]; then 
         continue 
     fi
     _info "Starting VM ${vm}"
-    _run start_vm "${vm}"
+    _run vm_start "${vm}"
 done
 
 _success "Opened identity '$IDENTITY' and started enabled VMs"

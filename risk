@@ -533,6 +533,7 @@ risk_identity_usage() {
   printf "  %s   Creates associated VMs for an identity (joe-gw, joe-vpn, joe-msg, joe-web)\n" "$(red "create")  "
   printf "  %s   Creates the infrastructure for an already exiting identity.\n" "$(red "equip")   "
   printf "  %s   Destroys an identity and all its associated machines and data\n" "$(red "delete")  "
+  printf "  %s   Delete the VMs belonging to an identity, but not the identity in the vault.\n" "$(red "nake")    "
   printf "  %s   Simply open the identity store in the vault\n" "$(red "open")    "
   printf "  %s   Simply close the identity store in the vault\n" "$(red "close")   "
   printf "  %s   Start the identity in the vault and all of its enabled VMs\n" "$(red "start")   "
@@ -740,6 +741,43 @@ risk_identity_delete_usage() {
     # :argument.usage
     printf "  %s\n" "$(blue "IDENTITY")"
     printf "    Identity to delete along with machines\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_identity_nake_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk identity nake - Delete the VMs belonging to an identity, but not the identity in the vault.\n"
+    echo
+
+  else
+    printf "risk identity nake - Delete the VMs belonging to an identity, but not the identity in the vault.\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk identity nake IDENTITY\n"
+  printf "  risk identity nake --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "%s\n" "$(bold "Arguments:")"
+
+    # :argument.usage
+    printf "  %s\n" "$(blue "IDENTITY")"
+    printf "    Identity for which to delete machines\n"
     echo
 
   fi
@@ -2189,14 +2227,17 @@ check_is_device_attached ()
 
 # src/lib/identity.sh
 
-# _set_identity is used to propagate our various IDENTITY related variables
+# Refactors
+# _identity_active > Remove ?
+
+# identity_set is used to propagate our various IDENTITY related variables
 # so that all functions that will be subsequently called can access them.
 #
 # This function also takes care of checking if there is already an active
 # identity that should be used, in case the argument is empty or none.
 #
 # $1 - The identity to use.
-_set_identity ()
+identity_set ()
 
 {
     local identity="$1"
@@ -2213,7 +2254,7 @@ _set_identity ()
 
 # variable that we can use in further functions and commands.
 # $1 - The name to use. If empty, just resets the identity.
-_set_active_identity ()
+identity_set_active ()
 {
     # If the identity is empty, wipe the identity file
     if [[ -z ${1} ]] && [[ -e ${RISK_IDENTITY_FILE} ]]; then
@@ -2234,6 +2275,12 @@ _set_active_identity ()
 
     _verbose "Identity '${1}' is now active (name file written)"
     _info "Identity '${1}' is now ACTIVE"
+}
+
+# identity_get_active returns the name of the vault active identity.
+identity_get_active ()
+{
+    qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null
 }
 
 # Returns 0 if an identity is unlocked, 1 if not.
@@ -2277,7 +2324,7 @@ _identity_active_or_specified ()
 }
 
 # check that no identity is active in the vault, and fail if there is.
-check_no_active_identity ()
+identity_check_none_active ()
 {
     active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
     if [[ -n $active_identity ]]; then
@@ -2292,7 +2339,7 @@ check_no_active_identity ()
 }
 
 # Checks that an identity exists in the vault
-check_identity_exists ()
+identity_check_exists ()
 {
     # Get the resulting encrypted name
     local encrypted_identity
@@ -2300,32 +2347,38 @@ check_identity_exists ()
     encrypted_identity="$(_encrypt_filename "${IDENTITY}")"
 
     # And check the directory exists
-    _qvrun "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
+    _run_exec "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
     _catch "Invalid identity: $1 does not exists in ${VAULT_VM}"
 }
 
 # Returns the name of the identity to which a VM belongs.
-get_vm_owner ()
+_vm_owner ()
 {
     print "$(qvm-tags "$1" "$RISK_VM_OWNER_TAG" 2>/dev/null)"
 }
 
 # Returns the default network VM for the active identity
-identity_default_netvm ()
+_identity_default_netvm ()
 {
     cat "${IDENTITY_DIR}/netvm" 2>/dev/null
 }
 
 # Get the default VM label/color for an identity
-get_identity_label ()
+_identity_default_vm_label ()
 {
     cat "${IDENTITY_DIR}/vm_label" 2>/dev/null
 }
 
 # Get the TOR gateway for the identity
-identity_tor_gw ()
+_identity_tor_gateway ()
 {
     cat "${IDENTITY_DIR}/tor_gw" 2>/dev/null
+}
+
+# Get the browser VM for the identity
+_identity_browser_vm ()
+{
+    cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null
 }
 
 # _identity_proxies returns an array of proxy VMs
@@ -2351,10 +2404,10 @@ _identity_client_vms ()
 # returns all identity VMs that are not gateways/proxies,
 # but are potentially (most of the time) accessing network
 # from one or more of these gateways.
-_identity_autostart_vms ()
+_identity_autovm_starts ()
 {
-    [[ -f "${IDENTITY_DIR}/autostart_vms" ]] || return
-    read -d '' -r -A clients <"${IDENTITY_DIR}/autostart_vms"
+    [[ -f "${IDENTITY_DIR}/autovm_starts" ]] || return
+    read -d '' -r -A clients <"${IDENTITY_DIR}/autovm_starts"
     echo "${clients[@]}"
 }
 
@@ -2591,6 +2644,80 @@ clone_messenger_vm ()
     _info "Cloning messaging VM (name: $msg / netvm: $netvm / template: $gw_clone)"
 }
 
+# src/lib/network.sh
+
+#
+
+# check_vm_owner verifies that the VM is owned by the current identity.
+check_valid_netvm ()
+{
+    local vm="$1"
+    local owner
+    local tor_gw
+
+    # Or if the owner is either non-existant or not the good one, we must fail.
+    owner="$(_vm_owner "$vm")"
+    [[ -n "$owner" ]] || _failure "VM $vm has no RISKS owner. Aborting"
+
+    [[ "$owner" == "$IDENTITY" ]] || _failure "VM $vm does not belong to identity $IDENTITY"
+
+    # If there is not network VM, there is nothing to do
+    netvm="$(qvm-prefs "$vm" netvm)"
+    [[ -z "$netvm" ]] && return 0
+
+    # If the VM is the whonix gateway for the identity, we are done with the chain
+    [[ "$vm" == "$(_identity_tor_gateway)" ]] && return 0
+
+    # We also return if its the sys-firewall, which does not belong to any identity.
+    [[ "$vm" == "$(config_get DEFAULT_NETVM)" ]] && return 0
+
+    # Or check if the netVM is in one of the identity proxies, or if its the default VM
+    _vm_is_identity_proxy "$netvm" || _failure "NetworkVM $vm is not listed as one of the identity's proxies"
+
+    # Else, we go on with the netvm and do the same steps
+    check_valid_netvm "$netvm"
+}
+
+# network_check_identity_chain verifies that the NetVM of a given VM indeed belongs
+# to the same owner, and does this recursively for each NetVM found in the chain.
+network_check_identity_chain ()
+{
+    local vm="$1"
+    local netvm
+    local owner
+
+    _verbose "Checking network chain (starting from VM $vm)"
+
+    # If there is not network VM, there is nothing to do
+    netvm="$(qvm-prefs "$vm" netvm)"
+    [[ -z "$netvm" ]] && return 0
+
+    # This call recursively checks for all netVMs
+    check_valid_netvm "$netvm"
+}
+
+# fail_vm_provides_network fails if the VM provides network to any other VM
+fail_vm_provides_network ()
+{
+    local vm="$1"
+
+    local vms connected_vms
+
+    # If it does not provide network at all, don't go further.
+    [[ $(qvm-prefs "$vm" provides_network) == "True" ]] || return 0
+
+    # Check if it provides network to any VM, and if yes, fail.
+    vms=( $(_vm_list) )
+    for svm in "${vms[@]}" ; do
+        local netvm
+        if [[ "$(qvm-prefs "$svm" netvm)" == "$vm" ]]; then
+            connected_vms+=( "$svm" )
+        fi
+    done
+
+    [[ ${#connected_vms} -gt 0 ]] && _failure "VM $vm is netVM for [ ${connected_vms[*]} ] VMs"
+}
+
 # src/lib/run.sh
 
 COMMAND_STDOUT=''           # Stores a command's stdout output.
@@ -2629,7 +2756,7 @@ _run ()
 # run a command in a qube
 # $1 - Qube name
 # $@ - Command string to run
-_qrun ()
+_run_qube ()
 
 {
     local vm="$1" ; shift
@@ -2666,8 +2793,8 @@ _qrun ()
     return $ret
 }
 
-# _qvrun is a simplified version of _qrun, without stdout/err split & store.
-_qvrun ()
+# _run_exec is a simplified version of _run_qube, without stdout/err split & store.
+_run_exec ()
 
 {
     local vm="$1"
@@ -2683,8 +2810,8 @@ _qvrun ()
     qvm-run --pass-io "$vm" "${command}"
 }
 
-# _qrun_term spawns a terminal on a target qube, with an associated command to run.
-_qrun_term ()
+# _run_qube_term spawns a terminal on a target qube, with an associated command to run.
+_run_qube_term ()
 
 {
     local vm="$1" ; shift
@@ -2739,7 +2866,7 @@ _encrypt_filename ()
 # $1 - Name to use for new VM
 # $2 - Netvm for this gateway
 # $3 - Label
-create_tor_gateway ()
+tor_gateway_create ()
 {
     local gw="${1}-gw"
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
@@ -2757,9 +2884,9 @@ create_tor_gateway ()
     echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
 
-# very similar to create_tor_gateway, except that we clone an existing
+# very similar to tor_gateway_create, except that we clone an existing
 # gateway AppVM instead of creating a new one from a Template.
-clone_tor_gateway ()
+tor_gateway_clone ()
 {
     local gw="${1}-gw"
     local gw_clone="$2"
@@ -2913,20 +3040,149 @@ validate_valid_vaultvm () {
 
 # src/lib/vm.sh
 
+#
+# // Attributes functions //
+#
+# Functions starting with an underscore
+
+# give information and values related to VMs,
+
+#
+
 # Returns the name of the identity to which a VM belongs.
-get_vm_owner ()
+_vm_owner ()
 {
     print "$(qvm-tags "$1" "$RISK_VM_OWNER_TAG" 2>/dev/null)"
 }
 
+# Returns the template used by a given AppVM
+_vm_template ()
+{
+    qvm-ls | grep "$(qubes-prefs updatevm)" | grep "TemplateVM" | awk '{print $1}'
+}
+
+# _vm_focused returns the name of the VM owning the currently active window.
+_vm_focused ()
+{
+    local window_class parts vm
+    window_class="$(xdotool getwindowclassname "$(xdotool getactivewindow)")"
+
+    # No colon means dom0
+    if [[ ${window_class} == *:* ]]; then
+        parts=( ${(s[:])window_class} )
+        print "${parts[1]}"
+    else
+        print "dom0"
+    fi
+}
+
+# Returns an array of all VMs
+_vm_list ()
+{
+    local -a vms
+
+    while IFS= read -r VM_NAME ; do
+        vms+=("${VM_NAME}")
+    done < <(qvm-ls --raw-list | sort)
+
+    echo "${vms[@]}"
+}
+
+# _vm_list_updatable returns all templates and standalone VMs
+_vm_list_updatable ()
+
+{
+    local templates=()
+
+    while read line ; do
+        IFS="|" read -r name class <<< "${line}"
+        if [[ "$class" == "TemplateVM" ]]; then
+            templates+=( "$name" )
+        elif [[ "$class" == "StandaloneVM" ]]; then
+            templates+=( "$name" )
+        fi
+    done < <(qvm-ls --raw-data --fields name,class | sort)
+
+    echo "${templates[@]}"
+}
+
+# _vm_args returns a list of VMs that are either explicitly named
+
+# in the array passed as arguments, or those belonging to some
+
+# "group keyword" of this same array.
+_vm_args ()
+{
+    local vms=("$@")
+    local _vm_list=()
+    local can_update=()
+    local updatevm
+
+    # Return if our only argument is empty
+
+    # All updatable VMs, except the updater one
+    read -rA can_update <<< "$(_vm_list_updatable)"
+    updatevm="$(_vm_template)"
+    can_update=( ${can_update:#$~updatevm} )
+
+    for word in "${vms[@]}"; do
+        case "${word}" in
+            # First check for group keywords
+            all)
+                _vm_list+=( "${updatevm}" )
+                _vm_list+=( "${can_update[@]}" )
+                ;;
+            cacher)
+                _vm_list+=( "${updatevm}" )
+                ;;
+            torbrowser)
+                ;;
+            dom0)
+                ;;
+            # Else return the VM name itself
+            *)
+                for vm in "${can_update[@]}"; do
+                    [[ "${vm}" =~ ${word} ]] && _vm_list+=( "${vm}" )
+                done
+                ;;
+        esac
+
+    done
+
+    echo "${_vm_list[@]}"
+}
+
+# _vm_is_identity_proxy verifies that the identity's proxy VMs arrays contains a given VM.
+_vm_is_identity_proxy ()
+{
+    local vm="$1"
+    local match proxies
+
+    match=1
+    read -rA proxies < <(_identity_proxies)
+
+    for proxy in "${proxies[@]}"; do
+        if [[ $vm == "$proxy" ]]; then
+            match=0
+            break
+        fi
+    done
+
+    return $match
+}
+
+#
+# // VM control and settings management //
+#
+
 # Enables a VM to autostart
-enable_vm_autostart ()
+vm_enable_autostart ()
 {
     local name="$1"
-    local autostart_vms=( "$(_identity_autostart_vms)" )
+    local autovm_starts=( "$(_identity_autovm_starts)" )
 
     # Check if the VM is already marked autostart
-    for vm in "${autostart_vms[@]}" ; do
+    for vm in "${autovm_starts[@]}" ; do
         if [[ $vm == "$name" ]]; then
             already_enabled=true
         fi
@@ -2934,49 +3190,23 @@ enable_vm_autostart ()
 
     if [[ ! $already_enabled ]]; then
         _info "Enabling VM ${name} to autostart"
-        echo "$name" >> "${IDENTITY_DIR}/autostart_vms"
+        echo "$name" >> "${IDENTITY_DIR}/autovm_starts"
     else
         _info "VM ${name} is already enabled"
     fi
 }
 
 # Disables a VM to autostart
-disable_vm_autostart ()
+vm_disable_autostart ()
 {
     local name="$1"
     _info "Disabling VM $name"
-    sed -i /"$name"/d "${IDENTITY_DIR}/autostart_vms"
+    sed -i /"$name"/d "${IDENTITY_DIR}/autovm_starts"
 }
 
-#assertRunning [vm] [start]
-#Assert that the given VM is running. Will unpause paused VMs and may start shut down VMs.
-#[vm]: VM for which to make sure it's running.
-#[start]: If it's not running and not paused, start it (default: 0/true). If set to 1, this function will return a non-zero exit code.
-#returns: A non-zero exit code, if it's not running and/or we failed to start the VM.
-assertRunning ()
-
-{
-    local vm="$1"
-    local start="${2:-0}"
-
-    #make sure the VM is unpaused
-    if qvm-check --paused "$vm" &> /dev/null ; then
-        qvm-unpause "$vm" &> /dev/null || return 1
-    else
-        if [ "$start" -eq 0 ] ; then
-            qvm-start --skip-if-running "$vm" &> /dev/null || return 1
-        else
-            #we don't attempt to start
-            return 2
-        fi
-    fi
-
-    return 0
-}
-
-# start_vm [vm 1] ... [vm n]
+# vm_start [vm 1] ... [vm n]
 #Start the given VMs without executing any command.
-start_vm ()
+vm_start ()
 
 {
     local ret=0
@@ -2986,7 +3216,7 @@ start_vm ()
     for vm in "$@" ; do
         [[ "$vm" == "dom0" ]] && continue
         _verbose "Starting: $vm"
-        assertRunning "$vm" &
+        vm_assert_running "$vm" &
         pids["$vm"]=$!
     done
 
@@ -3004,9 +3234,9 @@ start_vm ()
     [ -z "$failed" ]
 }
 
-# shutdown_vm [vm 1] ... [vm n]
+# vm_shutdown [vm 1] ... [vm n]
 #Shut the given VMs down.
-shutdown_vm ()
+vm_shutdown ()
 
 {
     local ret=0
@@ -3027,239 +3257,161 @@ shutdown_vm ()
     return $ret
 }
 
-# check_network_chain verifies that the NetVM of a given VM indeed belongs
-# to the same owner, and does this recursively for each NetVM found in the chain.
-check_network_chain ()
+#vm_assert_running [vm] [start]
+#Assert that the given VM is running. Will unpause paused VMs and may start shut down VMs.
+#[vm]: VM for which to make sure it's running.
+#[start]: If it's not running and not paused, start it (default: 0/true). If set to 1, this function will return a non-zero exit code.
+#returns: A non-zero exit code, if it's not running and/or we failed to start the VM.
+vm_assert_running ()
+
 {
     local vm="$1"
-    local netvm
-    local owner
+    local start="${2:-0}"
 
-    _verbose "Checking network chain (starting from VM $vm)"
-
-    # If there is not network VM, there is nothing to do
-    netvm="$(qvm-prefs "$vm" netvm)"
-    [[ -z "$netvm" ]] && return 0
-
-    # This call recursively checks for all netVMs
-    check_valid_netvm "$netvm"
-}
-
-# check_vm_owner verifies that the VM is owned by the current identity.
-check_valid_netvm ()
-{
-    local vm="$1"
-    local owner
-    local tor_gw
-
-    # Or if the owner is either non-existant or not the good one, we must fail.
-    owner="$(get_vm_owner "$vm")"
-    [[ -n "$owner" ]] || _failure "VM $vm has no RISKS owner. Aborting"
-
-    [[ "$owner" == "$IDENTITY" ]] || _failure "VM $vm does not belong to identity $IDENTITY"
-
-    # If there is not network VM, there is nothing to do
-    netvm="$(qvm-prefs "$vm" netvm)"
-    [[ -z "$netvm" ]] && return 0
-
-    # If the VM is the whonix gateway for the identity, we are done with the chain
-    [[ "$vm" == "$(identity_tor_gw)" ]] && return 0
-
-    # We also return if its the sys-firewall, which does not belong to any identity.
-    [[ "$vm" == "$(config_get DEFAULT_NETVM)" ]] && return 0
-
-    # Or check if the netVM is in one of the identity proxies, or if its the default VM
-    is_proxy_vm "$netvm" || _failure "NetworkVM $vm is not listed as one of the identity's proxies"
-
-    # Else, we go on with the netvm and do the same steps
-    check_valid_netvm "$netvm"
-}
-
-# is_proxy_vm verifies that the identity's proxy VMs arrays contains a given VM.
-is_proxy_vm ()
-{
-    local vm="$1"
-    local match proxies
-
-    match=1
-    proxies=( $(_identity_proxies) )
-
-    for proxy in "${proxies[@]}"; do
-        if [[ $vm == "$proxy" ]]; then
-            match=0
-            break
-        fi
-    done
-
-    return $match
-}
-
-# Returns an array of all VMs
-all_vms ()
-{
-    local -a vms
-
-    while IFS= read -r VM_NAME ; do
-        vms+=("${VM_NAME}")
-    done < <(qvm-ls --raw-list | sort)
-
-    echo "${vms[@]}"
-}
-
-# check_not_netvm fails if the VM provides network to any other VM
-check_not_netvm ()
-{
-    local vm="$1"
-
-    local vms connected_vms
-
-    # If it does not provide network at all, don't go further.
-    [[ $(qvm-prefs "$vm" provides_network) == "True" ]] || return 0
-
-    # Check if it provides network to any VM, and if yes, fail.
-    vms=( $(all_vms) )
-    for svm in "${vms[@]}" ; do
-        local netvm
-        if [[ "$(qvm-prefs "$svm" netvm)" == "$vm" ]]; then
-            connected_vms+=( "$svm" )
-        fi
-    done
-
-    [[ ${#connected_vms} -gt 0 ]] && _failure "VM $vm is netVM for [ ${connected_vms[*]} ] VMs"
-}
-
-# get_updatable_vms returns all templates and standalone VMs
-get_updatable_vms ()
-
-{
-    local templates=()
-
-    while read line ; do
-        IFS="|" read -r name class <<< "${line}"
-        if [[ "$class" == "TemplateVM" ]]; then
-            templates+=( "$name" )
-        elif [[ "$class" == "StandaloneVM" ]]; then
-            templates+=( "$name" )
-        fi
-    done < <(qvm-ls --raw-data --fields name,class | sort)
-
-    echo "${templates[@]}"
-}
-
-# Returns the template used by a given AppVM
-get_update_vm_template ()
-{
-    qvm-ls | grep "$(qubes-prefs updatevm)" | grep "TemplateVM" | awk '{print $1}'
-}
-
-# get_vm_args returns a list of VMs that either explicitly named in the array
-
-# arguments, or those belonging to some "group keyword" of this same array.
-get_vm_args ()
-{
-    local vms=("$@")
-    local all_vms=()
-    local can_update=()
-    local updatevm
-
-    # Return if our only argument is empty
-
-    # All updatable VMs, except the updater one
-    read -rA can_update <<< "$(get_updatable_vms)"
-    updatevm="$(get_update_vm_template)"
-    can_update=( ${can_update:#$~updatevm} )
-
-    for word in "${vms[@]}"; do
-        case "${word}" in
-            # First check for group keywords
-            all)
-                all_vms+=( "${updatevm}" )
-                all_vms+=( "${can_update[@]}" )
-                ;;
-            cacher)
-                all_vms+=( "${updatevm}" )
-                ;;
-            torbrowser)
-                ;;
-            dom0)
-                ;;
-            # Else return the VM name itself
-            *)
-                for vm in "${can_update[@]}"; do
-                    [[ "${vm}" =~ ${word} ]] && all_vms+=( "${vm}" )
-                done
-                ;;
-        esac
-
-    done
-
-    echo "${all_vms[@]}"
-}
-
-# get_active_window_vm returns the name of the VM owning the currently active window.
-get_active_window_vm ()
-{
-    local window_class parts vm
-    window_class="$(xdotool getwindowclassname "$(xdotool getactivewindow)")"
-
-    # No colon means dom0
-    if [[ ${window_class} == *:* ]]; then
-        parts=( ${(s[:])window_class} )
-        print "${parts[1]}"
+    #make sure the VM is unpaused
+    if qvm-check --paused "$vm" &> /dev/null ; then
+        qvm-unpause "$vm" &> /dev/null || return 1
     else
-        print "dom0"
+        if [ "$start" -eq 0 ] ; then
+            qvm-start --skip-if-running "$vm" &> /dev/null || return 1
+        else
+            #we don't attempt to start
+            return 2
+        fi
+    fi
+
+    return 0
+}
+
+# vm_delete deletes a VM belonging to the identity, and removes its from the
+
+# specified file. If this file is empty after this, it is deleted here.
+# $1 - VM name.
+# $2 - The file to search under ${IDENTITY_DIR}/ for deletion.
+vm_delete ()
+{
+    local vm="${1}"
+    local file="${2}"
+
+    if [[ -z "${vm}" ]]; then
+        return
+    fi
+
+    # Attempt to delete: if fails, return without touching the specified file.
+    _info "Deleting VM ${vm}"
+    _run qvm-remove --force --verbose "${vm}"
+    if [[ $? -gt 0 ]]; then
+        return
+    fi
+
+    if [[ -z "${file}" ]]; then
+        return
+    fi
+
+    # Delete the VM from the file
+    sed -i "/${vm}/d" "${IDENTITY_DIR}/${file}"
+    if [[ -z "$(cat "${IDENTITY_DIR}/${file}")" ]]; then
+        rm "${IDENTITY_DIR}/${file}"
     fi
 }
 
-# select_bookmark prompts the user with bookmarks,
-
-# and returns the URL extracted from the selection.
-select_bookmark ()
+# vm_shutdown_identity powers off all running VMs belonging to the identity.
+vm_shutdown_identity ()
 {
-    local bookmarks_command result
+    local clients proxies tor_gateway browser_vm net_vm other_vms
 
-    # bookmark_prompt=( $(bookmark_display_command) )
-    bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
-    qvm-run --pass-io "${vm}" "${bookmarks_command}"
-    result="$(qvm-run --pass-io "${vm}" cat bookmark)"
+    # Client VMs
+    read -rA clients < <(_identity_client_vms)
+    for vm in "${clients[@]}" ; do
+        if [[ -z "${vm}" ]]; then
+            continue
+        fi
+        _info "Shutting down $vm"
+        vm_shutdown "$vm"
+    done
 
-    print "$result" | awk '{print $2}'
+    # Browser VMs (disposables to find from template/tag)
+    browser_vm="$(_identity_browser_vm)"
+    if [[ -n "${browser_vm}" ]]; then
+        _info "Shutting down $browser_vm"
+        vm_shutdown "$browser_vm"
+    fi
+
+    # Proxy VMs
+    read -rA proxies < <(_identity_client_vms)
+    for vm in "${proxies[@]}" ; do
+        if [[ -z "${vm}" ]]; then
+            continue
+        fi
+        _info "Shutting down $vm"
+        vm_shutdown "$vm"
+    done
+
+    # Tor gateway.
+    tor_gateway="$(_identity_tor_gateway)"
+    if [[ -n "${tor_gateway}" ]]; then
+        _info "Shutting down $tor_gateway"
+        vm_shutdown "$tor_gateway"
+    fi
+
+    # Other VMs that are tagged with the identity.
+    read -rA other_vms < <(_vm_list)
+    for vm in "${other_vms[@]}" ; do
+        if [[ -z "${vm}" ]]; then
+            continue
+        fi
+
+        if [[ "$(_vm_owner "${vm}")" == "${IDENTITY}" ]]; then
+            _info "Shutting down $vm"
+            vm_shutdown "$vm"
+        fi
+    done
 }
 
-# pop_bookmark prompts the user with bookmarks, returns the URL
-
-# extracted from the selection and deletes the line in the file.
-# Returns the complete bookmark entry.
-pop_bookmark ()
+# vm_delete_identity deletes all VMs belonging to an identity.
+vm_delete_identity ()
 {
-    local bookmarks_command result bookmark_line vm
-    bookmark_file=".local/share/split-browser/bookmarks.tsv"
-    vm="$(config_get SPLIT_BROWSER)"
+    local clients proxies tor_gateway browser_vm net_vm other_vms
 
-    # Get the URL
-    bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
-    qvm-run --pass-io "${vm}" "${bookmarks_command}"
-    result=$( qvm-run --pass-io "${vm}" cat bookmark | awk '{print $2}')
-    qvm-run --pass-io "${vm}" "rm bookmark"
+    # Client VMs
+    read -rA clients < <(_identity_client_vms)
+    for client in "${clients[@]}"; do
+        vm_delete "${client}" "client_vms"
+    done
 
-    # Get the entire line, with the title and timestamp.
-    bookmark_line="$(qvm-run --pass-io "${vm}" "cat ${bookmark_file}")"
-    line="$(echo "${bookmark_line}" | grep "${result}")"
+    # Browser VM
+    browser_vm="$(_identity_browser_vm)"
+    if [[ -n "${browser_vm}" ]]; then
+        vm_delete "${browser_vm}" "browser_vm"
+    fi
 
-    # Abort if the user did not select anything
-    [[ -z "${result}" ]] && return
+    # Proxy VMs
+    read -rA proxies < <(_identity_client_vms)
+    for proxy in "${proxies[@]}"; do
+        vm_delete "${proxy}" "proxy_vms"
+    done
 
-    # Remove the line from the file.
-    remove_command="sed -i '\#${result}#d' .local/share/split-browser/bookmarks.tsv"
-    qvm-run --pass-io "${vm}" "${remove_command}"
+    # Tor gateway.
+    tor_gateway="$(_identity_tor_gateway)"
+    if [[ -n "${tor_gateway}" ]]; then
+        vm_delete "${tor_gateway}" "tor_gw"
+    fi
 
-    print "${line}"
+    # Net VM
+
+    # Other VMs that are tagged with the identity.
+    read -rA other_vms < <(_vm_list)
+    for vm in "${other_vms[@]}"; do
+        if [[ "$(_vm_owner "${vm}")" == "${IDENTITY}" ]]; then
+            vm_delete "${vm}"
+        fi
+    done
 }
 
 # src/lib/vpn_gateway.sh
 
 # Creates a new VPN gateway from a TemplateVM
-create_vpn_gateway ()
+vpn_create ()
 {
     local gw="${1}"
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
@@ -3278,7 +3430,7 @@ create_vpn_gateway ()
 
 # Creates a new VPN gateway from an existing VPN AppVM
 
-clone_vpn_gateway ()
+vpn_clone ()
 {
     local gw="${1}"
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
@@ -3315,7 +3467,7 @@ clone_vpn_gateway ()
 # $1 - Name of VPN VM
 # $2 - Name of VM in which to browse for configuration
 # $ $3 - Path to the VPN client config to which one (only) should be copied, if not a zip file
-import_vpn_configs ()
+vpn_import_configs ()
 {
     local name="$1"
     local config_vm="$2"
@@ -3324,12 +3476,12 @@ import_vpn_configs ()
     local config_path
     local new_path
 
-    config_path=$(_qvrun "$config_vm" "zenity --file-selection --title='VPN configuration selection' 2>/dev/null")
+    config_path=$(_run_exec "$config_vm" "zenity --file-selection --title='VPN configuration selection' 2>/dev/null")
     if [[ -z "$config_path" ]]; then
         _info "Canceling setup: no file selected in VM $config_vm"
     else
         _verbose "Copying file $config_path to VPN VM"
-        _qvrun "$config_vm" qvm-copy-to-vm "$name" "$config_path"
+        _run_exec "$config_vm" qvm-copy-to-vm "$name" "$config_path"
 
         # Now our configuration is the QubesIncoming directory of our VPN,
         # so we move it where the VPN will look for when starting.
@@ -3341,15 +3493,15 @@ import_vpn_configs ()
             local configs_dir="/rw/config/vpn/configs"
 
             _verbose "Unzipping files into $configs_dir"
-            _qvrun "$name" mkdir -p "$configs_dir"
+            _run_exec "$name" mkdir -p "$configs_dir"
 
-            _qvrun "$name" unzip -j -d "$configs_dir"
+            _run_exec "$name" unzip -j -d "$configs_dir"
 
-            _qvrun "$name" /usr/local/bin/setup_VPN
+            _run_exec "$name" /usr/local/bin/setup_VPN
 
         else
             _verbose "Copying file directly to the VPN client config path"
-            _qvrun "$name" mv "$new_path" "$client_conf_path"
+            _run_exec "$name" mv "$new_path" "$client_conf_path"
         fi
 
         _info "Done transfering VPN client configuration to VM"
@@ -3359,10 +3511,10 @@ import_vpn_configs ()
     echo "$gw" > "${IDENTITY_DIR}/proxy_vms"
 }
 
-# get_next_vpn_name returns a name for a new VPN VM, such as vpn-1,
+# vpn_next_vm_name returns a name for a new VPN VM, such as vpn-1,
 # where the number is the next value after the ones found in existing
 # VPN vms.
-get_next_vpn_name ()
+vpn_next_vm_name ()
 {
     local base_name="$1"
 
@@ -3380,8 +3532,8 @@ get_next_vpn_name ()
     print "$base_name-vpn-$next_number"
 }
 
-# check_vm_is_proxy fails if the VM is not listed as an identity proxy.
-check_vm_is_proxy ()
+# vpn_check__vm_is_identity_proxy fails if the VM is not listed as an identity proxy.
+vpn_check__vm_is_identity_proxy ()
 
 {
     local name="$1"
@@ -3403,7 +3555,7 @@ check_vm_is_proxy ()
 # src/lib/web.sh
 
 # Create a web browsing VM from a template
-create_browser_vm ()
+web_create_browser_vm ()
 {
     local web="${1}-web"
     local web_netvm="${2-$(config_get DEFAULT_NETVM)}"
@@ -3433,10 +3585,11 @@ create_browser_vm ()
     fi
 
     _run qvm-tags "$web" set "$IDENTITY"
+    echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
 # Clone a web browsing VM from an existing one
-clone_browser_vm ()
+web_clone_browser_vm ()
 {
     local web="${1}-web"
     local web_clone="$2"
@@ -3462,7 +3615,7 @@ clone_browser_vm ()
 }
 
 # Create a split-browser VM from a template
-create_split_browser_vm ()
+web_create_split_browser_backend ()
 {
     local web="${1}-split-web"
     local web_label="${2-gray}"
@@ -3476,7 +3629,7 @@ create_split_browser_vm ()
 }
 
 # Clone an existing split-browser VM, and change its dispvms
-clone_split_browser_vm ()
+web_clone_split_browser_backend ()
 {
     local web="${1}-split-web"
     local web_clone="$2"
@@ -3508,11 +3661,11 @@ create_bookmark_system_file ()
 }
 
 # create_bookmark_system_file writes and encrypts a file to store per-user bookmarks.
-create_bookmark_user_file ()
+web_create_identity_bookmarks ()
 {
     local filename="$(_encrypt_filename "bookmarks.tsv")"
     bookmarks_path="/home/user/.tomb/mgmt/${filename}"
-    _qvrun "$VAULT_VM" "touch ${bookmarks_path}"
+    _run_exec "$VAULT_VM" "touch ${bookmarks_path}"
 }
 
 # create_bookmark_system_file writes and encrypts a file for blacklisted links.
@@ -3525,7 +3678,7 @@ create_links_blacklist_file ()
 bookmark_system_file_exists ()
 {
     echo
-    # _qvrun "$VAULT" "ls /home/user/.graveyard/$encrypted_identity"
+    # _run_exec "$VAULT" "ls /home/user/.graveyard/$encrypted_identity"
 }
 
 # bookmark_display_command returns a command string
@@ -3544,10 +3697,10 @@ bookmark_display_command ()
     fi
 }
 
-# split_bookmark_file_is_empty returns 0 if no bookmark
+# _web_bookmarks_empty returns 0 if no bookmark
 
 # file exists in split-browser or if it is empty.
-split_bookmark_file_is_empty ()
+_web_bookmarks_empty ()
 {
     local split_command contents
     split_command=( qvm-run --pass-io "$(config_get SPLIT_BROWSER)" "cat .local/share/split-browser/bookmarks.tsv" )
@@ -3561,6 +3714,89 @@ split_bookmark_file_is_empty ()
     fi
 
     return 1
+}
+
+# web_set_identity_split_browser updates the default disposable VM
+# used by the split browser backend to use the active identity's one.
+web_set_identity_split_browser ()
+{
+    local browser_vm
+    browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
+
+    if [[ -n "${browser_vm}" ]]; then
+        _info "Setting identity browser VM with split-browser"
+        qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm "${browser_vm}"
+    fi
+}
+
+# web_unset_identity_split_browser removes the dispvm setting of the
+
+# tor split-browser backend if it is set to the identity browser VM.
+web_unset_identity_split_browser ()
+{
+    local browser_vm
+    browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
+
+    if [[ -z "${browser_vm}" ]]; then
+        return
+    fi
+
+    if [[ "$(qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm)" == "${browser_vm}" ]]; then
+        qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm ''
+    fi
+}
+
+# web_select_identity_bookmark prompts the user with bookmarks,
+
+# and returns the URL extracted from the selection.
+web_select_identity_bookmark ()
+{
+    local bookmarks_command result
+
+    # bookmark_prompt=( $(bookmark_display_command) )
+    bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
+    qvm-run --pass-io "${vm}" "${bookmarks_command}"
+    result="$(qvm-run --pass-io "${vm}" cat bookmark)"
+
+    print "$result" | awk '{print $2}'
+}
+
+# web_pop_identity_bookmark prompts the user with bookmarks, returns the URL
+
+# extracted from the selection and deletes the line in the file.
+# Returns the complete bookmark entry.
+web_pop_identity_bookmark ()
+{
+    local bookmarks_command result bookmark_line vm
+    bookmark_file=".local/share/split-browser/bookmarks.tsv"
+    vm="$(config_get SPLIT_BROWSER)"
+
+    # Get the URL
+    bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
+    qvm-run --pass-io "${vm}" "${bookmarks_command}"
+    result=$( qvm-run --pass-io "${vm}" cat bookmark | awk '{print $2}')
+    qvm-run --pass-io "${vm}" "rm bookmark"
+
+    # Get the entire line, with the title and timestamp.
+    bookmark_line="$(qvm-run --pass-io "${vm}" "cat ${bookmark_file}")"
+    line="$(echo "${bookmark_line}" | grep "${result}")"
+
+    # Abort if the user did not select anything
+    [[ -z "${result}" ]] && return
+
+    # Remove the line from the file.
+    remove_command="sed -i '\#${result}#d' .local/share/split-browser/bookmarks.tsv"
+    qvm-run --pass-io "${vm}" "${remove_command}"
+
+    print "${line}"
+}
+
+# get_browser_vm_from requires a VM name to be passed as argument.
+# If this VM is a disposable based on the identity's browser VM,
+# the argument is returned, otherwise the identity's browser VM.
+get_browser_vm_from ()
+{
+    echo
 }
 
 # :command.command_functions
@@ -3661,7 +3897,7 @@ risk_hush_attach_command() {
   # If user wants to mount it now, do it
   if [[ ${args['--mount']} -eq 1 ]]; then
       _info "Mounting hush device"
-      _qrun_term "$vm" risks hush mount
+      _run_qube_term "$vm" risks hush mount
   fi
 
 }
@@ -3677,7 +3913,7 @@ risk_hush_detach_command() {
 
   # First unmount the hush device in vault
   _info "Unmounting hush device before detaching"
-  _qrun "$vm" risks hush umount
+  _run_qube "$vm" risks hush umount
   _catch "Failed to unmount hush device ($block)"
 
   # detach the sdcard encrypted partition to the qube
@@ -3743,7 +3979,7 @@ risk_backup_detach_command() {
 
   # Always umount first
   _info "Locking/unmounting backup device before detaching"
-  _qrun "$vm" risks backup umount
+  _run_qube "$vm" risks backup umount
   _catch "Failed to unmount backup device ($block)"
 
   # detach the backup device
@@ -3777,7 +4013,7 @@ risk_identity_create_command() {
   local clone             # A variable that might be overritten several times, used to assign a VM to clone.
 
   # Propagate the identity and its settings (in the script only)
-  _set_identity "${args['identity']}"
+  identity_set "${args['identity']}"
 
   # Identity checks and basic setup ==========================================
 
@@ -3787,7 +4023,7 @@ risk_identity_create_command() {
   fi
 
   # or that the one we want to create does not exists already
-  if check_identity_exists "$IDENTITY" ; then
+  if identity_check_exists "$IDENTITY" ; then
       _failure "Identity $IDENTITY already exists"
   fi
 
@@ -3821,12 +4057,12 @@ risk_identity_create_command() {
   fi
 
   # Create it
-  _qrun_term "$VAULT_VM" risks identity create "$name" "$email" "$expiry" "${backup_args[@]}"
+  _run_qube_term "$VAULT_VM" risks identity create "$name" "$email" "$expiry" "${backup_args[@]}"
 
   _catch "Failed to create identity in vault"
 
   # And open it, in case the last command backed up the identity, which closed it.
-  _qrun_term "$VAULT_VM" risks open identity "$name"
+  _run_qube_term "$VAULT_VM" risks identity open "$name"
   _catch "Failed to open identity in vault"
 
   # If the user only wanted to create the identity in the vault, exit.
@@ -3843,9 +4079,9 @@ risk_identity_create_command() {
   if [[ ${args['--no-gw']} -eq 0 ]]; then
       if [[ -n ${args['--clone-gw-from']} ]]; then
           clone="${args['--clone-gw-from']}"
-          clone_tor_gateway "$vm_name" "$clone" "$gw_netvm" "$label"
+          tor_gateway_clone "$vm_name" "$clone" "$gw_netvm" "$label"
       else
-          create_tor_gateway "$vm_name" "$gw_netvm" "$label"
+          tor_gateway_create "$vm_name" "$gw_netvm" "$label"
       fi
   else
       _info "Skipping TOR gateway"
@@ -3861,13 +4097,13 @@ risk_identity_create_command() {
   # to have a different network route.
   if [[ -n ${args['--clone-web-from']} ]]; then
       clone="${args['--clone-web-from']}"
-      clone_browser_vm "$vm_name" "$clone" "$web_netvm" "$label"
+      web_clone_browser_vm "$vm_name" "$clone" "$web_netvm" "$label"
   else
-      create_browser_vm "$vm_name" "$web_netvm" "$label"
+      web_create_browser_vm "$vm_name" "$web_netvm" "$label"
   fi
 
   # Per-identity bookmarks file in vault management tomb.
-  create_bookmark_user_file
+  web_create_identity_bookmarks
 
   _success "Successfully initialized infrastructure for identity $IDENTITY"
 
@@ -3887,11 +4123,11 @@ risk_identity_equip_command() {
   local clone             # A variable that might be overritten several times, used to assign a VM to clone.
 
   # Propagate the identity and its settings (in the script only)
-  _set_identity "${args['identity']}"
+  identity_set "${args['identity']}"
 
   # Identity checks and basic setup ==========================================
 
-  check_identity_exists "$IDENTITY"
+  identity_check_exists "$IDENTITY"
 
   _in_section "identity" 8 && _info "Creating infrastructure for identity $IDENTITY"
 
@@ -3920,9 +4156,9 @@ risk_identity_equip_command() {
   if [[ ${args['--no-gw']} -eq 0 ]]; then
       if [[ -n ${args['--clone-gw-from']} ]]; then
           clone="${args['--clone-gw-from']}"
-          clone_tor_gateway "$vm_name" "$clone" "$gw_netvm" "$label"
+          tor_gateway_clone "$vm_name" "$clone" "$gw_netvm" "$label"
       else
-          create_tor_gateway "$vm_name" "$gw_netvm" "$label"
+          tor_gateway_create "$vm_name" "$gw_netvm" "$label"
       fi
   else
       _info "Skipping TOR gateway"
@@ -3938,13 +4174,13 @@ risk_identity_equip_command() {
   # to have a different network route.
   if [[ -n ${args['--clone-web-from']} ]]; then
       clone="${args['--clone-web-from']}"
-      clone_browser_vm "$vm_name" "$clone" "$web_netvm" "$label"
+      web_clone_browser_vm "$vm_name" "$clone" "$web_netvm" "$label"
   else
-      create_browser_vm "$vm_name" "$web_netvm" "$label"
+      web_create_browser_vm "$vm_name" "$web_netvm" "$label"
   fi
 
   # Per-identity bookmarks file in vault management tomb.
-  create_bookmark_user_file
+  web_create_identity_bookmarks
 
   _success "Successfully initialized infrastructure for identity $IDENTITY"
 
@@ -3954,17 +4190,20 @@ risk_identity_equip_command() {
 risk_identity_delete_command() {
   # src/identity_delete_command.sh
 
-  _set_identity "${args['identity']}"
-
   # First check the identity is valid
+  identity_set "${args['identity']}"
+  identity_check_exists
 
   # Check access to hush device in vault
+  sdcard_block="$(config_get SDCARD_BLOCK)"
+  check_is_device_attached "${sdcard_block}" "${VAULT_VM}"
 
-  # Close the identity
+  # Close the identity and all its running VMs
+  risk_identity_stop_command
 
-  # Close all machines belonging to the identity
-
-  # Delete these machines
+  # Delete all VMs belonging to the identity.
+  _info "Deleting identity VMs"
+  vm_delete_identity
 
   # Delete the identity data in the vault
 
@@ -3975,34 +4214,51 @@ risk_identity_delete_command() {
 }
 
 # :command.function
+risk_identity_nake_command() {
+  # src/identity_nake_command.sh
+
+  # First check the identity is valid
+  identity_set "${args['identity']}"
+  identity_check_exists
+
+  # Close the identity and all its running VMs
+  _info "Stopping machines of identity $IDENTITY"
+  vm_shutdown_identity
+
+  # If the identity browser VM is used with the split-browser backend.
+  web_unset_identity_split_browser
+
+  _info "Deleting identity VMs"
+  vm_delete_identity
+
+  _success "Successfully deleted VMs of identity $IDENTITY"
+
+}
+
+# :command.function
 risk_identity_open_command() {
   # src/identity_open_command.sh
 
-  local sdcard_block vault_vm browser_vm
+  local sdcard_block
 
   sdcard_block="$(config_get SDCARD_BLOCK)"
-  vault_vm="$(config_get VAULT_VM)"
 
-  _set_identity "${args['identity']}"
+  identity_set "${args['identity']}"
 
   # 1 - Check that hush is mounted on vault
-  check_is_device_attached "${sdcard_block}" "${vault_vm}"
+  check_is_device_attached "${sdcard_block}" "${VAULT_VM}"
 
   # 2 - Check that no identity is currently opened
   # The second line should be empty, as opposed to being an encrypted coffin name
-  check_no_active_identity "$IDENTITY"
+  identity_check_none_active "$IDENTITY"
 
   # 3 - Send commands to vault
   _info "Opening identity $IDENTITY"
-  _qrun_term "$vault_vm" risks identity open "$IDENTITY"
+  _run_qube_term "$VAULT_VM" risks identity open "$IDENTITY"
   _catch "Failed to open identity"
 
   # Set the identity browser VM, if any, as the disposable VM of split-browser backend.
-  browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
-  if [[ -n "${browser_vm}" ]]; then
-      _info "Setting identity browser VM with split-browser"
-      qvm-prefs "$(config_get SPLIT_BROWSER)" --set default_dispvm "${browser_vm}"
-  fi
+  web_set_identity_split_browser
 
   _info "Identity $IDENTITY is active"
 
@@ -4012,18 +4268,21 @@ risk_identity_open_command() {
 risk_identity_close_command() {
   # src/identity_close_command.sh
 
-  local vault_vm="$(config_get VAULT_VM)"
+  local active_identity
 
   # Check we have an active identity
-  active_identity=$(qvm-run --pass-io "$vault_vm" 'cat .identity' 2>/dev/null)
+  active_identity="$(identity_get_active)"
   if [[ -z $active_identity ]]; then
       _info "No active identity to close"
       exit 0
   fi
 
+  # If the identity browser VM is used with the split-browser backend.
+  web_unset_identity_split_browser
+
   _info "Closing identity $active_identity"
 
-  _qrun_term "$vault_vm" risks close identity "$active_identity"
+  _run_qube_term "${VAULT_VM}" risks identity close "$active_identity"
   _catch "Failed to close identity $active_identity"
 
   _info "Identity $active_identity is closed"
@@ -4034,18 +4293,33 @@ risk_identity_close_command() {
 risk_identity_start_command() {
   # src/identity_start_command.sh
 
-  _set_identity "${args['identity']}"
+  local active_identity enabled_vms
 
-  # Get the name for VMs
-  local name="$(cat "${IDENTITY_DIR}/vm_name")"
+  # Check the identity is valid, and open in vault if needed.
+  identity_set "${args['identity']}"
+  identity_check_exists
 
-  # Check the identity is valid
+  active_identity="$(identity_get_active)"
+  if [[ -n "${active_identity}" ]]; then
+      if [[ "${active_identity}" != "${IDENTITY}" ]]; then
+          identity_check_none_active "$IDENTITY"
+      fi
+      _info "Identity ${IDENTITY} already opened in vault"
+  else
+      risk_identity_open_command
+  fi
 
-  # Open the identity in vault
+  # Start all enabled identity machines
+  read -rA enabled_vms < <(_identity_autovm_starts)
+  for vm in "${enabled_vms[@]}"; do
+      if [[ -z "${vm}" ]]; then
 
-  # Start all enabled network machines
+          continue
 
-  # Start all enabled client machines
+      fi
+      _info "Starting VM ${vm}"
+      _run vm_start "${vm}"
+  done
 
   _success "Opened identity '$IDENTITY' and started enabled VMs"
 
@@ -4059,21 +4333,11 @@ risk_identity_stop_command() {
   local active_identity
   active_identity=$(_identity_active_or_specified)
 
-  _info "Stopping machines and identity $active_identity"
+  _info "Stopping machines of identity $active_identity"
+  vm_shutdown_identity
 
-  # First shut down all client VMs
-  read -ra client_vms "$(identity_client_vms)"
-  for vm in "${client_vms[@]}" ; do
-      _info "Shutting down $vm"
-      shutdown_vm "$vm"
-  done
-
-  # Do the same for proxyVMs
-  read -ra proxy_vms "$(identity_proxies)"
-  for vm in "${proxy_vms[@]}" ; do
-      _info "Shutting down $vm"
-      shutdown_vm "$vm"
-  done
+  _info "Closing identity in vault"
+  risk_identity_close_command
 
   _success "Done"
 
@@ -4112,22 +4376,22 @@ risk_slam_command() {
   # Else get the active identity, and propagate values to the script
   local active_identity
   active_identity=$(_identity_active_or_specified)
-  _set_identity "$active_identity"
+  identity_set "$active_identity"
 
   _info "Slamming infrastructure, vault and devices: identity $active_identity"
 
   # First shut down all client VMs
-  read -ra client_vms "$(identity_client_vms)"
+  read -rA client_vms < <(identity_client_vms)
   for vm in "${client_vms[@]}" ; do
       _info "Shutting down $vm"
-      shutdown_vm "$vm"
+      vm_shutdown "$vm"
   done
 
   # Do the same for proxyVMs
-  read -ra proxy_vms "$(identity_proxies)"
+  read -rA proxy_vms < <(identity_proxies)
   for vm in "${proxy_vms[@]}" ; do
       _info "Shutting down $vm"
-      shutdown_vm "$vm"
+      vm_shutdown "$vm"
   done
 
   # Close the identity in the vault, unmount hush and backup
@@ -4143,13 +4407,13 @@ risk_slam_command() {
 risk_vpn_create_command() {
   # src/vpn_create_command.sh
 
-  _set_identity
+  identity_set
 
   # Prepare some settings for this new VM
   local name netvm clone template label
 
   name="${args['vm']:-$(cat "${IDENTITY_DIR}/vm_name" 2>/dev/null)}"
-  label="${args['--label']:=$(get_identity_label)}"
+  label="${args['--label']:=$(_identity_default_vm_label)}"
   netvm="$(config_or_flag "${args['--netvm']}" DEFAULT_NETVM)"
   clone="$(config_or_flag "${args['--from']}" VPN_VM)"
   template="$(config_or_flag "${args['--template']}" VPN_TEMPLATE)"
@@ -4161,7 +4425,7 @@ risk_vpn_create_command() {
 
   # In this case, we add 'vpn-1' to it (number varying).
   if [[ -z "${args['vm']}" ]]; then
-      name="$(get_next_vpn_name "$name")"
+      name="$(vpn_next_vm_name "$name")"
   fi
 
   # 1 - Creation
@@ -4170,11 +4434,11 @@ risk_vpn_create_command() {
   # or we create it from a template.
   if [[ "${args['--clone']}" -eq 1 ]]; then
       _info "Cloning VPN gateway (from VM $clone)"
-      clone_vpn_gateway "$name" "$netvm" "$label" "$clone"
+      vpn_clone "$name" "$netvm" "$label" "$clone"
 
   else
       _info "Creating VPN gateway (from template $template)"
-      create_vpn_gateway "$name" "$netvm" "$label" "$template"
+      vpn_create "$name" "$netvm" "$label" "$template"
   fi
 
   # Tag the VM with its owner
@@ -4203,7 +4467,7 @@ risk_vpn_create_command() {
 risk_vpn_setup_command() {
   # src/vpn_setup_command.sh
 
-  _set_identity
+  identity_set
 
   local name config_vm client_conf_path netvm
 
@@ -4243,11 +4507,11 @@ risk_vpn_setup_command() {
   # Client VPN Configurations
   if [[ "${args['--choose']}" -eq 1 ]]; then
       # If we are asked to choose an existing configuration in the VM
-      _qvrun "$name" /usr/local/bin/setup_VPN
+      _run_exec "$name" /usr/local/bin/setup_VPN
 
   elif [[ -n "${args['--config-in']}" ]]; then
       # Or if we are asked to browse one or more configuration files in another VM.
-      import_vpn_configs "$name" "$config_vm" "$client_conf_path"
+      vpn_import_configs "$name" "$config_vm" "$client_conf_path"
   fi
 
 }
@@ -4262,10 +4526,10 @@ risk_vpn_start_command() {
 
   # First check all the network VMs that will be started
   # actually belong to the identity, otherwise we fail.
-  check_network_chain "$name"
+  network_check_identity_chain "$name"
 
   # Then start the VM, which will start all dependent ones.
-  start_vm "$name"
+  vm_start "$name"
   _catch "Failed to start $name"
 
   _info "Started VM $name"
@@ -4279,7 +4543,7 @@ risk_vpn_stop_command() {
   local name="${args['vm']}"
 
   _info "Shutting down gateway $name"
-  shutdown_vm "$name"
+  vm_shutdown "$name"
   _catch "Failed to shutdown $name"
   _info "Shut down $name"
 
@@ -4289,13 +4553,13 @@ risk_vpn_stop_command() {
 risk_vpn_enable_command() {
   # src/vpn_enable_command.sh
 
-  _set_identity
+  identity_set
 
-  local name autostart_vms already_enabled
+  local name autovm_starts already_enabled
 
   name="${args['vm']}"
 
-  enable_vm_autostart "$name"
+  vm_enable_autostart "$name"
 
 }
 
@@ -4303,11 +4567,11 @@ risk_vpn_enable_command() {
 risk_vpn_disable_command() {
   # src/vpn_disable_command.sh
 
-  _set_identity
+  identity_set
 
   local name="${args['vm']}"
 
-  disable_vm_autostart "$name"
+  vm_disable_autostart "$name"
 
 }
 
@@ -4319,25 +4583,25 @@ risk_vpn_delete_command() {
 
   name="${args['vm']}"
 
-  _set_identity
+  identity_set
 
   # Check that the selected VM is indeed one of the identity
   # proxy VMs, so that we don't accidentally delete another one.
-  check_vm_is_proxy "$name"
+  vpn_check__vm_is_identity_proxy "$name"
 
   # Do not even attempt to delete if the VM provides network to another VM.
-  check_not_netvm "$vm"
+  fail_vm_provides_network "$vm"
 
   _info "Deleting gateway VM $name"
 
   # If the VPN was the default NetVM for the identity,
   # update the NetVM to Whonix.
-  netvm="$(identity_default_netvm)"
+  netvm="$(_identity_default_netvm)"
   if [[ $netvm == "$name" ]]; then
       _warning "Gateway $name is the default NetVM for identity clients !"
 
       # Check if we have a TOR gateway
-      local tor_gw=$(identity_tor_gw)
+      local tor_gw=$(_identity_tor_gateway)
 
       if [[ -n $tor_gw ]]; then
           _info -n "Updating the default identity NetVM to $tor_gw"
@@ -4358,7 +4622,7 @@ risk_vpn_delete_command() {
   _catch "Failed to delete (fully or partially) VM $name"
 
   # Remove from VMs marked autostart
-  sed -i /"$name"/d "${IDENTITY_DIR}/autostart_vms"
+  sed -i /"$name"/d "${IDENTITY_DIR}/autovm_starts"
   # And remove from proxy VMs
 
   sed -i /"$name"/d "${IDENTITY_DIR}/proxy_vms"
@@ -4380,13 +4644,13 @@ risk_vm_add_command() {
 
   vm="${args['vm']}"
 
-  _set_identity
+  identity_set
 
   # We need a valid identity
-  check_identity_exists "$IDENTITY"
+  identity_check_exists "$IDENTITY"
 
   # Check VM ownership
-  vm_owner=$(get_vm_owner "$vm")
+  vm_owner=$(_vm_owner "$vm")
 
   # If already belongs to an identity, ask for confirmation to update the settings.
   if [[ -n "$vm_owner" ]] && [[ "$vm_owner" != "$IDENTITY" ]]; then
@@ -4408,12 +4672,12 @@ risk_vm_add_command() {
   # or with the netvm flag, which has precedence.
   if [[ "$(qvm-tags "$vm" netvm)" != 'None' ]]; then
       _info "VM is networked. Updating its network VM"
-      local netvm="$(identity_default_netvm)"
+      local netvm="$(_identity_default_netvm)"
 
       # If the user overrode the default netVM, check that it belongs
       # to the identity, or ask confirmation.
       if [[ -n "${args['--netvm']}" ]]; then
-          netvm_owner=$(get_vm_owner "${args['--netvm']}")
+          netvm_owner=$(_vm_owner "${args['--netvm']}")
           if [[ "$vm_owner" != "$IDENTITY" ]]; then
               _warning "Network VM $vm already belongs to $vm_owner"
               printf >&2 '%s ' "Do you really want to use this VM as netvm for $vm? (YES/n)"
@@ -4448,7 +4712,7 @@ risk_vm_add_command() {
   fi
 
   # Enable autostart if asked to
-  [[ "${args['--enable']}" -eq 1 ]] && enable_vm_autostart "$vm"
+  [[ "${args['--enable']}" -eq 1 ]] && vm_enable_autostart "$vm"
 
   _success "Succesfully set VM $vm as belonging to identity $IDENTITY"
 
@@ -4461,23 +4725,23 @@ risk_vm_delete_command() {
 
   vm="${args['vm']}"
 
-  _set_identity
+  identity_set
 
   # Check VM ownership
 
-  [[ "$(get_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
+  [[ "$(_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
   # Do not even attempt to delete if the VM provides network to another VM.
-  check_not_netvm "$vm"
+  fail_vm_provides_network "$vm"
 
   # If the VM is a gateway, just call the VPN command to do the work.
-  if is_proxy_vm "$vm" ; then
+  if _vm_is_identity_proxy "$vm" ; then
       risk_vpn_delete_command
       return
   fi
 
   # Remove from autostart enabled commands
-  sed -i /"$vm"/d "${IDENTITY_DIR}/autostart_vms"
+  sed -i /"$vm"/d "${IDENTITY_DIR}/autovm_starts"
 
   # Finally, delete the VM,
 
@@ -4493,13 +4757,13 @@ risk_vm_enable_command() {
 
   vm="${args['vm']}"
 
-  _set_identity
+  identity_set
 
   # Check VM ownership
 
-  [[ "$(get_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
+  [[ "$(_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
-  enable_vm_autostart "$vm"
+  vm_enable_autostart "$vm"
 
 }
 
@@ -4510,13 +4774,13 @@ risk_vm_disable_command() {
 
   vm="${args['vm']}"
 
-  _set_identity
+  identity_set
 
   # Check VM ownership
 
-  [[ "$(get_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
+  [[ "$(_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
-  disable_vm_autostart "$vm"
+  vm_disable_autostart "$vm"
 
 }
 
@@ -4531,7 +4795,7 @@ risk_use_command() {
   arguments="${other_args[@]}"
 
   local owner active_identity
-  owner=$(get_vm_owner "$vm")
+  owner=$(_vm_owner "$vm")
   active_identity="$(_identity_active_or_specified)"
 
   # If the VM does not belong to any identity, then we don't have
@@ -4551,7 +4815,7 @@ risk_use_command() {
   fi
 
   # At this point everything identity-related should be cleared and done.
-  _qvrun "$vm" "${arguments[@]}"
+  _run_exec "$vm" "${arguments[@]}"
   _catch "Failed to execute command in $vm:"
 
 }
@@ -4585,14 +4849,14 @@ risk_url_bookmark_command() {
   local url               # The URL to bookmark
   local title             # The URL page title to use if/when prompting the user for input.
 
-  _set_identity ""
+  identity_set ""
 
   url="${args['url']}"
   split_vm="$(config_get SPLIT_BROWSER)"
-  active_vm="$(get_active_window_vm)"
+  active_vm="$(_vm_focused)"
 
   if [[ -z "${url}" ]]; then
-      if split_bookmark_file_is_empty; then
+      if _web_bookmarks_empty; then
           _info "No bookmarks file in ${split_vm}, prompting user to enter it."
           zenity_prompt="zenity --text 'URL Bookmark' --forms --add-entry='URL' --add-entry='Page Title' --separator=\$'\t'"
           result="$(qvm-run --pass-io "${active_vm}" "${zenity_prompt}")"
@@ -4600,7 +4864,7 @@ risk_url_bookmark_command() {
           title="$( echo "${result}" | cut -f 2- -d $'\t')"
       else
           _info "No URL argument, starting dmenu with bookmarks list in ${split_vm}"
-          bookmark_entry="$(pop_bookmark)"
+          bookmark_entry="$(web_pop_identity_bookmark)"
           url="$( echo "${bookmark_entry}" | awk '{print $2}' )"
           title="$( echo "${bookmark_entry}" | awk '{print $3}' )"
       fi
@@ -4650,7 +4914,7 @@ risk_qubes_update_command() {
   # Analyze the arguments and extract all VMs
   # corresponding to those names/groups.
   local vms=()
-  read -rA vms <<< $(get_vm_args "${args['vms']}" "${other_args[@]}")
+  read -rA vms <<< $(_vm_args "${args['vms']}" "${other_args[@]}")
 
   # Otherwise use templates of identity VMs
   # if [[ "${args['--identity']}" -eq 1 ]]; then
@@ -5657,6 +5921,13 @@ risk_identity_parse_requirements() {
       shift $#
       ;;
 
+    nake)
+      action="nake"
+      shift
+      risk_identity_nake_parse_requirements "$@"
+      shift $#
+      ;;
+
     open)
       action="open"
       shift
@@ -6114,6 +6385,62 @@ risk_identity_delete_parse_requirements() {
   # :command.required_args_filter
   if [[ -z ${args['identity']+x} ]]; then
     printf "missing required argument: IDENTITY\nusage: risk identity delete IDENTITY\n" >&2
+    exit 1
+  fi
+
+}
+
+# :command.parse_requirements
+risk_identity_nake_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_identity_nake_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="identity nake"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        if [[ -z ${args['identity']+x} ]]; then
+
+          args['identity']=$1
+          shift
+        else
+          printf "invalid argument: %s\n" "$key" >&2
+          exit 1
+        fi
+
+        ;;
+
+    esac
+  done
+
+  # :command.required_args_filter
+  if [[ -z ${args['identity']+x} ]]; then
+    printf "missing required argument: IDENTITY\nusage: risk identity nake IDENTITY\n" >&2
     exit 1
   fi
 
@@ -8299,6 +8626,15 @@ run() {
         risk_identity_delete_usage
       else
         risk_identity_delete_command
+      fi
+      ;;
+
+    "identity nake")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_identity_nake_usage
+      else
+        risk_identity_nake_command
       fi
       ;;
 

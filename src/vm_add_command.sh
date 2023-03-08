@@ -70,6 +70,6 @@ if [[ "$(qvm-tags "$vm" provides_network)" == 'True' ]]; then
 fi
 
 # Enable autostart if asked to
-[[ "${args['--enable']}" -eq 1 ]] && enable_vm_autostart "$vm"
+[[ "${args['--enable']}" -eq 1 ]] && vm_enable_autostart "$vm"
 
 _success "Succesfully set VM $vm as belonging to identity $IDENTITY"

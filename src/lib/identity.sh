@@ -172,9 +172,9 @@ _identity_client_vms ()
 # returns all identity VMs that are not gateways/proxies,
 # but are potentially (most of the time) accessing network
 # from one or more of these gateways.
-_identity_autostart_vms ()
+_identity_autovm_starts ()
 {
-    [[ -f "${IDENTITY_DIR}/autostart_vms" ]] || return
-    read -d '' -r -A clients <"${IDENTITY_DIR}/autostart_vms"
+    [[ -f "${IDENTITY_DIR}/autovm_starts" ]] || return
+    read -d '' -r -A clients <"${IDENTITY_DIR}/autovm_starts"
     echo "${clients[@]}"
 }

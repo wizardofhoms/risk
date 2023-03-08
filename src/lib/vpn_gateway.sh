@@ -115,8 +115,8 @@ vpn_next_vm_name ()
     print "$base_name-vpn-$next_number"
 }
 
-# vpn_check_vm_is_proxy fails if the VM is not listed as an identity proxy.
-vpn_check_vm_is_proxy () 
+# vpn_check__vm_is_identity_proxy fails if the VM is not listed as an identity proxy.
+vpn_check__vm_is_identity_proxy () 
 {
     local name="$1"
     local proxies

@@ -1,8 +1,8 @@
 
 identity_set 
 
-local name autostart_vms already_enabled
+local name autovm_starts already_enabled
 
 name="${args['vm']}"
 
-enable_vm_autostart "$name"
+vm_enable_autostart "$name"

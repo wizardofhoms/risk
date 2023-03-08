@@ -64,7 +64,7 @@ _run_qube_term "$VAULT_VM" risks identity create "$name" "$email" "$expiry" "${b
 _catch "Failed to create identity in vault"
 
 # And open it, in case the last command backed up the identity, which closed it.
-_run_qube_term "$VAULT_VM" risks open identity "$name"
+_run_qube_term "$VAULT_VM" risks identity open "$name"
 _catch "Failed to open identity in vault"
 
 # If the user only wanted to create the identity in the vault, exit.

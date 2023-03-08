@@ -7,10 +7,10 @@ identity_set
 
 # Check that the selected VM is indeed one of the identity
 # proxy VMs, so that we don't accidentally delete another one.
-vpn_check_vm_is_proxy "$name"
+vpn_check__vm_is_identity_proxy "$name"
 
 # Do not even attempt to delete if the VM provides network to another VM.
-check_not_netvm "$vm"
+fail_vm_provides_network "$vm"
 
 _info "Deleting gateway VM $name"
 
@@ -41,7 +41,7 @@ echo "y" | _run qvm-remove "$name"
 _catch "Failed to delete (fully or partially) VM $name"
 
 # Remove from VMs marked autostart
-sed -i /"$name"/d "${IDENTITY_DIR}/autostart_vms"
+sed -i /"$name"/d "${IDENTITY_DIR}/autovm_starts"
 # And remove from proxy VMs 
 sed -i /"$name"/d "${IDENTITY_DIR}/proxy_vms"
 

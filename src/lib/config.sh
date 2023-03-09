@@ -60,6 +60,11 @@ SDCARD_BLOCK=
 ; Qubes path to backup device, such as 'sys-usb:sdb1'
 BACKUP_BLOCK=
 
+; If true, AUTO_MOUNT_HUSH will automatically run the risks hush mount
+; command in the target vault when invoking 'risk hush attach', prompting
+; the user for the device password. Equivalent to 'risk hush attach -m'
+AUTO_MOUNT_HUSH=false
+
 ; Other network settings ========================================= #
 
 ; Default VM to use as a firewall VM, to which either Tor or VPN gateways are bound
@@ -80,7 +85,7 @@ DOM0_SHELL=bash
 ; Default terminal to use in AppVMs
 VM_TERMINAL=xterm
 
-; Default shell to use in AppVMs 
+; Default shell to use in AppVMs
 VM_SHELL=bash
 
 EOF

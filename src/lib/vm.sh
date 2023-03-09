@@ -47,8 +47,8 @@ _vm_list ()
     echo "${vms[@]}"
 }
 
-# _vm_list_updatable returns all templates and standalone VMs
-_vm_list_updatable () 
+# _vm_list_updateable returns all templates and standalone VMs
+_vm_list_updateable () 
 {
     local templates=() 
     while read line ; do
@@ -75,8 +75,8 @@ _vm_args ()
 
     # Return if our only argument is empty
 
-    # All updatable VMs, except the updater one
-    read -rA can_update <<< "$(_vm_list_updatable)"
+    # All updateable VMs, except the updater one
+    read -rA can_update <<< "$(_vm_list_updateable)"
     updatevm="$(_vm_updatevm_template)"
     can_update=( ${can_update:#$~updatevm} )
 
@@ -126,7 +126,7 @@ _vm_is_identity_proxy ()
     return $match
 }
 
-# _vm_root_template returns the updatable template of a given VM.
+# _vm_root_template returns the updateable template of a given VM.
 # Example: if a disposable VM is given as argument, the first resolved
 # template is the dispvm template, which itself is an AppVM, so we get
 # the template of the dispvm template.

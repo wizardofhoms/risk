@@ -2089,6 +2089,12 @@ SDCARD_BLOCK=
 ; Qubes path to backup device, such as 'sys-usb:sdb1'
 BACKUP_BLOCK=
 
+; If true, AUTO_MOUNT_HUSH will automatically run the risks hush mount
+; command in the target vault when invoking 'risk hush attach', prompting
+
+; the user for the device password. Equivalent to 'risk hush attach -m'
+AUTO_MOUNT_HUSH=false
+
 ; Other network settings ========================================= #
 
 ; Default VM to use as a firewall VM, to which either Tor or VPN gateways are bound
@@ -3183,8 +3189,8 @@ _vm_list ()
     echo "${vms[@]}"
 }
 
-# _vm_list_updatable returns all templates and standalone VMs
-_vm_list_updatable ()
+# _vm_list_updateable returns all templates and standalone VMs
+_vm_list_updateable ()
 
 {
     local templates=()
@@ -3215,8 +3221,8 @@ _vm_args ()
 
     # Return if our only argument is empty
 
-    # All updatable VMs, except the updater one
-    read -rA can_update <<< "$(_vm_list_updatable)"
+    # All updateable VMs, except the updater one
+    read -rA can_update <<< "$(_vm_list_updateable)"
     updatevm="$(_vm_updatevm_template)"
     can_update=( ${can_update:#$~updatevm} )
 
@@ -3266,7 +3272,7 @@ _vm_is_identity_proxy ()
     return $match
 }
 
-# _vm_root_template returns the updatable template of a given VM.
+# _vm_root_template returns the updateable template of a given VM.
 # Example: if a disposable VM is given as argument, the first resolved
 # template is the dispvm template, which itself is an AppVM, so we get
 # the template of the dispvm template.
@@ -3977,6 +3983,7 @@ risk_hush_attach_command() {
 
   local block vm
   local error_invalid_vm error_device
+  local must_mount
 
   block="${args['device']-$(config_get SDCARD_BLOCK)}"
   vm="${args['vault_vm']-$(config_get VAULT_VM)}"
@@ -4015,6 +4022,18 @@ risk_hush_attach_command() {
 
   # If user wants to mount it now, do it
   if [[ ${args['--mount']} -eq 1 ]]; then
+      must_mount=1
+  elif [[ "$(config_get AUTO_MOUNT_HUSH)" == True ]]; then
+      must_mount=1
+  elif [[ "$(config_get AUTO_MOUNT_HUSH)" == true ]]; then
+      must_mount=1
+  elif [[ "$(config_get AUTO_MOUNT_HUSH)" == yes ]]; then
+      must_mount=1
+  elif [[ "$(config_get AUTO_MOUNT_HUSH)" == 1 ]]; then
+      must_mount=1
+  fi
+
+  if [[ "${must_mount}" -eq 1 ]]; then
       _info "Mounting hush device"
       _run_qube_term "$vm" risks hush mount
   fi

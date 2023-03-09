@@ -1,6 +1,7 @@
 
 local block vm
 local error_invalid_vm error_device
+local must_mount
 
 block="${args['device']-$(config_get SDCARD_BLOCK)}"
 vm="${args['vault_vm']-$(config_get VAULT_VM)}"
@@ -37,6 +38,18 @@ fi
 
 # If user wants to mount it now, do it
 if [[ ${args['--mount']} -eq 1 ]]; then
+    must_mount=1
+elif [[ "$(config_get AUTO_MOUNT_HUSH)" == True ]]; then
+    must_mount=1
+elif [[ "$(config_get AUTO_MOUNT_HUSH)" == true ]]; then
+    must_mount=1
+elif [[ "$(config_get AUTO_MOUNT_HUSH)" == yes ]]; then
+    must_mount=1
+elif [[ "$(config_get AUTO_MOUNT_HUSH)" == 1 ]]; then
+    must_mount=1
+fi
+
+if [[ "${must_mount}" -eq 1 ]]; then
     _info "Mounting hush device"
     _run_qube_term "$vm" risks hush mount
 fi

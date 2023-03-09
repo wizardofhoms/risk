@@ -18,7 +18,7 @@ vm_delete_identity
 _info "Deleting identity in vault"
 delete_vault_cmd=( risks identity delete "${IDENTITY}" )
 
-# If a backup medium is mounted and backup 
+# If a backup medium is mounted and backup
 # removal is asked, add the corresponding flags.
 if device_backup_mounted_on "${VAULT_VM}"; then
     if [[ "${args['--backup']}" -eq 1 ]]; then

@@ -17,7 +17,7 @@ option_is_set() {
 # config file, and optionally overrides it if the flag is set.
 # $1 - Flag argument
 # $2 - Key name in config
-config_or_flag () 
+config_or_flag ()
 {
     local value config_value
 

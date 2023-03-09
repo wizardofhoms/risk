@@ -16,10 +16,10 @@ web_create_browser_vm ()
     if [[ "${template_disp}" == True ]]; then
         create_command+=(--class DispVM)
     fi
-    
+
     # Generate the VM
     "${create_command[@]}"
-    if [[ $? -gt 0 ]]; then 
+    if [[ $? -gt 0 ]]; then
         _warning "Failed to create browser VM $web" && return
     fi
 
@@ -53,7 +53,7 @@ web_clone_browser_vm ()
     if [[ "$(qvm-prefs "${ws_template}" template_for_dispvms 2>/dev/null)" == False ]]; then
         _run qvm-prefs "${web}" template_for_dispvms True
     fi
-    
+
     _run qvm-tags "$web" set "$IDENTITY"
     echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
@@ -94,13 +94,13 @@ create_bookmark_system_file ()
     local filename="bookmarks.tsv"
 
     # A hush device should be mounted.
-    
+
     # If the file exists, return
-    
+
     # Ask for a password to use, or generate a random seed to use for the encryption.
-    
+
     # Get an encrypted name for the file.
-    
+
     # And create it.
 }
 
@@ -125,12 +125,12 @@ bookmark_system_file_exists ()
     # _run_exec "$VAULT" "ls /home/user/.graveyard/$encrypted_identity"
 }
 
-# bookmark_display_command returns a command string 
+# bookmark_display_command returns a command string
 # to use as the dmenu displayer of a bookmarks file.
 bookmark_display_command ()
 {
-    # This command will not work if qubes-split-browser is not installed in the split-browser VM 
-    local window_focus_command='_NET_WM_NAME="Split Browser" x11-unoverride-redirect stdbuf -oL' 
+    # This command will not work if qubes-split-browser is not installed in the split-browser VM
+    local window_focus_command='_NET_WM_NAME="Split Browser" x11-unoverride-redirect stdbuf -oL'
 
     if [[ -n "$(config_get BOOKMARKS_DMENU_COMMAND)" ]]; then
         echo "${window_focus_command} $(config_get BOOKMARKS_DMENU_COMMAND)"
@@ -139,7 +139,7 @@ bookmark_display_command ()
     fi
 }
 
-# _web_bookmarks_empty returns 0 if no bookmark 
+# _web_bookmarks_empty returns 0 if no bookmark
 # file exists in split-browser or if it is empty.
 _web_bookmarks_empty ()
 {
@@ -170,7 +170,7 @@ web_set_identity_split_browser ()
     fi
 }
 
-# web_unset_identity_split_browser removes the dispvm setting of the 
+# web_unset_identity_split_browser removes the dispvm setting of the
 # tor split-browser backend if it is set to the identity browser VM.
 web_unset_identity_split_browser ()
 {
@@ -186,7 +186,7 @@ web_unset_identity_split_browser ()
     fi
 }
 
-# web_select_identity_bookmark prompts the user with bookmarks, 
+# web_select_identity_bookmark prompts the user with bookmarks,
 # and returns the URL extracted from the selection.
 web_select_identity_bookmark ()
 {
@@ -195,11 +195,11 @@ web_select_identity_bookmark ()
     # bookmark_prompt=( $(bookmark_display_command) )
     bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
     qvm-run --pass-io "${vm}" "${bookmarks_command}"
-    result="$(qvm-run --pass-io "${vm}" cat bookmark)" 
+    result="$(qvm-run --pass-io "${vm}" cat bookmark)"
     print "$result" | awk '{print $2}'
 }
 
-# web_pop_identity_bookmark prompts the user with bookmarks, returns the URL 
+# web_pop_identity_bookmark prompts the user with bookmarks, returns the URL
 # extracted from the selection and deletes the line in the file.
 # Returns the complete bookmark entry.
 web_pop_identity_bookmark ()

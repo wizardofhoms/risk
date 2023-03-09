@@ -46,7 +46,7 @@ if [[ "$(qvm-tags "$vm" netvm)" != 'None' ]]; then
                 netvm="${args['--netvm']}"
             fi
         fi
-    fi 
+    fi
 
     _info "Setting network VM to $netvm"
     _run qvm-tags "$vm" netvm "$netvm"
@@ -54,17 +54,17 @@ if [[ "$(qvm-tags "$vm" netvm)" != 'None' ]]; then
 fi
 
 
-# Check if the VM provides network. If yes we naturally consider 
+# Check if the VM provides network. If yes we naturally consider
 # it to be a gateway, and we add it to the list of proxy_vms.
 if [[ "$(qvm-tags "$vm" provides_network)" == 'True' ]]; then
     _info "VM provides network. Treating it as a gateway VM"
 
     # Add as a proxy VM
-    echo "$vm" > "${IDENTITY_DIR}/proxy_vms" 
+    echo "$vm" > "${IDENTITY_DIR}/proxy_vms"
 
     # If the user specified to use it as the default netvm
     if [[ ${args['--set-default']} -eq 1 ]]; then
-        echo "$vm" > "${IDENTITY_DIR}/net_vm" 
+        echo "$vm" > "${IDENTITY_DIR}/net_vm"
         _info "Setting '$vm' as default NetVM for all client machines"
     fi
 fi

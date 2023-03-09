@@ -1,11 +1,11 @@
 
 #
 # ========================================================================================
-# Attributes functions 
+# Attributes functions
 # ========================================================================================
 #
-# Functions starting with an underscore 
-# give information and values related to VMs, 
+# Functions starting with an underscore
+# give information and values related to VMs,
 #
 
 # Returns the name of the identity to which a VM belongs.
@@ -48,9 +48,9 @@ _vm_list ()
 }
 
 # _vm_list_updateable returns all templates and standalone VMs
-_vm_list_updateable () 
+_vm_list_updateable ()
 {
-    local templates=() 
+    local templates=()
     while read line ; do
         IFS="|" read -r name class <<< "${line}"
         if [[ "$class" == "TemplateVM" ]]; then
@@ -63,8 +63,8 @@ _vm_list_updateable ()
     echo "${templates[@]}"
 }
 
-# _vm_args returns a list of VMs that are either explicitly named 
-# in the array passed as arguments, or those belonging to some 
+# _vm_args returns a list of VMs that are either explicitly named
+# in the array passed as arguments, or those belonging to some
 # "group keyword" of this same array.
 _vm_args ()
 {
@@ -101,7 +101,7 @@ _vm_args ()
                 done
                 ;;
         esac
-        
+
     done
 
     echo "${_vm_list[@]}"
@@ -133,7 +133,7 @@ _vm_is_identity_proxy ()
 _vm_root_template ()
 {
     local vm="${1}"
-    local updateable 
+    local updateable
 
     template="$(qvm-prefs "${vm}" template 2>/dev/null)"
     updateable="$(qvm-prefs "${vm}" updateable 2>/dev/null)"
@@ -149,7 +149,7 @@ _vm_root_template ()
 # ========================================================================================
 #  VM control and settings management
 # ========================================================================================
-# 
+#
 
 # vm_init_identity_settings is used once when creating
 # VMs for an identity, and requires access to argu
@@ -185,7 +185,7 @@ vm_disable_autostart ()
 
 # vm_start [vm 1] ... [vm n]
 #Start the given VMs without executing any command.
-vm_start () 
+vm_start ()
 {
     local ret=0
 
@@ -214,7 +214,7 @@ vm_start ()
 
 # vm_shutdown [vm 1] ... [vm n]
 #Shut the given VMs down.
-vm_shutdown () 
+vm_shutdown ()
 {
     local ret=0
 
@@ -239,7 +239,7 @@ vm_shutdown ()
 #[vm]: VM for which to make sure it's running.
 #[start]: If it's not running and not paused, start it (default: 0/true). If set to 1, this function will return a non-zero exit code.
 #returns: A non-zero exit code, if it's not running and/or we failed to start the VM.
-vm_assert_running () 
+vm_assert_running ()
 {
     local vm="$1"
     local start="${2:-0}"
@@ -259,7 +259,7 @@ vm_assert_running ()
     return 0
 }
 
-# vm_delete deletes a VM belonging to the identity, and removes its from the 
+# vm_delete deletes a VM belonging to the identity, and removes its from the
 # specified file. If this file is empty after this, it is deleted here.
 # $1 - VM name.
 # $2 - The file to search under ${IDENTITY_DIR}/ for deletion.
@@ -359,7 +359,7 @@ vm_delete_identity ()
     if [[ -n "${browser_vm}" ]]; then
         vm_delete "${browser_vm}" "browser_vm"
     fi
-    
+
     # Proxy VMs
     read -rA proxies < <(_identity_client_vms)
     for proxy in "${proxies[@]}"; do
@@ -373,7 +373,7 @@ vm_delete_identity ()
     fi
 
     # Net VM
-    
+
     # Other VMs that are tagged with the identity.
     read -rA other_vms < <(_vm_list)
     for vm in "${other_vms[@]}"; do

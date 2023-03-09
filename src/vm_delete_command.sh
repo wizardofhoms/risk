@@ -4,7 +4,7 @@ vm="${args['vm']}"
 
 identity_set
 
-# Check VM ownership 
+# Check VM ownership
 [[ "$(_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
 # Do not even attempt to delete if the VM provides network to another VM.
@@ -19,6 +19,6 @@ fi
 # Remove from autostart enabled commands
 sed -i /"$vm"/d "${IDENTITY_DIR}/autovm_starts"
 
-# Finally, delete the VM, 
+# Finally, delete the VM,
 _run qvm-remove "$vm"
 _catch "Failed to delete VM $vm:"

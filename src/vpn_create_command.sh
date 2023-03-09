@@ -1,5 +1,5 @@
 
-identity_set 
+identity_set
 
 # Prepare some settings for this new VM
 local name netvm clone template label
@@ -14,7 +14,7 @@ template="$(config_or_flag "${args['--template']}" VPN_TEMPLATE)"
 # 0 - Last-time setup
 
 # If the --name flag is empty, this means we are using a default one,
-# either the configured default one, or the name of the identity. 
+# either the configured default one, or the name of the identity.
 # In this case, we add 'vpn-1' to it (number varying).
 if [[ -z "${args['vm']}" ]]; then
     name="$(vpn_next_vm_name "$name")"
@@ -26,7 +26,7 @@ fi
 # or we create it from a template.
 if [[ "${args['--clone']}" -eq 1 ]]; then
     _info "Cloning VPN gateway (from VM $clone)"
-    vpn_clone "$name" "$netvm" "$label" "$clone" 
+    vpn_clone "$name" "$netvm" "$label" "$clone"
 else
     _info "Creating VPN gateway (from template $template)"
     vpn_create "$name" "$netvm" "$label" "$template"
@@ -44,7 +44,7 @@ args['vm']="$name"
 risk_vpn_setup_command
 
 # If the VM is marked autostart
-if [[ -n ${args['--enable']} ]]; then 
+if [[ -n ${args['--enable']} ]]; then
     _verbose "Enabling VM to autostart"
     risk_vpn_enable_command
 fi

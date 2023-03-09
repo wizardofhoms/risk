@@ -18,8 +18,8 @@ fi
 # Start all enabled identity machines
 read -rA enabled_vms < <(_identity_autovm_starts)
 for vm in "${enabled_vms[@]}"; do
-    if [[ -z "${vm}" ]]; then 
-        continue 
+    if [[ -z "${vm}" ]]; then
+        continue
     fi
     _info "Starting VM ${vm}"
     _run vm_start "${vm}"

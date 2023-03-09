@@ -6,7 +6,7 @@ vm="${args['vault_vm']-$(config_get VAULT_VM)}"
 
 local error_invalid_vm error_device
 
-# If the validations were not performed because 
+# If the validations were not performed because
 # we use a default environment variable for the
 # vault VM, perform them again here.
 error_invalid_vm=$(validate_vm_exists "$vm")

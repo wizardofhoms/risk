@@ -11,8 +11,8 @@ active_identity="$(_identity_active_or_specified)"
 
 # If the VM does not belong to any identity, then we don't have
 # to interact with any of them, and this branch is skipped.
-# 
-# However if the VM does not belong the active identity, we must: 
+#
+# However if the VM does not belong the active identity, we must:
 if [[ -n "$owner" ]] && [[ $owner != "$active_identity" ]]; then
     # Close the active identity
     _info "Closing identity $active_identity"

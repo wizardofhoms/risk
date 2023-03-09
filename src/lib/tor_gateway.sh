@@ -13,7 +13,7 @@ tor_gateway_create ()
 
     _info "Creating TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_template)"
     _run qvm-create "${gw}" --property netvm="$netvm" --label "$gw_label" --template "$gw_template"
-    _run qvm-prefs "$gw" provides_network true 
+    _run qvm-prefs "$gw" provides_network true
 
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
@@ -34,7 +34,7 @@ tor_gateway_clone ()
     _run qvm-clone "${gw_clone}" "${gw}"
     _catch "Failed to clone VM ${gw_clone}"
 
-    # For now disposables are not allowed, since it would create too many VMs, 
+    # For now disposables are not allowed, since it would create too many VMs,
     # and complicate a bit the setup steps for VPNs. If the clone is a template
     # for disposables, unset it
     local disp_template

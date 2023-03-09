@@ -12,7 +12,7 @@ check_valid_netvm ()
 
     # Or if the owner is either non-existant or not the good one, we must fail.
     owner="$(_vm_owner "$vm")"
-    [[ -n "$owner" ]] || _failure "VM $vm has no RISKS owner. Aborting" 
+    [[ -n "$owner" ]] || _failure "VM $vm has no RISKS owner. Aborting"
     [[ "$owner" == "$IDENTITY" ]] || _failure "VM $vm does not belong to identity $IDENTITY"
 
     # If there is not network VM, there is nothing to do
@@ -27,7 +27,7 @@ check_valid_netvm ()
 
     # Or check if the netVM is in one of the identity proxies, or if its the default VM
     _vm_is_identity_proxy "$netvm" || _failure "NetworkVM $vm is not listed as one of the identity's proxies"
-    
+
     # Else, we go on with the netvm and do the same steps
     check_valid_netvm "$netvm"
 }
@@ -53,7 +53,7 @@ network_check_identity_chain ()
 # fail_vm_provides_network fails if the VM provides network to any other VM
 fail_vm_provides_network ()
 {
-    local vm="$1" 
+    local vm="$1"
     local vms connected_vms
 
     # If it does not provide network at all, don't go further.

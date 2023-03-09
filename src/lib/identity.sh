@@ -9,7 +9,7 @@
 # identity that should be used, in case the argument is empty or none.
 #
 # $1 - The identity to use.
-identity_set () 
+identity_set ()
 {
     local identity="$1"
 
@@ -21,7 +21,7 @@ identity_set ()
     IDENTITY_DIR="${RISK_IDENTITIES_DIR}/${IDENTITY}"
 }
 
-# Upon unlocking a given identity, sets the name as an ENV 
+# Upon unlocking a given identity, sets the name as an ENV
 # variable that we can use in further functions and commands.
 # $1 - The name to use. If empty, just resets the identity.
 identity_set_active ()
@@ -36,8 +36,8 @@ identity_set_active ()
         return
     fi
 
-    
-    # If we don't have a file containing the 
+
+    # If we don't have a file containing the
     # identity name, populate it.
     if [[ ! -e ${RISK_IDENTITY_FILE} ]]; then
         print "$1" > "${RISK_IDENTITY_FILE}"
@@ -68,7 +68,7 @@ identity_delete_directory ()
 }
 
 # Returns 0 if an identity is unlocked, 1 if not.
-_identity_active () 
+_identity_active ()
 {
     local active_identity
 
@@ -125,7 +125,7 @@ identity_check_none_active ()
 identity_check_exists ()
 {
     # Get the resulting encrypted name
-    local encrypted_identity 
+    local encrypted_identity
     encrypted_identity="$(_encrypt_filename "${IDENTITY}")"
 
     # And check the directory exists
@@ -163,7 +163,7 @@ _identity_browser_vm ()
     cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null
 }
 
-# _identity_proxies returns an array of proxy VMs 
+# _identity_proxies returns an array of proxy VMs
 # (VPNs and TOR gateways for the current identity)
 _identity_proxies ()
 {
@@ -194,12 +194,12 @@ _identity_autovm_starts ()
 
 # _get_name either returns the name given as parameter, or
 # generates a random (burner) one and prints it to the screen.
-_get_name () 
+_get_name ()
 {
     local name
 
     if [[ -z "${1}" ]] && [[ "${args['--burner']}" -eq 0 ]]; then
-        _failure "Either an identity name is required, or the --burner flag" 
+        _failure "Either an identity name is required, or the --burner flag"
     fi
 
     # Either use the provided one
@@ -213,7 +213,7 @@ _get_name ()
     print "${name}"
 }
 
-# _get_mail returns a correctly formatted mail given either a fully specified 
+# _get_mail returns a correctly formatted mail given either a fully specified
 # one as positional, or a generated/concatenated one from the username argument.
 _get_mail ()
 {
@@ -224,7 +224,7 @@ _get_mail ()
 
     email="${args['--mail']}"
 
-    # Return either the mail flag with the name 
+    # Return either the mail flag with the name
     [[ -n "${email}" ]] && print "${name}@${email}"
     # Or the lowercase name without spaces
     print "${name// /_}"
@@ -232,7 +232,7 @@ _get_mail ()
 
 # _get_expiry returns a correctly formatted expiry date for a GPG key.
 # If no arguments are passed to the call, the expiry date is never.
-_get_expiry () 
+_get_expiry ()
 {
     local expiry
 
@@ -240,7 +240,7 @@ _get_expiry ()
         expiry_date="never"
     else
         expiry="${1}"
-        expiry_date="$(date +"%Y-%m-%d" --date="${expiry}")" 
+        expiry_date="$(date +"%Y-%m-%d" --date="${expiry}")"
     fi
 
     print "${expiry_date}"

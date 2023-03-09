@@ -12,13 +12,13 @@ commands:
     help: Verify the authenticity/signatures and reputation of an onion URL.
     args:
       - name: url
-        help: URL to browse
+        help: URL to verify 
         required: false
   - name: bookmark
     help: Add an onion to the user/system bookmarks without verifying it.
     args:
       - name: url
-        help: URL to browse
+        help: URL to bookmark (optional, if empty the split-bookmarks file is opened, or the user is prompted for URL/info)
         required: false
     flags:
       - long: --user
@@ -32,11 +32,11 @@ commands:
     help: Add an onion to the system list of blacklisted onions
     args:
       - name: url
-        help: URL to browse
+        help: URL to blacklist 
         required: false
   - name: news 
     help: refresh the authenticity files, refered links and current news for an onion.
     args:
       - name: url
-        help: URL to browse
+        help: URL to fetch news for 
         required: false

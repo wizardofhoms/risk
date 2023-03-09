@@ -4,7 +4,7 @@ read -rA vms < <(_vm_args "${args['vms']}" "${other_args[@]}")
 
 # Update matching VMs.
 if [[ -n "${vms[*]}" ]]; then
-    _info "Updating following VMs:" 
+    _info "Updating following VMs:"
     for template in "${vms[@]}"; do
             _info "$template"
     done
@@ -22,7 +22,7 @@ fi
 # If torbrowser update is required, get identity browsing VM template and update
 # We need to know for which identity to update, so we need one active.
 if [[ ${args['vms']} == torbrowser ]] || [[ ${other_args[(r)torbrowser]} == torbrowser ]]; then
-    identity_set 
+    identity_set
 
     local browser_vm browser_template
     browser_vm="$(_identity_browser_vm)"

@@ -1,5 +1,5 @@
 
-# _encrypt_filename takes a filename as input, and uses the currently 
+# _encrypt_filename takes a filename as input, and uses the currently
 # set identity to produce an random name to use as a file/directory name.
 _encrypt_filename ()
 {

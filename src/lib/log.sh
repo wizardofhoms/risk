@@ -57,9 +57,9 @@ function is_verbose_set () {
 }
 
 # Messaging function with pretty coloring
-function _msg() 
+function _msg()
 {
-    # Check if we have been provided a section name, 
+    # Check if we have been provided a section name,
     # and if not, that the section is set to a default.
     if [[ ${#@} -lt 3 ]]; then
         local progname="$section"
@@ -159,7 +159,7 @@ function _warning() {
 # of an error exit code, and then looks at the contents of erroring
 # command's stderr buffer, which is printed just below our message.
 # We then exit the program.
-function _failure() 
+function _failure()
 {
 	typeset -i exitcode=${exitv:-1}
 

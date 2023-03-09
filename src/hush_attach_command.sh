@@ -6,7 +6,7 @@ local must_mount
 block="${args['device']-$(config_get SDCARD_BLOCK)}"
 vm="${args['vault_vm']-$(config_get VAULT_VM)}"
 
-# If the validations were not performed because 
+# If the validations were not performed because
 # we use a default environment variable for the
 # vault VM, perform them again here.
 error_invalid_vm=$(validate_valid_vaultvm "$vm")
@@ -25,7 +25,7 @@ qvm-ls | grep Running | awk {'print $1'} | grep '^'"${vm}"'$' &> /dev/null
 if [ "$?" != "0" ]; then
     _verbose "Starting VM $vm"
     qvm-start "${vm}"
-	sleep 5 
+	sleep 5
 fi
 
 # finally attach the sdcard encrypted partition to the qube

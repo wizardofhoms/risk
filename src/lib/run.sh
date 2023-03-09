@@ -1,6 +1,6 @@
 
 COMMAND_STDOUT=''           # Stores a command's stdout output.
-COMMAND_STDERR=''           # Stores a command's stderr output.   
+COMMAND_STDERR=''           # Stores a command's stderr output.
 
 # do a command, splitting and storing stdout/stderr output and printing
 # the former to screen only if the command is ran with verbose flag.
@@ -35,7 +35,7 @@ _run ()
 # run a command in a qube
 # $1 - Qube name
 # $@ - Command string to run
-_run_qube () 
+_run_qube ()
 {
     local vm="$1" ; shift
     local command="$*"
@@ -72,7 +72,7 @@ _run_qube ()
 }
 
 # _run_exec is a simplified version of _run_qube, without stdout/err split & store.
-_run_exec () 
+_run_exec ()
 {
     local vm="$1"
     shift
@@ -88,7 +88,7 @@ _run_exec ()
 }
 
 # _run_qube_term spawns a terminal on a target qube, with an associated command to run.
-_run_qube_term () 
+_run_qube_term ()
 {
     local vm="$1" ; shift
     local command="$*"
@@ -108,7 +108,7 @@ _run_qube_term ()
 # catch $ret "hush" "Failed to execute this command"
 function _catch ()
 {
-    local ret="$?" 
+    local ret="$?"
 
     if [[ ! $ret -eq 0 ]]; then
         _failure "$@"

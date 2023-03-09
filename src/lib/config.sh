@@ -13,14 +13,14 @@
 ##
 config_init() {
   RISK_CONFIG_FILE=${RISK_CONFIG_FILE-${RISK_DIR}/config.ini}
-  [[ -f "$RISK_CONFIG_FILE" ]] || { 
+  [[ -f "$RISK_CONFIG_FILE" ]] || {
       _info "Writing default configuration file to ${RISK_CONFIG_FILE}"
-      cat << EOF > "$RISK_CONFIG_FILE" 
+      cat << EOF > "$RISK_CONFIG_FILE"
 ; RISKS Dom0 Configuration file
 
 ; You can either edit this file in place, set values
 ; through the 'risk config' command.
- 
+
 ; Default Templates =============================================== #
 
 ; Default Whonix Workstation TemplateVM for TOR clients
@@ -103,7 +103,7 @@ config_get() {
   local value=""
 
   config_init
-  
+
   while IFS= read -r line || [ -n "$line" ]; do
     if [[ $line =~ $regex ]]; then
       value="${BASH_REMATCH[2]}" # Changed to 2 because ZSH indexes start at 1
@@ -130,7 +130,7 @@ config_set() {
   local output=""
   local found_key=""
   local newline
-  
+
   while IFS= read -r line || [ -n "$line" ]; do
     newline=$line
     if [[ $line =~ $regex ]]; then
@@ -191,7 +191,7 @@ config_keys() {
 
   local keys=()
   local key
-  
+
   while IFS= read -r line || [ -n "$line" ]; do
     if [[ $line =~ $regex ]]; then
       key="${BASH_REMATCH[1]}"

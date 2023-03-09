@@ -17,7 +17,7 @@ vpn_create ()
     echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
 }
 
-# Creates a new VPN gateway from an existing VPN AppVM 
+# Creates a new VPN gateway from an existing VPN AppVM
 vpn_clone ()
 {
     local gw="${1}"
@@ -30,7 +30,7 @@ vpn_clone ()
     _run qvm-clone "${gw_clone}" "${gw}"
     _catch "Failed to clone VM ${gw_clone}"
 
-    # For now disposables are not allowed, since it would create too many VMs, 
+    # For now disposables are not allowed, since it would create too many VMs,
     # and complicate a bit the setup steps for VPNs. If the clone is a template
     # for disposables, unset it
     local disp_template
@@ -77,11 +77,11 @@ vpn_import_configs ()
         # If the file is a zip file, unzip it in the configs directory
         # and immediately run the setup prompt to choose one.
         if [[ $new_path:t:e == "zip" ]]; then
-            local configs_dir="/rw/config/vpn/configs" 
+            local configs_dir="/rw/config/vpn/configs"
             _verbose "Unzipping files into $configs_dir"
-            _run_exec "$name" mkdir -p "$configs_dir" 
-            _run_exec "$name" unzip -j -d "$configs_dir" 
-            _run_exec "$name" /usr/local/bin/setup_VPN 
+            _run_exec "$name" mkdir -p "$configs_dir"
+            _run_exec "$name" unzip -j -d "$configs_dir"
+            _run_exec "$name" /usr/local/bin/setup_VPN
         else
             _verbose "Copying file directly to the VPN client config path"
             _run_exec "$name" mv "$new_path" "$client_conf_path"
@@ -116,7 +116,7 @@ vpn_next_vm_name ()
 }
 
 # vpn_check__vm_is_identity_proxy fails if the VM is not listed as an identity proxy.
-vpn_check__vm_is_identity_proxy () 
+vpn_check__vm_is_identity_proxy ()
 {
     local name="$1"
     local proxies

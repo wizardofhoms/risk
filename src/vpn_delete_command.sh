@@ -3,7 +3,7 @@ local name
 
 name="${args['vm']}"
 
-identity_set 
+identity_set
 
 # Check that the selected VM is indeed one of the identity
 # proxy VMs, so that we don't accidentally delete another one.
@@ -25,7 +25,7 @@ if [[ $netvm == "$name" ]]; then
 
     if [[ -n $tor_gw ]]; then
         _info -n "Updating the default identity NetVM to $tor_gw"
-        echo "$tor_gw" > "${IDENTITY_DIR}/net_vm" 
+        echo "$tor_gw" > "${IDENTITY_DIR}/net_vm"
     else
         _info -n "The identity has no default NetVM anymore, please set it."
     fi
@@ -42,10 +42,10 @@ _catch "Failed to delete (fully or partially) VM $name"
 
 # Remove from VMs marked autostart
 sed -i /"$name"/d "${IDENTITY_DIR}/autovm_starts"
-# And remove from proxy VMs 
+# And remove from proxy VMs
 sed -i /"$name"/d "${IDENTITY_DIR}/proxy_vms"
 
-# Finally, delete the VM, 
+# Finally, delete the VM,
 _run qvm-remove "$name"
 _catch "Failed to delete VM $name:"
 

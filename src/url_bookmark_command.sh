@@ -4,15 +4,15 @@ local bookmark_entry    # Complete entry (date/url/title)
 local url               # The URL to bookmark
 local title             # The URL page title to use if/when prompting the user for input.
 
-_set_identity ""
+identity_set ""
 
 url="${args['url']}"
 split_vm="$(config_get SPLIT_BROWSER)"
-active_vm="$(get_active_window_vm)"
+active_vm="$(_vm_focused)"
 
 ## 1 - Get the bookmark entry from either split-browser file, args, or user-input in prompt.
 if [[ -z "${url}" ]]; then
-    if split_bookmark_file_is_empty; then
+    if _web_bookmarks_empty; then
         _info "No bookmarks file in ${split_vm}, prompting user to enter it."
         zenity_prompt="zenity --text 'URL Bookmark' --forms --add-entry='URL' --add-entry='Page Title' --separator=\$'\t'"
         result="$(qvm-run --pass-io "${active_vm}" "${zenity_prompt}")"
@@ -20,7 +20,7 @@ if [[ -z "${url}" ]]; then
         title="$( echo "${result}" | cut -f 2- -d $'\t')"
     else
         _info "No URL argument, starting dmenu with bookmarks list in ${split_vm}"
-        bookmark_entry="$(pop_bookmark)"
+        bookmark_entry="$(web_pop_identity_bookmark)"
         url="$( echo "${bookmark_entry}" | awk '{print $2}' )"
         title="$( echo "${bookmark_entry}" | awk '{print $3}' )"
     fi

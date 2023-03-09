@@ -23,14 +23,14 @@ _in_section "identity" 8 && _info "Creating infrastructure for identity $IDENTIT
 # If the user wants to use a different vm_name for the VMs
 vm_name="${args['--prefix']-$IDENTITY}"
 _info "Using '$name' as VM prefix"
-echo "$vm_name" > "${IDENTITY_DIR}/vm_name" 
+echo "$vm_name" > "${IDENTITY_DIR}/vm_name"
 
 label="${args['--label']-orange}"
 _info "Using label '$label' as VM default label"
-echo "$vm_name" > "${IDENTITY_DIR}/vm_label" 
+echo "$vm_name" > "${IDENTITY_DIR}/vm_label"
 
 # Prepare the root NetVM for this identity
-config_get DEFAULT_NETVM > "${IDENTITY_DIR}/net_vm" 
+config_get DEFAULT_NETVM > "${IDENTITY_DIR}/net_vm"
 
 # Network VMs ==============================================================
 _in_section "network" && _info "Creating network VMs"
@@ -53,7 +53,7 @@ _in_section "web" && _info "Creating browsing VMs"
 web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
 # Browser VMs are disposable, but we make a template for this identity,
-# since we might  either modify stuff in there, and we need them at least 
+# since we might  either modify stuff in there, and we need them at least
 # to have a different network route.
 if [[ -n ${args['--clone-web-from']} ]]; then
     clone="${args['--clone-web-from']}"

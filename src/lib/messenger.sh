@@ -1,7 +1,7 @@
 
 # Creates a new Messaging AppVM.
 # $1 - Name to use for new VM
-# $2 - Netvm for this VM 
+# $2 - Netvm for this VM
 # $3 - Label
 create_messenger_vm ()
 {
@@ -17,7 +17,7 @@ create_messenger_vm ()
     _info "Creating messaging VM (name: $msg / netvm: $netvm / template: $ws_template)"
 }
 
-# very similar to create_messenger_vm , except that we clone 
+# very similar to create_messenger_vm , except that we clone
 # an existing AppVM instead of creating a new one from a Template.
 clone_messenger_vm ()
 {

@@ -26,7 +26,7 @@ if device_backup_mounted_on "${VAULT_VM}"; then
     fi
 fi
 
-_run_qubes_term "${VAULT_VM}" "${delete_vault_cmd[@]}"
+_run_qube_term "${VAULT_VM}" "${delete_vault_cmd[@]}"
 
 # Finally, delete its dom0 directory.
 identity_delete_directory

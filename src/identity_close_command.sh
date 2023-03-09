@@ -5,7 +5,7 @@ local active_identity
 active_identity="$(identity_get_active)"
 if [[ -z $active_identity ]]; then
     _info "No active identity to close"
-    exit 0
+    return
 fi
 
 # If the identity browser VM is used with the split-browser backend.

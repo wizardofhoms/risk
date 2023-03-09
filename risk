@@ -722,13 +722,19 @@ risk_identity_delete_usage() {
   fi
 
   printf "%s\n" "$(bold "Usage:")"
-  printf "  risk identity delete IDENTITY\n"
+  printf "  risk identity delete IDENTITY [OPTIONS]\n"
   printf "  risk identity delete --help | -h\n"
   echo
 
   # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_flags
+    # :flag.usage
+    printf "  %s\n" "--backup"
+    printf "    If a backup medium is mounted in vault, also delete the backup if it exists.\n"
+    echo
 
     # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
@@ -2232,8 +2238,8 @@ device_backup_mounted_on ()
     local backup_status
 
     backup_status="$(qvm-run --pass-io "${vm}" 'risks backup status')"
-    if [[ ${backup_status} ~= 'No backup device mounted' ]]; then
-        _fail "Failed no backup"
+    if [[ ${backup_status} =~ 'No backup device mounted' ]]; then
+        return 1
     fi
 }
 
@@ -4248,7 +4254,7 @@ risk_identity_delete_command() {
       fi
   fi
 
-  _run_qubes_term "${VAULT_VM}" "${delete_vault_cmd[@]}"
+  _run_qube_term "${VAULT_VM}" "${delete_vault_cmd[@]}"
 
   # Finally, delete its dom0 directory.
   identity_delete_directory
@@ -4318,7 +4324,7 @@ risk_identity_close_command() {
   active_identity="$(identity_get_active)"
   if [[ -z $active_identity ]]; then
       _info "No active identity to close"
-      exit 0
+      return
   fi
 
   # If the identity browser VM is used with the split-browser backend.
@@ -4382,8 +4388,6 @@ risk_identity_stop_command() {
 
   _info "Closing identity in vault"
   risk_identity_close_command
-
-  _success "Done"
 
 }
 
@@ -6403,6 +6407,13 @@ risk_identity_delete_parse_requirements() {
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
+      # :flag.case
+      --backup)
+
+        # :flag.case_no_arg
+        args['--backup']=1
+        shift
+        ;;
 
       -?*)
         printf "invalid option: %s\n" "$key" >&2
@@ -6428,7 +6439,7 @@ risk_identity_delete_parse_requirements() {
 
   # :command.required_args_filter
   if [[ -z ${args['identity']+x} ]]; then
-    printf "missing required argument: IDENTITY\nusage: risk identity delete IDENTITY\n" >&2
+    printf "missing required argument: IDENTITY\nusage: risk identity delete IDENTITY [OPTIONS]\n" >&2
     exit 1
   fi
 

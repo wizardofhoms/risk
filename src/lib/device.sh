@@ -18,7 +18,7 @@ device_backup_mounted_on ()
     local backup_status
 
     backup_status="$(qvm-run --pass-io "${vm}" 'risks backup status')"
-    if [[ ${backup_status} ~= 'No backup device mounted' ]]; then
-        _fail "Failed no backup"
+    if [[ ${backup_status} =~ 'No backup device mounted' ]]; then
+        return 1
     fi
 }

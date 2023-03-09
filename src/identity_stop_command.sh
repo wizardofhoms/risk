@@ -8,5 +8,3 @@ vm_shutdown_identity
 
 _info "Closing identity in vault"
 risk_identity_close_command
-
-_success "Done"

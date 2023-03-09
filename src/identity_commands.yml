@@ -73,6 +73,9 @@ commands:
       - name: identity
         help: "Identity to delete along with machines"
         required: true
+    flags:
+      - long: --backup
+        help: If a backup medium is mounted in vault, also delete the backup if it exists.
 
   - name: nake 
     help: Delete the VMs belonging to an identity, but not the identity in the vault.

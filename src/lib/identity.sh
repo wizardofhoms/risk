@@ -191,3 +191,57 @@ _identity_autovm_starts ()
     read -d '' -r -A clients <"${IDENTITY_DIR}/autovm_starts"
     echo "${clients[@]}"
 }
+
+# _get_name either returns the name given as parameter, or
+# generates a random (burner) one and prints it to the screen.
+_get_name () 
+{
+    local name
+
+    if [[ -z "${1}" ]] && [[ "${args['--burner']}" -eq 0 ]]; then
+        _failure "Either an identity name is required, or the --burner flag" 
+    fi
+
+    # Either use the provided one
+    if [[ -n "${1}" ]]; then
+        name="${1}"
+    elif [[ "${args['--burner']}" -eq 1 ]]; then
+        name="$(rig -m | head -n 1)"
+        name="${name// /_}"
+    fi
+
+    print "${name}"
+}
+
+# _get_mail returns a correctly formatted mail given either a fully specified 
+# one as positional, or a generated/concatenated one from the username argument.
+_get_mail ()
+{
+    local name="$1"
+    local email="$2"
+
+    [[ -n "${email}" ]] && print "${email}" && return
+
+    email="${args['--mail']}"
+
+    # Return either the mail flag with the name 
+    [[ -n "${email}" ]] && print "${name}@${email}"
+    # Or the lowercase name without spaces
+    print "${name// /_}"
+}
+
+# _get_expiry returns a correctly formatted expiry date for a GPG key.
+# If no arguments are passed to the call, the expiry date is never.
+_get_expiry () 
+{
+    local expiry
+
+    if [[ -z "${1}" ]]; then
+        expiry_date="never"
+    else
+        expiry="${1}"
+        expiry_date="$(date +"%Y-%m-%d" --date="${expiry}")" 
+    fi
+
+    print "${expiry_date}"
+}

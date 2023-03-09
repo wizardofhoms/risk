@@ -5,7 +5,7 @@ commands:
   - name: create 
     help: "Creates associated VMs for an identity (joe-gw, joe-vpn, joe-msg, joe-web)"
     args:
-      - name: identity
+      - name: name 
         help: "Name of the identity for which to initialize infrastructure"
         required: true
       - name: email 
@@ -75,6 +75,7 @@ commands:
         required: true
     flags:
       - long: --backup
+        short: -b
         help: If a backup medium is mounted in vault, also delete the backup if it exists.
 
   - name: nake 

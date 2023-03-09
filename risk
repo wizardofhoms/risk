@@ -566,7 +566,7 @@ risk_identity_create_usage() {
   fi
 
   printf "%s\n" "$(bold "Usage:")"
-  printf "  risk identity create IDENTITY EMAIL EXPIRY_DATE [OPTIONS]\n"
+  printf "  risk identity create NAME EMAIL EXPIRY_DATE [OPTIONS]\n"
   printf "  risk identity create --help | -h\n"
   echo
 
@@ -624,7 +624,7 @@ risk_identity_create_usage() {
     printf "%s\n" "$(bold "Arguments:")"
 
     # :argument.usage
-    printf "  %s\n" "$(blue "IDENTITY")"
+    printf "  %s\n" "$(blue "NAME")"
     printf "    Name of the identity for which to initialize infrastructure\n"
     echo
 
@@ -732,7 +732,7 @@ risk_identity_delete_usage() {
 
     # :command.usage_flags
     # :flag.usage
-    printf "  %s\n" "--backup"
+    printf "  %s\n" "--backup, -b"
     printf "    If a backup medium is mounted in vault, also delete the backup if it exists.\n"
     echo
 
@@ -2443,6 +2443,66 @@ _identity_autovm_starts ()
     echo "${clients[@]}"
 }
 
+# _get_name either returns the name given as parameter, or
+# generates a random (burner) one and prints it to the screen.
+_get_name ()
+
+{
+    local name
+
+    if [[ -z "${1}" ]] && [[ "${args['--burner']}" -eq 0 ]]; then
+        _failure "Either an identity name is required, or the --burner flag"
+
+    fi
+
+    # Either use the provided one
+    if [[ -n "${1}" ]]; then
+        name="${1}"
+    elif [[ "${args['--burner']}" -eq 1 ]]; then
+        name="$(rig -m | head -n 1)"
+        name="${name// /_}"
+    fi
+
+    print "${name}"
+}
+
+# _get_mail returns a correctly formatted mail given either a fully specified
+
+# one as positional, or a generated/concatenated one from the username argument.
+_get_mail ()
+{
+    local name="$1"
+    local email="$2"
+
+    [[ -n "${email}" ]] && print "${email}" && return
+
+    email="${args['--mail']}"
+
+    # Return either the mail flag with the name
+
+    [[ -n "${email}" ]] && print "${name}@${email}"
+    # Or the lowercase name without spaces
+    print "${name// /_}"
+}
+
+# _get_expiry returns a correctly formatted expiry date for a GPG key.
+# If no arguments are passed to the call, the expiry date is never.
+_get_expiry ()
+
+{
+    local expiry
+
+    if [[ -z "${1}" ]]; then
+        expiry_date="never"
+    else
+        expiry="${1}"
+        expiry_date="$(date +"%Y-%m-%d" --date="${expiry}")"
+
+    fi
+
+    print "${expiry_date}"
+}
+
 # src/lib/log.sh
 
 
@@ -4037,10 +4097,12 @@ risk_identity_create_command() {
   # Variables setup ==========================================================
 
   # Variables populated from command-line args/flags
-  local name="${args['identity']}"
-  local email="${args['email']}"
-  local expiry="${args['expiry_date']}"
-  local pendrive="${args['--backup']}"
+  name="${args['name']}"
+  name="$(_get_name "${name}")"
+  identity="${name// /_}"
+  expiry="$(_get_expiry "${args['expiry_date']}")"
+  email="$(_get_mail "${name}" "${args['email']}")"
+  pendrive="${args['--backup']}" # Backup is optional
 
   # Other variables
   local vm_name           # Default prefix to use for newly created vm (eg. 'joe' => joe-vpn, joe-web)
@@ -4051,7 +4113,7 @@ risk_identity_create_command() {
   local clone             # A variable that might be overritten several times, used to assign a VM to clone.
 
   # Propagate the identity and its settings (in the script only)
-  identity_set "${args['identity']}"
+  identity_set "${identity}"
 
   # Identity checks and basic setup ==========================================
 
@@ -6196,9 +6258,9 @@ risk_identity_create_parse_requirements() {
       *)
         # :command.parse_requirements_case
         # :command.parse_requirements_case_simple
-        if [[ -z ${args['identity']+x} ]]; then
+        if [[ -z ${args['name']+x} ]]; then
 
-          args['identity']=$1
+          args['name']=$1
           shift
         elif [[ -z ${args['email']+x} ]]; then
 
@@ -6219,16 +6281,16 @@ risk_identity_create_parse_requirements() {
   done
 
   # :command.required_args_filter
-  if [[ -z ${args['identity']+x} ]]; then
-    printf "missing required argument: IDENTITY\nusage: risk identity create IDENTITY EMAIL EXPIRY_DATE [OPTIONS]\n" >&2
+  if [[ -z ${args['name']+x} ]]; then
+    printf "missing required argument: NAME\nusage: risk identity create NAME EMAIL EXPIRY_DATE [OPTIONS]\n" >&2
     exit 1
   fi
   if [[ -z ${args['email']+x} ]]; then
-    printf "missing required argument: EMAIL\nusage: risk identity create IDENTITY EMAIL EXPIRY_DATE [OPTIONS]\n" >&2
+    printf "missing required argument: EMAIL\nusage: risk identity create NAME EMAIL EXPIRY_DATE [OPTIONS]\n" >&2
     exit 1
   fi
   if [[ -z ${args['expiry_date']+x} ]]; then
-    printf "missing required argument: EXPIRY_DATE\nusage: risk identity create IDENTITY EMAIL EXPIRY_DATE [OPTIONS]\n" >&2
+    printf "missing required argument: EXPIRY_DATE\nusage: risk identity create NAME EMAIL EXPIRY_DATE [OPTIONS]\n" >&2
     exit 1
   fi
 
@@ -6408,7 +6470,7 @@ risk_identity_delete_parse_requirements() {
     key="$1"
     case "$key" in
       # :flag.case
-      --backup)
+      --backup | -b)
 
         # :flag.case_no_arg
         args['--backup']=1

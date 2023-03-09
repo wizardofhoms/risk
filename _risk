@@ -193,11 +193,12 @@ _identity_commands ()
         'open:Open an identity and its associated builtin stores in the vault'
         'create:Create associated VMs for an identity (joe-gw, joe-vpn, joe-msg, joe-web, etc)'
         'delete:Destroys an identity and all its associated machines and data'
-        'close:Simply open the identity store in the vault'
+        'close:Simply close the identity stores in the vault'
         'start:Start the identity in the vault and all of its enabled VMs'
-        'stop:Stops all machines belonging to an identity, and close its vault if active.'
+        'stop:Stops all machines belonging to an identity, and close its vault if active'
         'equip:Creates the default infrastructure for an already exiting identity'
-        'restrict:Forbid VMs not belonging to the identity from split/copy features when not active '
+        'restrict:Forbid VMs not belonging to the identity from split/copy features when not active'
+        'nake:Delete the VMs belonging to an identity, but not the identity in the vault'
     )
     _describe -t commands 'identity commands' subcmds && ret=0
 }
@@ -226,7 +227,7 @@ _identity ()
                     '1:identity name:' \
                     && ret=0
                 ;;
-            start|open|delete)
+            start|open|delete|nake)
                 _arguments \
                     '1:identity name:' \
                     && ret=0
@@ -243,6 +244,8 @@ _identity_create ()
     _arguments -C \
         '--vault-only[Only create the identity in the vault: do not create any machines]' \
         '(-b --backup)'{-b,--backup}'[Device file of the backup drive (whole drive without partition number, eg. /dev/sdb)]:path to backup device in vault:($(_vault_devices))' \
+        '(-m --mail)'{-m,--mail}'[Mail provider to use for the GPG key (appended to the name when no full mail is given as arg)]:mail provider (without @):' \
+        '(-B --burner)'{-B,--burner}'[Generate a random username, and only generate GPG/Pass stores]' \
         "${_flags_vm_base[@]}" \
         "${_flags_init_tor[@]}" \
         "${_flags_init_web[@]}" \
@@ -254,13 +257,13 @@ _identity_create ()
     # Indications for the create identity command
     case "$state" in
         name)
-            _message "quoted string of the name, if spaces"
+            _message "quoted string of the name, if spaces (optional if --burner)"
             ;;
         recipient)
-            _message "mail address recipient to use for GPG" 
+            _message "mail address recipient to use for GPG (optional)" 
             ;;
         duration)
-            _message "quoted, human readable expiry duration for GPG keys" 
+            _message "quoted, human readable expiry duration for GPG keys (empty: no expiry)" 
             ;;
     esac
 }

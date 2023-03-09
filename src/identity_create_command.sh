@@ -2,10 +2,12 @@
 # Variables setup ==========================================================
 
 # Variables populated from command-line args/flags
-local name="${args['identity']}"
-local email="${args['email']}"
-local expiry="${args['expiry_date']}"
-local pendrive="${args['--backup']}" 
+name="${args['name']}"
+name="$(_get_name "${name}")"
+identity="${name// /_}"
+expiry="$(_get_expiry "${args['expiry_date']}")"
+email="$(_get_mail "${name}" "${args['email']}")"
+pendrive="${args['--backup']}" # Backup is optional
 
 # Other variables
 local vm_name           # Default prefix to use for newly created vm (eg. 'joe' => joe-vpn, joe-web)
@@ -16,8 +18,7 @@ local web_netvm         # NetVM for the Web browser VM
 local clone             # A variable that might be overritten several times, used to assign a VM to clone.
 
 # Propagate the identity and its settings (in the script only)
-identity_set "${args['identity']}"
-
+identity_set "${identity}"
 
 # Identity checks and basic setup ==========================================
 

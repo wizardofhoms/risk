@@ -3151,7 +3151,7 @@ _vm_owner ()
 }
 
 # Returns the template used by a given AppVM
-_vm_template ()
+_vm_updatevm_template ()
 {
     qvm-ls | grep "$(qubes-prefs updatevm)" | grep "TemplateVM" | awk '{print $1}'
 }
@@ -3217,7 +3217,7 @@ _vm_args ()
 
     # All updatable VMs, except the updater one
     read -rA can_update <<< "$(_vm_list_updatable)"
-    updatevm="$(_vm_template)"
+    updatevm="$(_vm_updatevm_template)"
     can_update=( ${can_update:#$~updatevm} )
 
     for word in "${vms[@]}"; do
@@ -3264,6 +3264,26 @@ _vm_is_identity_proxy ()
     done
 
     return $match
+}
+
+# _vm_root_template returns the updatable template of a given VM.
+# Example: if a disposable VM is given as argument, the first resolved
+# template is the dispvm template, which itself is an AppVM, so we get
+# the template of the dispvm template.
+_vm_root_template ()
+{
+    local vm="${1}"
+    local updateable
+
+    template="$(qvm-prefs "${vm}" template 2>/dev/null)"
+    updateable="$(qvm-prefs "${vm}" updateable 2>/dev/null)"
+
+    while [[ "${updateable}" == "False" ]]; do
+        template="$(qvm-prefs "${template}" template 2>/dev/null)"
+        updateable="$(qvm-prefs "${template}" updateable 2>/dev/null)"
+    done
+
+    echo "${template}"
 }
 
 # ========================================================================================
@@ -4107,7 +4127,8 @@ risk_identity_create_command() {
   # Other variables
   local vm_name           # Default prefix to use for newly created vm (eg. 'joe' => joe-vpn, joe-web)
   local label             # Default label color to use for all VMs, varies if not specified
-  local backup_args       # If identity is to be immediately backed up, this is the flag + the /dev/path in vault
+  local other_args        # Other args/flags to pass to vault identity create command (backup/burner, etc)
+
   local gw_netvm          # NetVM for the tor gateway
   local web_netvm         # NetVM for the Web browser VM
   local clone             # A variable that might be overritten several times, used to assign a VM to clone.
@@ -4153,11 +4174,14 @@ risk_identity_create_command() {
   _in_section "identity" 8 && _info "Creating identity in vault"
 
   if [[ -n "$pendrive" ]]; then
-      backup_args=(--backup "$pendrive")
+      other_args=(--backup "$pendrive")
+  fi
+  if [[ "${args['--burner']}" -eq 1 ]]; then
+      other_args+=( --burner )
   fi
 
   # Create it
-  _run_qube_term "$VAULT_VM" risks identity create "$name" "$email" "$expiry" "${backup_args[@]}"
+  _run_qube_term "$VAULT_VM" risks identity create "$name" "$email" "$expiry" "${other_args[@]}"
 
   _catch "Failed to create identity in vault"
 
@@ -5023,14 +5047,9 @@ risk_qubes_update_command() {
   # src/qubes_update_command.sh
   # Analyze the arguments and extract all VMs
   # corresponding to those names/groups.
-  local vms=()
-  read -rA vms <<< $(_vm_args "${args['vms']}" "${other_args[@]}")
+  read -rA vms < <(_vm_args "${args['vms']}" "${other_args[@]}")
 
-  # Otherwise use templates of identity VMs
-  # if [[ "${args['--identity']}" -eq 1 ]]; then
-  # fi
-
-  # Update VMs
+  # Update matching VMs.
   if [[ -n "${vms[*]}" ]]; then
       _info "Updating following VMs:"
 
@@ -5049,6 +5068,19 @@ risk_qubes_update_command() {
   fi
 
   # If torbrowser update is required, get identity browsing VM template and update
+  # We need to know for which identity to update, so we need one active.
+  if [[ ${args['vms']} == torbrowser ]] || [[ ${other_args[(r)torbrowser]} == torbrowser ]]; then
+      identity_set
+
+      local browser_vm browser_template
+      browser_vm="$(_identity_browser_vm)"
+
+      if [[ -n "${browser_vm}" ]]; then
+          browser_template="$(_vm_root_template "${browser_vm}")"
+          _info "Updating Tor browser in ${browser_template}"
+          _run_qube_term "${browser_template}" sudo update-torbrowser
+      fi
+  fi
 
 }
 

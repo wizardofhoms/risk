@@ -12,7 +12,7 @@ pendrive="${args['--backup']}" # Backup is optional
 # Other variables
 local vm_name           # Default prefix to use for newly created vm (eg. 'joe' => joe-vpn, joe-web)
 local label             # Default label color to use for all VMs, varies if not specified
-local backup_args       # If identity is to be immediately backed up, this is the flag + the /dev/path in vault
+local other_args        # Other args/flags to pass to vault identity create command (backup/burner, etc) 
 local gw_netvm          # NetVM for the tor gateway
 local web_netvm         # NetVM for the Web browser VM
 local clone             # A variable that might be overritten several times, used to assign a VM to clone.
@@ -56,11 +56,14 @@ config_get DEFAULT_NETVM > "${IDENTITY_DIR}/net_vm"
 _in_section "identity" 8 && _info "Creating identity in vault"
 
 if [[ -n "$pendrive" ]]; then
-    backup_args=(--backup "$pendrive")
+    other_args=(--backup "$pendrive")
+fi
+if [[ "${args['--burner']}" -eq 1 ]]; then
+    other_args+=( --burner )
 fi
 
 # Create it
-_run_qube_term "$VAULT_VM" risks identity create "$name" "$email" "$expiry" "${backup_args[@]}" 
+_run_qube_term "$VAULT_VM" risks identity create "$name" "$email" "$expiry" "${other_args[@]}" 
 _catch "Failed to create identity in vault"
 
 # And open it, in case the last command backed up the identity, which closed it.

@@ -15,7 +15,7 @@ _vm_owner ()
 }
 
 # Returns the template used by a given AppVM
-_vm_template ()
+_vm_updatevm_template ()
 {
     qvm-ls | grep "$(qubes-prefs updatevm)" | grep "TemplateVM" | awk '{print $1}'
 }
@@ -77,7 +77,7 @@ _vm_args ()
 
     # All updatable VMs, except the updater one
     read -rA can_update <<< "$(_vm_list_updatable)"
-    updatevm="$(_vm_template)"
+    updatevm="$(_vm_updatevm_template)"
     can_update=( ${can_update:#$~updatevm} )
 
     for word in "${vms[@]}"; do
@@ -124,6 +124,26 @@ _vm_is_identity_proxy ()
     done
 
     return $match
+}
+
+# _vm_root_template returns the updatable template of a given VM.
+# Example: if a disposable VM is given as argument, the first resolved
+# template is the dispvm template, which itself is an AppVM, so we get
+# the template of the dispvm template.
+_vm_root_template ()
+{
+    local vm="${1}"
+    local updateable 
+
+    template="$(qvm-prefs "${vm}" template 2>/dev/null)"
+    updateable="$(qvm-prefs "${vm}" updateable 2>/dev/null)"
+
+    while [[ "${updateable}" == "False" ]]; do
+        template="$(qvm-prefs "${template}" template 2>/dev/null)"
+        updateable="$(qvm-prefs "${template}" updateable 2>/dev/null)"
+    done
+
+    echo "${template}"
 }
 
 # ========================================================================================

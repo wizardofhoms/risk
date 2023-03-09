@@ -601,6 +601,27 @@ _known_vms ()
     _alternative "VMs:VMs:($VM_COMPLETIONS)"
 }
 
+# returns all VMs that can be updated. Quite slow to return results.
+_updateable_vms ()
+{
+    local ret=
+    # VMS
+    local VM_COMPLETIONS=()
+    local updateable_vms=()
+    while IFS= read -r VM_NAME ; do
+
+        VM_COMPLETIONS+=("${VM_NAME}")
+    done < <(qvm-ls --raw-list | sort)
+
+    for vm in "${VM_COMPLETIONS[@]}"; do
+        if [[ "$(qvm-prefs "${vm}" updateable 2>/dev/null)" == True ]]; then
+            updateable_vms+=( "${vm}" )
+        fi
+    done
+
+    _alternative "updateable VMs:updateable VMs:($updateable_vms)"
+}
+
 # Returns all the VMs belonging to the active identity
 _identity_vms ()
 {

@@ -22,12 +22,12 @@ _in_section "identity" 8 && _info "Creating infrastructure for identity $IDENTIT
 
 # If the user wants to use a different vm_name for the VMs
 vm_name="${args['--prefix']-$IDENTITY}"
+_info "Using '$name' as VM prefix"
 echo "$vm_name" > "${IDENTITY_DIR}/vm_name" 
-_info "Using vm_name '$name' as VM base name"
 
 label="${args['--label']-orange}"
-echo "$vm_name" > "${IDENTITY_DIR}/vm_label" 
 _info "Using label '$label' as VM default label"
+echo "$vm_name" > "${IDENTITY_DIR}/vm_label" 
 
 # Prepare the root NetVM for this identity
 config_get DEFAULT_NETVM > "${IDENTITY_DIR}/net_vm" 

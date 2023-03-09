@@ -21,7 +21,6 @@ identity_set ()
     IDENTITY_DIR="${RISK_IDENTITIES_DIR}/${IDENTITY}"
 }
 
-
 # Upon unlocking a given identity, sets the name as an ENV 
 # variable that we can use in further functions and commands.
 # $1 - The name to use. If empty, just resets the identity.
@@ -52,6 +51,20 @@ identity_set_active ()
 identity_get_active ()
 {
     qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null
+}
+
+# identity_delete_directory deletes the ~/.risk/identities/<identity> directory.
+identity_delete_directory ()
+{
+    if ! _identity_active ; then
+        return
+    fi
+    if [[ -z "${IDENTITY_DIR}" ]]; then
+        return
+    fi
+
+    _info "Deleting identiy ${IDENTITY} home directory"
+    _run -rf "${IDENTITY_DIR}"
 }
 
 # Returns 0 if an identity is unlocked, 1 if not.

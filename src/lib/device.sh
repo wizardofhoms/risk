@@ -10,3 +10,15 @@ check_is_device_attached ()
         _failure "Device block $block is not mounted on vault ${vm}"
     fi
 }
+
+# device_backup_mounted_on returns 0 if a backup is mounted in the target vault VM.
+device_backup_mounted_on ()
+{
+    local vm="${1-$VAULT_VM}"
+    local backup_status
+
+    backup_status="$(qvm-run --pass-io "${vm}" 'risks backup status')"
+    if [[ ${backup_status} ~= 'No backup device mounted' ]]; then
+        _fail "Failed no backup"
+    fi
+}

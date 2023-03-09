@@ -10,7 +10,6 @@ local pendrive="${args['--backup']}"
 # Other variables
 local vm_name           # Default prefix to use for newly created vm (eg. 'joe' => joe-vpn, joe-web)
 local label             # Default label color to use for all VMs, varies if not specified
-local netvm             # Entry NetVM for the identity
 local backup_args       # If identity is to be immediately backed up, this is the flag + the /dev/path in vault
 local gw_netvm          # NetVM for the tor gateway
 local web_netvm         # NetVM for the Web browser VM

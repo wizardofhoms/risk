@@ -2225,6 +2225,18 @@ check_is_device_attached ()
     fi
 }
 
+# device_backup_mounted_on returns 0 if a backup is mounted in the target vault VM.
+device_backup_mounted_on ()
+{
+    local vm="${1-$VAULT_VM}"
+    local backup_status
+
+    backup_status="$(qvm-run --pass-io "${vm}" 'risks backup status')"
+    if [[ ${backup_status} ~= 'No backup device mounted' ]]; then
+        _fail "Failed no backup"
+    fi
+}
+
 # src/lib/identity.sh
 
 # Refactors
@@ -2281,6 +2293,20 @@ identity_set_active ()
 identity_get_active ()
 {
     qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null
+}
+
+# identity_delete_directory deletes the ~/.risk/identities/<identity> directory.
+identity_delete_directory ()
+{
+    if ! _identity_active ; then
+        return
+    fi
+    if [[ -z "${IDENTITY_DIR}" ]]; then
+        return
+    fi
+
+    _info "Deleting identiy ${IDENTITY} home directory"
+    _run -rf "${IDENTITY_DIR}"
 }
 
 # Returns 0 if an identity is unlocked, 1 if not.
@@ -3041,7 +3067,10 @@ validate_valid_vaultvm () {
 # src/lib/vm.sh
 
 #
-# // Attributes functions //
+# ========================================================================================
+# Attributes functions
+
+# ========================================================================================
 #
 # Functions starting with an underscore
 
@@ -3171,9 +3200,13 @@ _vm_is_identity_proxy ()
     return $match
 }
 
+# ========================================================================================
+#  VM control and settings management
+# ========================================================================================
 #
-# // VM control and settings management //
-#
+
+# vm_init_identity_settings is used once when creating
+# VMs for an identity, and requires access to argu
 
 # Enables a VM to autostart
 vm_enable_autostart ()
@@ -4006,7 +4039,6 @@ risk_identity_create_command() {
   # Other variables
   local vm_name           # Default prefix to use for newly created vm (eg. 'joe' => joe-vpn, joe-web)
   local label             # Default label color to use for all VMs, varies if not specified
-  local netvm             # Entry NetVM for the identity
   local backup_args       # If identity is to be immediately backed up, this is the flag + the /dev/path in vault
   local gw_netvm          # NetVM for the tor gateway
   local web_netvm         # NetVM for the Web browser VM
@@ -4136,14 +4168,12 @@ risk_identity_equip_command() {
 
   # If the user wants to use a different vm_name for the VMs
   vm_name="${args['--prefix']-$IDENTITY}"
+  _info "Using '$name' as VM prefix"
   echo "$vm_name" > "${IDENTITY_DIR}/vm_name"
 
-  _info "Using vm_name '$name' as VM base name"
-
   label="${args['--label']-orange}"
-  echo "$vm_name" > "${IDENTITY_DIR}/vm_label"
-
   _info "Using label '$label' as VM default label"
+  echo "$vm_name" > "${IDENTITY_DIR}/vm_label"
 
   # Prepare the root NetVM for this identity
   config_get DEFAULT_NETVM > "${IDENTITY_DIR}/net_vm"
@@ -4190,6 +4220,8 @@ risk_identity_equip_command() {
 risk_identity_delete_command() {
   # src/identity_delete_command.sh
 
+  local delete_vault_cmd
+
   # First check the identity is valid
   identity_set "${args['identity']}"
   identity_check_exists
@@ -4201,13 +4233,25 @@ risk_identity_delete_command() {
   # Close the identity and all its running VMs
   risk_identity_stop_command
 
-  # Delete all VMs belonging to the identity.
   _info "Deleting identity VMs"
   vm_delete_identity
 
-  # Delete the identity data in the vault
+  _info "Deleting identity in vault"
+  delete_vault_cmd=( risks identity delete "${IDENTITY}" )
 
-  # And delete the identity directory in dom0.
+  # If a backup medium is mounted and backup
+
+  # removal is asked, add the corresponding flags.
+  if device_backup_mounted_on "${VAULT_VM}"; then
+      if [[ "${args['--backup']}" -eq 1 ]]; then
+          delete_vault_cmd+=( --backup )
+      fi
+  fi
+
+  _run_qubes_term "${VAULT_VM}" "${delete_vault_cmd[@]}"
+
+  # Finally, delete its dom0 directory.
+  identity_delete_directory
 
   _success "Successfully deleted identity $IDENTITY"
 

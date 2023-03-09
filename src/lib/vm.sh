@@ -1,6 +1,8 @@
 
 #
-# // Attributes functions //
+# ========================================================================================
+# Attributes functions 
+# ========================================================================================
 #
 # Functions starting with an underscore 
 # give information and values related to VMs, 
@@ -124,9 +126,13 @@ _vm_is_identity_proxy ()
     return $match
 }
 
-#
-# // VM control and settings management //
+# ========================================================================================
+#  VM control and settings management
+# ========================================================================================
 # 
+
+# vm_init_identity_settings is used once when creating
+# VMs for an identity, and requires access to argu
 
 # Enables a VM to autostart
 vm_enable_autostart ()

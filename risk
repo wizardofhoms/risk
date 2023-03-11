@@ -2623,7 +2623,7 @@ function identity.delete_qubes ()
 
 
 # If the user wants to log command output to a file.
-risks_log_file=""
+risk_log_file=""
 
 # Section is set either by functions or simple calls,
 # so that logging can inform on the component working.
@@ -2663,23 +2663,23 @@ log_chars=(
 # is not writable.
 function _init_log_file ()
 {
-    risks_log_file="${args['--log-file']}"
-    [[ -z "${risks_log_file}" ]] && return
+    risk_log_file="${args['--log-file']}"
+    [[ -z "${risk_log_file}" ]] && return
 
     # Ensure not a directory, and if exists, is writable.
-    if [[ -d "${risks_log_file}" ]] ; then
-        risks_log_file=''
-        _failure "Log file ${risks_log_file} is a directory"
-    elif [[ -e "${risks_log_file}" ]] && [[ ! -w "${risks_log_file}" ]]; then
-        risks_log_file=''
-        _failure "Log file ${risks_log_file} is not writable"
+    if [[ -d "${risk_log_file}" ]] ; then
+        risk_log_file=''
+        _failure "Log file ${risk_log_file} is a directory"
+    elif [[ -e "${risk_log_file}" ]] && [[ ! -w "${risk_log_file}" ]]; then
+        risk_log_file=''
+        _failure "Log file ${risk_log_file} is not writable"
     fi
 
     # Create the file if not existing, or fail.
-    if [[ ! -e "${risks_log_file}" ]]; then
-        _run touch "${risks_log_file}"
-        _catch "Failed to create log file ${risks_log_file}"
-        _info "Logging command output to file ${risks_log_file}"
+    if [[ ! -e "${risk_log_file}" ]]; then
+        _run touch "${risk_log_file}"
+        _catch "Failed to create log file ${risk_log_file}"
+        _info "Logging command output to file ${risk_log_file}"
     fi
 }
 
@@ -2766,8 +2766,8 @@ function _msg ()
 
     # If there is a log-file specified, write the output to it.
 
-    if [[ -n "${risks_log_file}" ]]; then
-        ${=command} "${progname}" "${pchars}" "${msg}" >> "$risks_log_file"
+    if [[ -n "${risk_log_file}" ]]; then
+        ${=command} "${progname}" "${pchars}" "${msg}" >> "$risk_log_file"
     fi
 
     # Else, print to stdout, with colors

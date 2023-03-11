@@ -1,14 +1,18 @@
 
 # Connected terminal
 typeset -H _TTY
-GPG_TTY=$(tty)  # Needed for GPG operations
-export GPG_TTY
 
 # Remove verbose errors when * don't yield any match in ZSH
 setopt +o nomatch
 
 # The generated script makes use of BASH_REMATCH, set compat for ZSH
 setopt BASH_REMATCH
+
+# Use colors unless told not to
+{ ! option_is_set --no-color } && { autoload -Uz colors && colors }
+
+# Set log file if specified via flags.
+_init_log_file
 
 ## Checks ##
 
@@ -17,10 +21,6 @@ if [[ $EUID -eq 0 ]]; then
    echo "This script must be run as user"
    exit 2
 fi
-
-# Use colors unless told not to
-{ ! option_is_set --no-color } && { autoload -Uz colors && colors }
-
 
 # Configuration file -------------------------------------------------------------------------------
 #

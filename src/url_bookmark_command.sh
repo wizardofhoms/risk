@@ -4,7 +4,7 @@ local bookmark_entry    # Complete entry (date/url/title)
 local url               # The URL to bookmark
 local title             # The URL page title to use if/when prompting the user for input.
 
-identity_set ""
+identity.set ""
 
 url="${args['url']}"
 split_vm="$(config_get SPLIT_BROWSER)"

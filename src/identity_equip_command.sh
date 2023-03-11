@@ -9,11 +9,11 @@ local web_netvm         # NetVM for the Web browser VM
 local clone             # A variable that might be overritten several times, used to assign a VM to clone.
 
 # Propagate the identity and its settings (in the script only)
-identity_set "${args['identity']}"
+identity.set "${args['identity']}"
 
 # Identity checks and basic setup ==========================================
 
-identity_check_exists "$IDENTITY"
+identity.fail_unknown "$IDENTITY"
 
 _in_section "identity" 8 && _info "Creating infrastructure for identity $IDENTITY"
 

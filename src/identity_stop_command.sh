@@ -1,7 +1,7 @@
 
 # Else get the active identity
 local active_identity
-active_identity=$(_identity_active_or_specified)
+active_identity=$(identity.active_or_specified)
 
 _info "Stopping machines of identity $active_identity"
 vm_shutdown_identity

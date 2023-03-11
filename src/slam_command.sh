@@ -9,8 +9,8 @@ fi
 
 # Else get the active identity, and propagate values to the script
 local active_identity
-active_identity=$(_identity_active_or_specified)
-identity_set "$active_identity"
+active_identity=$(identity.active_or_specified)
+identity.set "$active_identity"
 
 _info "Slamming infrastructure, vault and devices: identity $active_identity"
 

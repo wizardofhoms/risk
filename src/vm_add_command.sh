@@ -6,7 +6,7 @@ vm="${args['vm']}"
 identity_set
 
 # We need a valid identity
-identity_check_exists "$IDENTITY"
+identity.fail_unknown "$IDENTITY"
 
 # Check VM ownership
 vm_owner=$(_vm_owner "$vm")

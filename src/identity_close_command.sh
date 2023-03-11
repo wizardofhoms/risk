@@ -2,7 +2,7 @@
 local active_identity
 
 # Check we have an active identity
-active_identity="$(identity_get_active)"
+active_identity="$(identity.active)"
 if [[ -z $active_identity ]]; then
     _info "No active identity to close"
     return

@@ -10,6 +10,10 @@ default:
 	# First generate the risk script from our source
 	bashly generate
 
+	# Remove set -e from the generated script
+	# since we handle our errors ourselves
+	sed -i 's/set -e//g' risk
+
 	# Move the initialize call from its current position to within 
 	# the run function, so that flags are accessible immediately.
 	sed -i 'N;$$!P;D' risk
@@ -29,6 +33,10 @@ release:
 	# First generate the risk script from our source
 	bashly generate
 	
+	# Remove set -e from the generated script
+	# since we handle our errors ourselves
+	sed -i 's/set -e//g' risk
+
 	# Move the initialize call from its current position to within 
 	# the run function, so that flags are accessible immediately.
 	sed -i 'N;$$!P;D' risks

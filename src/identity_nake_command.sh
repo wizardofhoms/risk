@@ -1,7 +1,7 @@
 
 # First check the identity is valid
-identity_set "${args['identity']}"
-identity_check_exists
+identity.set "${args['identity']}"
+identity.fail_unknown
 
 # Close the identity and all its running VMs
 _info "Stopping machines of identity $IDENTITY"

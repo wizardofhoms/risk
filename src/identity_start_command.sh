@@ -2,13 +2,13 @@
 local active_identity enabled_vms
 
 # Check the identity is valid, and open in vault if needed.
-identity_set "${args['identity']}"
-identity_check_exists
+identity.set "${args['identity']}"
+identity.fail_unknown
 
-active_identity="$(identity_get_active)"
+active_identity="$(identity.active)"
 if [[ -n "${active_identity}" ]]; then
     if [[ "${active_identity}" != "${IDENTITY}" ]]; then
-        identity_check_none_active "$IDENTITY"
+        identity.fail_none_active "$IDENTITY"
     fi
     _info "Identity ${IDENTITY} already opened in vault"
 else

@@ -3,14 +3,14 @@ local sdcard_block
 
 sdcard_block="$(config_get SDCARD_BLOCK)"
 
-identity_set "${args['identity']}"
+identity.set "${args['identity']}"
 
 # 1 - Check that hush is mounted on vault
-check_is_device_attached "${sdcard_block}" "${VAULT_VM}"
+device.fail_not_attached_to "${sdcard_block}" "${VAULT_VM}"
 
 # 2 - Check that no identity is currently opened
 # The second line should be empty, as opposed to being an encrypted coffin name
-identity_check_none_active "$IDENTITY"
+identity.fail_none_active "$IDENTITY"
 
 # 3 - Send commands to vault
 _info "Opening identity $IDENTITY"

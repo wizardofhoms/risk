@@ -3,10 +3,10 @@
 
 # Variables populated from command-line args/flags
 name="${args['name']}"
-name="$(_get_name "${name}")"
+name="$(identity.get_args_name "${name}")"
 identity="${name// /_}"
-expiry="$(_get_expiry "${args['expiry_date']}")"
-email="$(_get_mail "${name}" "${args['email']}")"
+expiry="$(identity.get_args_expiry "${args['expiry_date']}")"
+email="$(identity.get_args_mail "${name}" "${args['email']}")"
 pendrive="${args['--backup']}" # Backup is optional
 
 # Other variables
@@ -18,7 +18,7 @@ local web_netvm         # NetVM for the Web browser VM
 local clone             # A variable that might be overritten several times, used to assign a VM to clone.
 
 # Propagate the identity and its settings (in the script only)
-identity_set "${identity}"
+identity.set "${identity}"
 
 # Identity checks and basic setup ==========================================
 
@@ -28,7 +28,7 @@ if _identity_active ; then
 fi
 
 # or that the one we want to create does not exists already
-if identity_check_exists "$IDENTITY" ; then
+if identity.fail_unknown "$IDENTITY" ; then
     _failure "Identity $IDENTITY already exists"
 fi
 

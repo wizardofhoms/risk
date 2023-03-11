@@ -29,6 +29,11 @@ release:
 	# First generate the risk script from our source
 	bashly generate
 	
+	# Move the initialize call from its current position to within 
+	# the run function, so that flags are accessible immediately.
+	sed -i 'N;$$!P;D' risks
+	sed -i '/parse_requirements "$${/a \ \ initialize' risks
+
 	# And reset the settings from prod to dev
 	sed -i 's#^.*\benv\b.*$$#env: development#' settings.yml
 

@@ -2041,10 +2041,8 @@ cyan_underlined() { print_in_color "\e[4;36m" "$*"; }
 config_init() {
   RISK_CONFIG_FILE=${RISK_CONFIG_FILE-${RISK_DIR}/config.ini}
   [[ -f "$RISK_CONFIG_FILE" ]] || {
-
       _info "Writing default configuration file to ${RISK_CONFIG_FILE}"
       cat << EOF > "$RISK_CONFIG_FILE"
-
 ; RISKS Dom0 Configuration file
 
 ; You can either edit this file in place, set values
@@ -2091,7 +2089,6 @@ BACKUP_BLOCK=
 
 ; If true, AUTO_MOUNT_HUSH will automatically run the risks hush mount
 ; command in the target vault when invoking 'risk hush attach', prompting
-
 ; the user for the device password. Equivalent to 'risk hush attach -m'
 AUTO_MOUNT_HUSH=false
 
@@ -2116,7 +2113,6 @@ DOM0_SHELL=bash
 VM_TERMINAL=xterm
 
 ; Default shell to use in AppVMs
-
 VM_SHELL=bash
 
 EOF
@@ -2262,7 +2258,6 @@ device_backup_mounted_on ()
 #
 # $1 - The identity to use.
 identity_set ()
-
 {
     local identity="$1"
 
@@ -2275,7 +2270,6 @@ identity_set ()
 }
 
 # Upon unlocking a given identity, sets the name as an ENV
-
 # variable that we can use in further functions and commands.
 # $1 - The name to use. If empty, just resets the identity.
 identity_set_active ()
@@ -2291,7 +2285,6 @@ identity_set_active ()
     fi
 
     # If we don't have a file containing the
-
     # identity name, populate it.
     if [[ ! -e ${RISK_IDENTITY_FILE} ]]; then
         print "$1" > "${RISK_IDENTITY_FILE}"
@@ -2323,7 +2316,6 @@ identity_delete_directory ()
 
 # Returns 0 if an identity is unlocked, 1 if not.
 _identity_active ()
-
 {
     local active_identity
 
@@ -2381,7 +2373,6 @@ identity_check_exists ()
 {
     # Get the resulting encrypted name
     local encrypted_identity
-
     encrypted_identity="$(_encrypt_filename "${IDENTITY}")"
 
     # And check the directory exists
@@ -2420,7 +2411,6 @@ _identity_browser_vm ()
 }
 
 # _identity_proxies returns an array of proxy VMs
-
 # (VPNs and TOR gateways for the current identity)
 _identity_proxies ()
 {
@@ -2452,13 +2442,11 @@ _identity_autovm_starts ()
 # _get_name either returns the name given as parameter, or
 # generates a random (burner) one and prints it to the screen.
 _get_name ()
-
 {
     local name
 
     if [[ -z "${1}" ]] && [[ "${args['--burner']}" -eq 0 ]]; then
         _failure "Either an identity name is required, or the --burner flag"
-
     fi
 
     # Either use the provided one
@@ -2473,7 +2461,6 @@ _get_name ()
 }
 
 # _get_mail returns a correctly formatted mail given either a fully specified
-
 # one as positional, or a generated/concatenated one from the username argument.
 _get_mail ()
 {
@@ -2485,7 +2472,6 @@ _get_mail ()
     email="${args['--mail']}"
 
     # Return either the mail flag with the name
-
     [[ -n "${email}" ]] && print "${name}@${email}"
     # Or the lowercase name without spaces
     print "${name// /_}"
@@ -2494,7 +2480,6 @@ _get_mail ()
 # _get_expiry returns a correctly formatted expiry date for a GPG key.
 # If no arguments are passed to the call, the expiry date is never.
 _get_expiry ()
-
 {
     local expiry
 
@@ -2503,7 +2488,6 @@ _get_expiry ()
     else
         expiry="${1}"
         expiry_date="$(date +"%Y-%m-%d" --date="${expiry}")"
-
     fi
 
     print "${expiry_date}"
@@ -2568,10 +2552,8 @@ function is_verbose_set () {
 
 # Messaging function with pretty coloring
 function _msg()
-
 {
     # Check if we have been provided a section name,
-
     # and if not, that the section is set to a default.
     if [[ ${#@} -lt 3 ]]; then
         local progname="$section"
@@ -2672,7 +2654,6 @@ function _warning() {
 # command's stderr buffer, which is printed just below our message.
 # We then exit the program.
 function _failure()
-
 {
 	typeset -i exitcode=${exitv:-1}
 
@@ -2708,7 +2689,6 @@ function _print() {
 # Creates a new Messaging AppVM.
 # $1 - Name to use for new VM
 # $2 - Netvm for this VM
-
 # $3 - Label
 create_messenger_vm ()
 {
@@ -2725,7 +2705,6 @@ create_messenger_vm ()
 }
 
 # very similar to create_messenger_vm , except that we clone
-
 # an existing AppVM instead of creating a new one from a Template.
 clone_messenger_vm ()
 {
@@ -2756,7 +2735,6 @@ check_valid_netvm ()
     # Or if the owner is either non-existant or not the good one, we must fail.
     owner="$(_vm_owner "$vm")"
     [[ -n "$owner" ]] || _failure "VM $vm has no RISKS owner. Aborting"
-
     [[ "$owner" == "$IDENTITY" ]] || _failure "VM $vm does not belong to identity $IDENTITY"
 
     # If there is not network VM, there is nothing to do
@@ -2798,7 +2776,6 @@ network_check_identity_chain ()
 fail_vm_provides_network ()
 {
     local vm="$1"
-
     local vms connected_vms
 
     # If it does not provide network at all, don't go further.
@@ -2855,7 +2832,6 @@ _run ()
 # $1 - Qube name
 # $@ - Command string to run
 _run_qube ()
-
 {
     local vm="$1" ; shift
     local command="$*"
@@ -2893,7 +2869,6 @@ _run_qube ()
 
 # _run_exec is a simplified version of _run_qube, without stdout/err split & store.
 _run_exec ()
-
 {
     local vm="$1"
     shift
@@ -2910,7 +2885,6 @@ _run_exec ()
 
 # _run_qube_term spawns a terminal on a target qube, with an associated command to run.
 _run_qube_term ()
-
 {
     local vm="$1" ; shift
     local command="$*"
@@ -2940,7 +2914,6 @@ function _catch ()
 # src/lib/secrets.sh
 
 # _encrypt_filename takes a filename as input, and uses the currently
-
 # set identity to produce an random name to use as a file/directory name.
 _encrypt_filename ()
 {
@@ -2996,7 +2969,6 @@ tor_gateway_clone ()
     _catch "Failed to clone VM ${gw_clone}"
 
     # For now disposables are not allowed, since it would create too many VMs,
-
     # and complicate a bit the setup steps for VPNs. If the clone is a template
     # for disposables, unset it
     local disp_template
@@ -3038,7 +3010,6 @@ option_is_set() {
 # $1 - Flag argument
 # $2 - Key name in config
 config_or_flag ()
-
 {
     local value config_value
 
@@ -3141,13 +3112,10 @@ validate_valid_vaultvm () {
 #
 # ========================================================================================
 # Attributes functions
-
 # ========================================================================================
 #
 # Functions starting with an underscore
-
 # give information and values related to VMs,
-
 #
 
 # Returns the name of the identity to which a VM belongs.
@@ -3191,10 +3159,8 @@ _vm_list ()
 
 # _vm_list_updateable returns all templates and standalone VMs
 _vm_list_updateable ()
-
 {
     local templates=()
-
     while read line ; do
         IFS="|" read -r name class <<< "${line}"
         if [[ "$class" == "TemplateVM" ]]; then
@@ -3208,9 +3174,7 @@ _vm_list_updateable ()
 }
 
 # _vm_args returns a list of VMs that are either explicitly named
-
 # in the array passed as arguments, or those belonging to some
-
 # "group keyword" of this same array.
 _vm_args ()
 {
@@ -3332,7 +3296,6 @@ vm_disable_autostart ()
 # vm_start [vm 1] ... [vm n]
 #Start the given VMs without executing any command.
 vm_start ()
-
 {
     local ret=0
 
@@ -3362,7 +3325,6 @@ vm_start ()
 # vm_shutdown [vm 1] ... [vm n]
 #Shut the given VMs down.
 vm_shutdown ()
-
 {
     local ret=0
 
@@ -3388,7 +3350,6 @@ vm_shutdown ()
 #[start]: If it's not running and not paused, start it (default: 0/true). If set to 1, this function will return a non-zero exit code.
 #returns: A non-zero exit code, if it's not running and/or we failed to start the VM.
 vm_assert_running ()
-
 {
     local vm="$1"
     local start="${2:-0}"
@@ -3409,7 +3370,6 @@ vm_assert_running ()
 }
 
 # vm_delete deletes a VM belonging to the identity, and removes its from the
-
 # specified file. If this file is empty after this, it is deleted here.
 # $1 - VM name.
 # $2 - The file to search under ${IDENTITY_DIR}/ for deletion.
@@ -3554,7 +3514,6 @@ vpn_create ()
 }
 
 # Creates a new VPN gateway from an existing VPN AppVM
-
 vpn_clone ()
 {
     local gw="${1}"
@@ -3568,7 +3527,6 @@ vpn_clone ()
     _catch "Failed to clone VM ${gw_clone}"
 
     # For now disposables are not allowed, since it would create too many VMs,
-
     # and complicate a bit the setup steps for VPNs. If the clone is a template
     # for disposables, unset it
     local disp_template
@@ -3616,14 +3574,10 @@ vpn_import_configs ()
         # and immediately run the setup prompt to choose one.
         if [[ $new_path:t:e == "zip" ]]; then
             local configs_dir="/rw/config/vpn/configs"
-
             _verbose "Unzipping files into $configs_dir"
             _run_exec "$name" mkdir -p "$configs_dir"
-
             _run_exec "$name" unzip -j -d "$configs_dir"
-
             _run_exec "$name" /usr/local/bin/setup_VPN
-
         else
             _verbose "Copying file directly to the VPN client config path"
             _run_exec "$name" mv "$new_path" "$client_conf_path"
@@ -3659,7 +3613,6 @@ vpn_next_vm_name ()
 
 # vpn_check__vm_is_identity_proxy fails if the VM is not listed as an identity proxy.
 vpn_check__vm_is_identity_proxy ()
-
 {
     local name="$1"
     local proxies
@@ -3700,7 +3653,6 @@ web_create_browser_vm ()
     # Generate the VM
     "${create_command[@]}"
     if [[ $? -gt 0 ]]; then
-
         _warning "Failed to create browser VM $web" && return
     fi
 
@@ -3807,12 +3759,10 @@ bookmark_system_file_exists ()
 }
 
 # bookmark_display_command returns a command string
-
 # to use as the dmenu displayer of a bookmarks file.
 bookmark_display_command ()
 {
     # This command will not work if qubes-split-browser is not installed in the split-browser VM
-
     local window_focus_command='_NET_WM_NAME="Split Browser" x11-unoverride-redirect stdbuf -oL'
 
     if [[ -n "$(config_get BOOKMARKS_DMENU_COMMAND)" ]]; then
@@ -3823,7 +3773,6 @@ bookmark_display_command ()
 }
 
 # _web_bookmarks_empty returns 0 if no bookmark
-
 # file exists in split-browser or if it is empty.
 _web_bookmarks_empty ()
 {
@@ -3855,7 +3804,6 @@ web_set_identity_split_browser ()
 }
 
 # web_unset_identity_split_browser removes the dispvm setting of the
-
 # tor split-browser backend if it is set to the identity browser VM.
 web_unset_identity_split_browser ()
 {
@@ -3872,7 +3820,6 @@ web_unset_identity_split_browser ()
 }
 
 # web_select_identity_bookmark prompts the user with bookmarks,
-
 # and returns the URL extracted from the selection.
 web_select_identity_bookmark ()
 {
@@ -3882,12 +3829,10 @@ web_select_identity_bookmark ()
     bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
     qvm-run --pass-io "${vm}" "${bookmarks_command}"
     result="$(qvm-run --pass-io "${vm}" cat bookmark)"
-
     print "$result" | awk '{print $2}'
 }
 
 # web_pop_identity_bookmark prompts the user with bookmarks, returns the URL
-
 # extracted from the selection and deletes the line in the file.
 # Returns the complete bookmark entry.
 web_pop_identity_bookmark ()
@@ -3989,7 +3934,6 @@ risk_hush_attach_command() {
   vm="${args['vault_vm']-$(config_get VAULT_VM)}"
 
   # If the validations were not performed because
-
   # we use a default environment variable for the
   # vault VM, perform them again here.
   error_invalid_vm=$(validate_valid_vaultvm "$vm")
@@ -4009,7 +3953,6 @@ risk_hush_attach_command() {
       _verbose "Starting VM $vm"
       qvm-start "${vm}"
   	sleep 5
-
   fi
 
   # finally attach the sdcard encrypted partition to the qube
@@ -4075,7 +4018,6 @@ risk_backup_attach_command() {
   local error_invalid_vm error_device
 
   # If the validations were not performed because
-
   # we use a default environment variable for the
   # vault VM, perform them again here.
   error_invalid_vm=$(validate_vm_exists "$vm")
@@ -4147,7 +4089,6 @@ risk_identity_create_command() {
   local vm_name           # Default prefix to use for newly created vm (eg. 'joe' => joe-vpn, joe-web)
   local label             # Default label color to use for all VMs, varies if not specified
   local other_args        # Other args/flags to pass to vault identity create command (backup/burner, etc)
-
   local gw_netvm          # NetVM for the tor gateway
   local web_netvm         # NetVM for the Web browser VM
   local clone             # A variable that might be overritten several times, used to assign a VM to clone.
@@ -4176,12 +4117,10 @@ risk_identity_create_command() {
   # If the user wants to use a different vm_name for the VMs
   vm_name="${args['--prefix']-$IDENTITY}"
   echo "$vm_name" > "${IDENTITY_DIR}/vm_name"
-
   _info "Using vm_name ${fg_bold[green]}'$name'${reset_color} as VM base name"
 
   label="${args['--label']}"
   echo "$vm_name" > "${IDENTITY_DIR}/vm_label"
-
   _info "Using label ${fg_bold[green]}'$label'${reset_color} as VM default label"
 
   # Prepare the root NetVM for this identity
@@ -4201,7 +4140,6 @@ risk_identity_create_command() {
 
   # Create it
   _run_qube_term "$VAULT_VM" risks identity create "$name" "$email" "$expiry" "${other_args[@]}"
-
   _catch "Failed to create identity in vault"
 
   # And open it, in case the last command backed up the identity, which closed it.
@@ -4236,7 +4174,6 @@ risk_identity_create_command() {
 
   # Browser VMs are disposable, but we make a template for this identity,
   # since we might  either modify stuff in there, and we need them at least
-
   # to have a different network route.
   if [[ -n ${args['--clone-web-from']} ]]; then
       clone="${args['--clone-web-from']}"
@@ -4311,7 +4248,6 @@ risk_identity_equip_command() {
 
   # Browser VMs are disposable, but we make a template for this identity,
   # since we might  either modify stuff in there, and we need them at least
-
   # to have a different network route.
   if [[ -n ${args['--clone-web-from']} ]]; then
       clone="${args['--clone-web-from']}"
@@ -4351,7 +4287,6 @@ risk_identity_delete_command() {
   delete_vault_cmd=( risks identity delete "${IDENTITY}" )
 
   # If a backup medium is mounted and backup
-
   # removal is asked, add the corresponding flags.
   if device_backup_mounted_on "${VAULT_VM}"; then
       if [[ "${args['--backup']}" -eq 1 ]]; then
@@ -4468,9 +4403,7 @@ risk_identity_start_command() {
   read -rA enabled_vms < <(_identity_autovm_starts)
   for vm in "${enabled_vms[@]}"; do
       if [[ -z "${vm}" ]]; then
-
           continue
-
       fi
       _info "Starting VM ${vm}"
       _run vm_start "${vm}"
@@ -4575,7 +4508,6 @@ risk_vpn_create_command() {
 
   # If the --name flag is empty, this means we are using a default one,
   # either the configured default one, or the name of the identity.
-
   # In this case, we add 'vpn-1' to it (number varying).
   if [[ -z "${args['vm']}" ]]; then
       name="$(vpn_next_vm_name "$name")"
@@ -4588,7 +4520,6 @@ risk_vpn_create_command() {
   if [[ "${args['--clone']}" -eq 1 ]]; then
       _info "Cloning VPN gateway (from VM $clone)"
       vpn_clone "$name" "$netvm" "$label" "$clone"
-
   else
       _info "Creating VPN gateway (from template $template)"
       vpn_create "$name" "$netvm" "$label" "$template"
@@ -4607,7 +4538,6 @@ risk_vpn_create_command() {
 
   # If the VM is marked autostart
   if [[ -n ${args['--enable']} ]]; then
-
       _verbose "Enabling VM to autostart"
       risk_vpn_enable_command
   fi
@@ -4642,11 +4572,9 @@ risk_vpn_setup_command() {
   # like browsers, messaging VMs, etc.
   if [[ ${args['--set-default']} -eq 1 ]]; then
       echo "$name" > "${IDENTITY_DIR}/net_vm"
-
       _info "Setting '$name' as default NetVM for all client machines"
 
       # Here, find all existing client VMs (not gateways)
-
       # and change their netVMs to this one.
       local clients=($(_identity_client_vms))
       for client in "${clients[@]}"; do
@@ -4661,7 +4589,6 @@ risk_vpn_setup_command() {
   if [[ "${args['--choose']}" -eq 1 ]]; then
       # If we are asked to choose an existing configuration in the VM
       _run_exec "$name" /usr/local/bin/setup_VPN
-
   elif [[ -n "${args['--config-in']}" ]]; then
       # Or if we are asked to browse one or more configuration files in another VM.
       vpn_import_configs "$name" "$config_vm" "$client_conf_path"
@@ -4759,7 +4686,6 @@ risk_vpn_delete_command() {
       if [[ -n $tor_gw ]]; then
           _info -n "Updating the default identity NetVM to $tor_gw"
           echo "$tor_gw" > "${IDENTITY_DIR}/net_vm"
-
       else
           _info -n "The identity has no default NetVM anymore, please set it."
       fi
@@ -4777,11 +4703,9 @@ risk_vpn_delete_command() {
   # Remove from VMs marked autostart
   sed -i /"$name"/d "${IDENTITY_DIR}/autovm_starts"
   # And remove from proxy VMs
-
   sed -i /"$name"/d "${IDENTITY_DIR}/proxy_vms"
 
   # Finally, delete the VM,
-
   _run qvm-remove "$name"
   _catch "Failed to delete VM $name:"
 
@@ -4848,7 +4772,6 @@ risk_vm_add_command() {
   fi
 
   # Check if the VM provides network. If yes we naturally consider
-
   # it to be a gateway, and we add it to the list of proxy_vms.
   if [[ "$(qvm-tags "$vm" provides_network)" == 'True' ]]; then
       _info "VM provides network. Treating it as a gateway VM"
@@ -4859,7 +4782,6 @@ risk_vm_add_command() {
       # If the user specified to use it as the default netvm
       if [[ ${args['--set-default']} -eq 1 ]]; then
           echo "$vm" > "${IDENTITY_DIR}/net_vm"
-
           _info "Setting '$vm' as default NetVM for all client machines"
       fi
   fi
@@ -4881,7 +4803,6 @@ risk_vm_delete_command() {
   identity_set
 
   # Check VM ownership
-
   [[ "$(_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
   # Do not even attempt to delete if the VM provides network to another VM.
@@ -4897,7 +4818,6 @@ risk_vm_delete_command() {
   sed -i /"$vm"/d "${IDENTITY_DIR}/autovm_starts"
 
   # Finally, delete the VM,
-
   _run qvm-remove "$vm"
   _catch "Failed to delete VM $vm:"
 
@@ -4913,7 +4833,6 @@ risk_vm_enable_command() {
   identity_set
 
   # Check VM ownership
-
   [[ "$(_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
   vm_enable_autostart "$vm"
@@ -4930,7 +4849,6 @@ risk_vm_disable_command() {
   identity_set
 
   # Check VM ownership
-
   [[ "$(_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
   vm_disable_autostart "$vm"
@@ -4954,9 +4872,7 @@ risk_use_command() {
   # If the VM does not belong to any identity, then we don't have
   # to interact with any of them, and this branch is skipped.
   #
-
   # However if the VM does not belong the active identity, we must:
-
   if [[ -n "$owner" ]] && [[ $owner != "$active_identity" ]]; then
       # Close the active identity
       _info "Closing identity $active_identity"
@@ -5071,7 +4987,6 @@ risk_qubes_update_command() {
   # Update matching VMs.
   if [[ -n "${vms[*]}" ]]; then
       _info "Updating following VMs:"
-
       for template in "${vms[@]}"; do
               _info "$template"
       done
@@ -8592,7 +8507,7 @@ risk_help_parse_requirements() {
 initialize() {
   version="0.1.0"
   long_usage=''
-  
+  set -euo pipefail
 
   # src/initialize.sh
 
@@ -8651,6 +8566,7 @@ run() {
   declare -a input=()
   normalize_input "$@"
   parse_requirements "${input[@]}"
+  initialize
 
   case "$action" in
     "config")
@@ -9079,5 +8995,4 @@ run() {
   esac
 }
 
-initialize
 run "$@"

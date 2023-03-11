@@ -11,8 +11,8 @@ target_dir: .
 # The path to use for upgrading library files, relative to the source dir
 lib_dir: lib
 
-# When true, enable bash strict mode (set -euo pipefail)
-strict: false
+# When true, enable bash strict mode (set -euo pipefail). Empty is no strict mode.
+strict: ''
 
 # When true, the generated script will use tab indentation instead of spaces
 # (every 2 leading spaces will be converted to a tab character)

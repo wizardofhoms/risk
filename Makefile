@@ -5,15 +5,16 @@ VERSION = $(shell git describe --abbrev=0 --tags --always)
 
 default:
 	# Remove all trailing spaces from src code.
-	sed -i 's/[ \t]*$//' **/*.sh
+	sed -i 's/[ \t]*$$//' **/*.sh
 
 	# First generate the risk script from our source
 	bashly generate
-	
-	# Remove set -e from the generated script
-	# since we handle our errors ourselves
-	sed -i 's/set -e//g' risk
 
+	# Move the initialize call from its current position to within 
+	# the run function, so that flags are accessible immediately.
+	sed -i 'N;$$!P;D' risk
+	sed -i '/parse_requirements "$${/a \ \ initialize' risk
+	
 release:
 	# Update the version line string
 	sed -i 's#^.*\bversion\b.*$$#version: $(VERSION)#' src/bashly.yml
@@ -23,14 +24,10 @@ release:
 	sed -i 's#^.*\benv\b.*$$#env: production#' settings.yml
 	
 	# Remove all trailing spaces from src code.
-	sed -i 's/[ \t]*$//' **/*.sh
+	sed -i 's/[ \t]*$$//' **/*.sh
 
 	# First generate the risk script from our source
 	bashly generate
-	
-	# Remove set -e from the generated script
-	# since we handle our errors ourselves
-	sed -i 's/set -e//g' risk
 	
 	# And reset the settings from prod to dev
 	sed -i 's#^.*\benv\b.*$$#env: development#' settings.yml

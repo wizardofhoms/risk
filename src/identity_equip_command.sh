@@ -40,9 +40,9 @@ gw_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 if [[ ${args['--no-gw']} -eq 0 ]]; then
     if [[ -n ${args['--clone-gw-from']} ]]; then
         clone="${args['--clone-gw-from']}"
-        tor_gateway_clone "$vm_name" "$clone" "$gw_netvm" "$label"
+        proxy.tor_clone "$vm_name" "$clone" "$gw_netvm" "$label"
     else
-        tor_gateway_create "$vm_name" "$gw_netvm" "$label"
+        proxy.tor_create "$vm_name" "$gw_netvm" "$label"
     fi
 else
     _info "Skipping TOR gateway"
@@ -57,13 +57,13 @@ web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 # to have a different network route.
 if [[ -n ${args['--clone-web-from']} ]]; then
     clone="${args['--clone-web-from']}"
-    web_clone_browser_vm "$vm_name" "$clone" "$web_netvm" "$label"
+    web.browser_clone "$vm_name" "$clone" "$web_netvm" "$label"
 else
-    web_create_browser_vm "$vm_name" "$web_netvm" "$label"
+    web.browser_create "$vm_name" "$web_netvm" "$label"
 fi
 
 # Per-identity bookmarks file in vault management tomb.
-web_create_identity_bookmarks
+web.bookmark_create_file
 
 ## All done ##
 _success "Successfully initialized infrastructure for identity $IDENTITY"

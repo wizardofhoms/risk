@@ -9,7 +9,7 @@ if [[ -z $active_identity ]]; then
 fi
 
 # If the identity browser VM is used with the split-browser backend.
-web_unset_identity_split_browser
+web.browser_unset_split_dispvm
 
 _info "Closing identity $active_identity"
 

@@ -6,7 +6,7 @@ vm="${args['vm']}"
 arguments="${other_args[@]}"
 
 local owner active_identity
-owner=$(_vm_owner "$vm")
+owner=$(qube.owner "$vm")
 active_identity="$(identity.active_or_specified)"
 
 # If the VM does not belong to any identity, then we don't have

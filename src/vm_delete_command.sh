@@ -2,22 +2,22 @@ local vm
 
 vm="${args['vm']}"
 
-identity_set
+identity.set
 
 # Check VM ownership
-[[ "$(_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
+[[ "$(qube.owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
 # Do not even attempt to delete if the VM provides network to another VM.
-fail_vm_provides_network "$vm"
+network.fail_networked_qube "$vm"
 
 # If the VM is a gateway, just call the VPN command to do the work.
-if _vm_is_identity_proxy "$vm" ; then
+if qube.is_identity_proxy "$vm" ; then
     risk_vpn_delete_command
     return
 fi
 
 # Remove from autostart enabled commands
-sed -i /"$vm"/d "${IDENTITY_DIR}/autovm_starts"
+sed -i /"$vm"/d "${IDENTITY_DIR}/autoqube.starts"
 
 # Finally, delete the VM,
 _run qvm-remove "$vm"

@@ -1,5 +1,5 @@
 
-identity_set
+identity.set
 
 local name config_vm client_conf_path netvm
 
@@ -25,7 +25,7 @@ if [[ ${args['--set-default']} -eq 1 ]]; then
 
     # Here, find all existing client VMs (not gateways)
     # and change their netVMs to this one.
-    local clients=($(_identity_client_vms))
+    read -rA clients < <(identity.client_qubes)
     for client in "${clients[@]}"; do
         if [[ -n "$client" ]]; then
             _verbose "Changing $client netVM"
@@ -40,5 +40,5 @@ if [[ "${args['--choose']}" -eq 1 ]]; then
     _run_exec "$name" /usr/local/bin/setup_VPN
 elif [[ -n "${args['--config-in']}" ]]; then
     # Or if we are asked to browse one or more configuration files in another VM.
-    vpn_import_configs "$name" "$config_vm" "$client_conf_path"
+    proxy.vpn_import_configs "$name" "$config_vm" "$client_conf_path"
 fi

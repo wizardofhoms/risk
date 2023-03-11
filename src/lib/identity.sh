@@ -174,8 +174,8 @@ function identity.get_args_expiry ()
     print "${expiry_date}"
 }
 
-# identity.delete_home_director deletes the ~/.risk/identities/<identity> directory.
-function identity.delete_home_directory ()
+# identity.delete_home_directory deletes the ~/.risk/identities/<identity> directory.
+function identity.delete_home_directoryy ()
 {
     if ! _identity_active ; then
         return

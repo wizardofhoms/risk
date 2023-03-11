@@ -249,13 +249,14 @@ function qube.delete ()
 # ========================================================================================
 #
 
-# qubes.updatevm_template Returns the template used by a given AppVM
+# qubes.updatevm_template returns the template of the updateVM.
 function qubes.updatevm_template ()
 {
     qvm-ls | grep "$(qubes-prefs updatevm)" | grep "TemplateVM" | awk '{print $1}'
 }
 
-# qubes.focused_qube returns the name of the VM owning the currently active window.
+# qubes.focused_qube returns the name of the VM owning the currently 
+# active window. Returns 'dom0' if the focused window is a dom0 one.
 function qubes.focused_qube ()
 {
     local window_class parts vm

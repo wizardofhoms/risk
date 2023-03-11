@@ -15,17 +15,17 @@ identity.set "$active_identity"
 _info "Slamming infrastructure, vault and devices: identity $active_identity"
 
 # First shut down all client VMs
-read -rA client_vms < <(identity_client_vms)
+read -rA client_vms < <(identity.client_qubes)
 for vm in "${client_vms[@]}" ; do
     _info "Shutting down $vm"
-    vm_shutdown "$vm"
+    qube.shutdown "$vm"
 done
 
 # Do the same for proxyVMs
-read -rA proxy_vms < <(identity_proxies)
+read -rA proxy_vms < <(identity.proxy_qubes)
 for vm in "${proxy_vms[@]}" ; do
     _info "Shutting down $vm"
-    vm_shutdown "$vm"
+    qube.shutdown "$vm"
 done
 
 # Close the identity in the vault, unmount hush and backup

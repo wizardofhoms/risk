@@ -1,6 +1,6 @@
 # Analyze the arguments and extract all VMs
 # corresponding to those names/groups.
-read -rA vms < <(_vm_args "${args['vms']}" "${other_args[@]}")
+read -rA vms < <(qube.command_args "${args['vms']}" "${other_args[@]}")
 
 # Update matching VMs.
 if [[ -n "${vms[*]}" ]]; then
@@ -22,13 +22,13 @@ fi
 # If torbrowser update is required, get identity browsing VM template and update
 # We need to know for which identity to update, so we need one active.
 if [[ ${args['vms']} == torbrowser ]] || [[ ${other_args[(r)torbrowser]} == torbrowser ]]; then
-    identity_set
+    identity.set 
 
     local browser_vm browser_template
-    browser_vm="$(_identity_browser_vm)"
+    browser_vm="$(identity.browser_qube)"
 
     if [[ -n "${browser_vm}" ]]; then
-        browser_template="$(_vm_root_template "${browser_vm}")"
+        browser_template="$(qube.root_template "${browser_vm}")"
         _info "Updating Tor browser in ${browser_template}"
         _run_qube_term "${browser_template}" sudo update-torbrowser
     fi

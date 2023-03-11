@@ -13,7 +13,7 @@ device.fail_not_attached_to "${sdcard_block}" "${VAULT_VM}"
 risk_identity_stop_command
 
 _info "Deleting identity VMs"
-vm_delete_identity
+identity.delete_qubes
 
 _info "Deleting identity in vault"
 delete_vault_cmd=( risks identity delete "${IDENTITY}" )
@@ -29,6 +29,6 @@ fi
 _run_qube_term "${VAULT_VM}" "${delete_vault_cmd[@]}"
 
 # Finally, delete its dom0 directory.
-identity.delete_home_director
+identity.delete_home_directory
 
 _success "Successfully deleted identity $IDENTITY"

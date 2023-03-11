@@ -16,13 +16,13 @@ else
 fi
 
 # Start all enabled identity machines
-read -rA enabled_vms < <(_identity_autovm_starts)
+read -rA enabled_vms < <(identity.enabled_qubes)
 for vm in "${enabled_vms[@]}"; do
     if [[ -z "${vm}" ]]; then
         continue
     fi
     _info "Starting VM ${vm}"
-    _run vm_start "${vm}"
+    _run qube.start "${vm}"
 done
 
 _success "Opened identity '$IDENTITY' and started enabled VMs"

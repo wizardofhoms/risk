@@ -2,9 +2,9 @@ local vm
 
 vm="${args['vm']}"
 
-identity_set
+identity.set
 
 # Check VM ownership
-[[ "$(_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
+[[ "$(qube.owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
-vm_enable_autostart "$vm"
+qube.enable "$vm"

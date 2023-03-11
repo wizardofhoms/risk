@@ -8,11 +8,11 @@ identity.set ""
 
 url="${args['url']}"
 split_vm="$(config_get SPLIT_BROWSER)"
-active_vm="$(_vm_focused)"
+active_vm="$(qubes.focused_qube)"
 
 ## 1 - Get the bookmark entry from either split-browser file, args, or user-input in prompt.
 if [[ -z "${url}" ]]; then
-    if _web_bookmarks_empty; then
+    if web.bookmarks_file_is_empty; then
         _info "No bookmarks file in ${split_vm}, prompting user to enter it."
         zenity_prompt="zenity --text 'URL Bookmark' --forms --add-entry='URL' --add-entry='Page Title' --separator=\$'\t'"
         result="$(qvm-run --pass-io "${active_vm}" "${zenity_prompt}")"
@@ -20,7 +20,7 @@ if [[ -z "${url}" ]]; then
         title="$( echo "${result}" | cut -f 2- -d $'\t')"
     else
         _info "No URL argument, starting dmenu with bookmarks list in ${split_vm}"
-        bookmark_entry="$(web_pop_identity_bookmark)"
+        bookmark_entry="$(web.bookmark_pop)"
         url="$( echo "${bookmark_entry}" | awk '{print $2}' )"
         title="$( echo "${bookmark_entry}" | awk '{print $3}' )"
     fi
@@ -36,7 +36,7 @@ fi
 
 ## 2 - Transfer the results to the vault's user bookmarks file.
 _info "Transfering entry to vault bookmarks file."
-bookmarks_path="/home/user/.tomb/mgmt/$(_encrypt_filename 'bookmarks.tsv')"
+bookmarks_path="/home/user/.tomb/mgmt/$(crypt.filename 'bookmarks.tsv')"
 
 if ! qvm-run --pass-io "${VAULT_VM}" "cat ${bookmarks_path} | grep ${url}" &>/dev/null; then
 # grep -m 1 -F -- \$'\t'${url}\$'\t'"

@@ -1,6 +1,10 @@
 
+# ========================================================================================
+# Virtual machines / equipment functions
+# ========================================================================================
+
 # Create a web browsing VM from a template
-web_create_browser_vm ()
+function web.browser_create ()
 {
     local web="${1}-web"
     local web_netvm="${2-$(config_get DEFAULT_NETVM)}"
@@ -33,7 +37,7 @@ web_create_browser_vm ()
 }
 
 # Clone a web browsing VM from an existing one
-web_clone_browser_vm ()
+function web.browser_clone ()
 {
     local web="${1}-web"
     local web_clone="$2"
@@ -59,7 +63,7 @@ web_clone_browser_vm ()
 }
 
 # Create a split-browser VM from a template
-web_create_split_browser_backend ()
+function web.split_backend_create ()
 {
     local web="${1}-split-web"
     local web_label="${2-gray}"
@@ -73,7 +77,7 @@ web_create_split_browser_backend ()
 }
 
 # Clone an existing split-browser VM, and change its dispvms
-web_clone_split_browser_backend ()
+function web.split_backend_clone ()
 {
     local web="${1}-split-web"
     local web_clone="$2"
@@ -88,8 +92,41 @@ web_clone_split_browser_backend ()
     qvm-tags "$web" set "$IDENTITY"
 }
 
-# create_bookmark_system_file writes and encrypts a file to store all-users bookmarks.
-create_bookmark_system_file ()
+# web.browser_set_split_dispvm updates the default disposable VM
+# used by the split browser backend to use the active identity's one.
+function web.browser_set_split_dispvm ()
+{
+    local browser_vm
+    browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
+
+    if [[ -n "${browser_vm}" ]]; then
+        _info "Setting identity browser VM with split-browser"
+        qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm "${browser_vm}"
+    fi
+}
+
+# web.browser_unset_split_dispvm removes the dispvm setting of the
+# tor split-browser backend if it is set to the identity browser VM.
+function web.browser_unset_split_dispvm ()
+{
+    local browser_vm
+    browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
+
+    if [[ -z "${browser_vm}" ]]; then
+        return
+    fi
+
+    if [[ "$(qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm)" == "${browser_vm}" ]]; then
+        qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm ''
+    fi
+}
+
+# ========================================================================================
+# Browsing activities and data
+# ========================================================================================
+#
+# web.bookmark_create_system writes and encrypts a file to store all-users bookmarks.
+function web.bookmark_create_system ()
 {
     local filename="bookmarks.tsv"
 
@@ -104,30 +141,23 @@ create_bookmark_system_file ()
     # And create it.
 }
 
-# create_bookmark_system_file writes and encrypts a file to store per-user bookmarks.
-web_create_identity_bookmarks ()
+# web.bookmark_create_system writes and encrypts a file to store per-user bookmarks.
+function web.bookmark_create_file ()
 {
-    local filename="$(_encrypt_filename "bookmarks.tsv")"
+    local filename="$(crypt.filename "bookmarks.tsv")"
     bookmarks_path="/home/user/.tomb/mgmt/${filename}"
     _run_exec "$VAULT_VM" "touch ${bookmarks_path}"
 }
 
-# create_bookmark_system_file writes and encrypts a file for blacklisted links.
-create_links_blacklist_file ()
+# web.bookmark_create_system writes and encrypts a file for blacklisted links.
+function web.blacklist_create_file ()
 {
     echo
 }
 
-# bookmark_system_file_exists returns 0 if the file exists, or 1.
-bookmark_system_file_exists ()
-{
-    echo
-    # _run_exec "$VAULT" "ls /home/user/.graveyard/$encrypted_identity"
-}
-
-# bookmark_display_command returns a command string
+# web.bookmark_display_command returns a command string
 # to use as the dmenu displayer of a bookmarks file.
-bookmark_display_command ()
+function web.bookmark_display_command ()
 {
     # This command will not work if qubes-split-browser is not installed in the split-browser VM
     local window_focus_command='_NET_WM_NAME="Split Browser" x11-unoverride-redirect stdbuf -oL'
@@ -139,9 +169,9 @@ bookmark_display_command ()
     fi
 }
 
-# _web_bookmarks_empty returns 0 if no bookmark
+# web.bookmarks_file_is_empty returns 0 if no bookmark
 # file exists in split-browser or if it is empty.
-_web_bookmarks_empty ()
+function web.bookmarks_file_is_empty ()
 {
     local split_command contents
     split_command=( qvm-run --pass-io "$(config_get SPLIT_BROWSER)" "cat .local/share/split-browser/bookmarks.tsv" )
@@ -157,52 +187,23 @@ _web_bookmarks_empty ()
     return 1
 }
 
-# web_set_identity_split_browser updates the default disposable VM
-# used by the split browser backend to use the active identity's one.
-web_set_identity_split_browser ()
-{
-    local browser_vm
-    browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
-
-    if [[ -n "${browser_vm}" ]]; then
-        _info "Setting identity browser VM with split-browser"
-        qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm "${browser_vm}"
-    fi
-}
-
-# web_unset_identity_split_browser removes the dispvm setting of the
-# tor split-browser backend if it is set to the identity browser VM.
-web_unset_identity_split_browser ()
-{
-    local browser_vm
-    browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
-
-    if [[ -z "${browser_vm}" ]]; then
-        return
-    fi
-
-    if [[ "$(qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm)" == "${browser_vm}" ]]; then
-        qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm ''
-    fi
-}
-
-# web_select_identity_bookmark prompts the user with bookmarks,
+# web.bookmarks_select prompts the user with bookmarks,
 # and returns the URL extracted from the selection.
-web_select_identity_bookmark ()
+function web.bookmarks_select ()
 {
     local bookmarks_command result
 
-    # bookmark_prompt=( $(bookmark_display_command) )
+    # bookmark_prompt=( $(web.bookmark_display_command) )
     bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
     qvm-run --pass-io "${vm}" "${bookmarks_command}"
     result="$(qvm-run --pass-io "${vm}" cat bookmark)"
     print "$result" | awk '{print $2}'
 }
 
-# web_pop_identity_bookmark prompts the user with bookmarks, returns the URL
+# web.bookmark_pop prompts the user with bookmarks, returns the URL
 # extracted from the selection and deletes the line in the file.
 # Returns the complete bookmark entry.
-web_pop_identity_bookmark ()
+function web.bookmark_pop ()
 {
     local bookmarks_command result bookmark_line vm
     bookmark_file=".local/share/split-browser/bookmarks.tsv"

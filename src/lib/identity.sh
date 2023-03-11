@@ -51,20 +51,6 @@ function identity.active ()
     qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null
 }
 
-# identity.delete_home_director deletes the ~/.risk/identities/<identity> directory.
-function identity.delete_home_directory ()
-{
-    if ! _identity_active ; then
-        return
-    fi
-    if [[ -z "${IDENTITY_DIR}" ]]; then
-        return
-    fi
-
-    _info "Deleting identiy ${IDENTITY} home directory"
-    _run -rf "${IDENTITY_DIR}"
-}
-
 # identity.is_active returns 0 if an identity is unlocked, 1 if not.
 function identity.is_active ()
 {
@@ -127,70 +113,11 @@ function identity.fail_unknown ()
 {
     # Get the resulting encrypted name
     local encrypted_identity
-    encrypted_identity="$(_encrypt_filename "${IDENTITY}")"
+    encrypted_identity="$(crypt.filename "${IDENTITY}")"
 
     # And check the directory exists
     _run_exec "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
     _catch "Invalid identity: $1 does not exists in ${VAULT_VM}"
-}
-
-# Returns the name of the identity to which a VM belongs.
-_vm_owner ()
-{
-    print "$(qvm-tags "$1" "$RISK_VM_OWNER_TAG" 2>/dev/null)"
-}
-
-# Returns the default network VM for the active identity
-_identity_default_netvm ()
-{
-    cat "${IDENTITY_DIR}/netvm" 2>/dev/null
-}
-
-# Get the default VM label/color for an identity
-_identity_default_vm_label ()
-{
-    cat "${IDENTITY_DIR}/vm_label" 2>/dev/null
-}
-
-# Get the TOR gateway for the identity
-_identity_tor_gateway ()
-{
-    cat "${IDENTITY_DIR}/tor_gw" 2>/dev/null
-}
-
-# Get the browser VM for the identity
-_identity_browser_vm ()
-{
-    cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null
-}
-
-# _identity_proxies returns an array of proxy VMs
-# (VPNs and TOR gateways for the current identity)
-_identity_proxies ()
-{
-    [[ -f "${IDENTITY_DIR}/proxy_vms" ]] || return
-    read -d '' -r -A proxies <"${IDENTITY_DIR}/proxy_vms"
-    echo "${proxies[@]}"
-}
-
-# returns all identity VMs that are not gateways/proxies,
-# but are potentially (most of the time) accessing network
-# from one or more of these gateways.
-_identity_client_vms ()
-{
-    [[ -f "${IDENTITY_DIR}/client_vms" ]] || return
-    read -d '' -r -A clients <"${IDENTITY_DIR}/client_vms"
-    echo "${clients[@]}"
-}
-
-# returns all identity VMs that are not gateways/proxies,
-# but are potentially (most of the time) accessing network
-# from one or more of these gateways.
-_identity_autovm_starts ()
-{
-    [[ -f "${IDENTITY_DIR}/autovm_starts" ]] || return
-    read -d '' -r -A clients <"${IDENTITY_DIR}/autovm_starts"
-    echo "${clients[@]}"
 }
 
 # identity.get_args_name either returns the name given as parameter, or
@@ -246,3 +173,169 @@ function identity.get_args_expiry ()
 
     print "${expiry_date}"
 }
+
+# identity.delete_home_director deletes the ~/.risk/identities/<identity> directory.
+function identity.delete_home_directory ()
+{
+    if ! _identity_active ; then
+        return
+    fi
+    if [[ -z "${IDENTITY_DIR}" ]]; then
+        return
+    fi
+
+    _info "Deleting identiy ${IDENTITY} home directory"
+    _run -rf "${IDENTITY_DIR}"
+}
+
+
+# ========================================================================================
+# Virtual machines / equipment functions
+# ========================================================================================
+
+# identity.netvm returns the default network VM for the active identity
+function identity.netvm ()
+{
+    cat "${IDENTITY_DIR}/netvm" 2>/dev/null
+}
+
+# identity.vm_label returns the default VM label/color for an identity
+function identity.vm_label ()
+{
+    cat "${IDENTITY_DIR}/vm_label" 2>/dev/null
+}
+
+# identity.tor_gateway returns the TOR gateway for the identity
+function identity.tor_gateway ()
+{
+    cat "${IDENTITY_DIR}/tor_gw" 2>/dev/null
+}
+
+# identity.browser_qube returns the browser VM for the identity
+function identity.browser_qube ()
+{
+    cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null
+}
+
+# identity.proxy_qubes returns an array of proxy VMs
+# (VPNs and TOR gateways for the current identity)
+function identity.proxy_qubes ()
+{
+    [[ -f "${IDENTITY_DIR}/proxy_vms" ]] || return
+    read -d '' -r -A proxies <"${IDENTITY_DIR}/proxy_vms"
+    echo "${proxies[@]}"
+}
+
+# identity.client_qubes returns all identity VMs that are not gateways/proxies,
+# but are potentially (most of the time) accessing network from one or more of 
+# these gateways.
+function identity.client_qubes ()
+{
+    [[ -f "${IDENTITY_DIR}/client_vms" ]] || return
+    read -d '' -r -A clients <"${IDENTITY_DIR}/client_vms"
+    echo "${clients[@]}"
+}
+
+# identity.enabled_qubes returns all identity VMs that are 
+# not gateways/proxies, but are potentially (most of the time) 
+# accessing network from one or more of these gateways.
+function identity.enabled_qubes ()
+{
+    [[ -f "${IDENTITY_DIR}/autostart_vms" ]] || return
+    read -d '' -r -A clients <"${IDENTITY_DIR}/autostart_vms"
+    echo "${clients[@]}"
+}
+
+# identity.shutdown_qubes powers off all running VMs belonging to the identity.
+function identity.shutdown_qubes ()
+{
+    local clients proxies tor_gateway browser_vm net_vm other_vms
+
+    # Client VMs
+    read -rA clients < <(identity.client_qubes)
+    for vm in "${clients[@]}" ; do
+        if [[ -z "${vm}" ]]; then
+            continue
+        fi
+        _info "Shutting down $vm"
+        qube.shutdown "$vm"
+    done
+
+    # Browser VMs (disposables to find from template/tag)
+    browser_vm="$(identity.browser_qube)"
+    if [[ -n "${browser_vm}" ]]; then
+        _info "Shutting down $browser_vm"
+        qube.shutdown "$browser_vm"
+    fi
+
+    # Proxy VMs
+    read -rA proxies < <(identity.client_qubes)
+    for vm in "${proxies[@]}" ; do
+        if [[ -z "${vm}" ]]; then
+            continue
+        fi
+        _info "Shutting down $vm"
+        qube.shutdown "$vm"
+    done
+
+    # Tor gateway.
+    tor_gateway="$(identity.tor_gateway)"
+    if [[ -n "${tor_gateway}" ]]; then
+        _info "Shutting down $tor_gateway"
+        qube.shutdown "$tor_gateway"
+    fi
+
+    # Other VMs that are tagged with the identity.
+    read -rA other_vms < <(qubes.list_all)
+    for vm in "${other_vms[@]}" ; do
+        if [[ -z "${vm}" ]]; then
+            continue
+        fi
+
+        if [[ "$(qube.owner "${vm}")" == "${IDENTITY}" ]]; then
+            _info "Shutting down $vm"
+            qube.shutdown "$vm"
+        fi
+    done
+}
+
+# identity.delete_qubes deletes all VMs belonging to an identity.
+function identity.delete_qubes ()
+{
+    local clients proxies tor_gateway browser_vm net_vm other_vms
+
+    # Client VMs
+    read -rA clients < <(identity.client_qubes)
+    for client in "${clients[@]}"; do
+        qube.delete "${client}" "client_vms"
+    done
+
+    # Browser VM
+    browser_vm="$(identity.browser_qube)"
+    if [[ -n "${browser_vm}" ]]; then
+        qube.delete "${browser_vm}" "browser_vm"
+    fi
+
+    # Proxy VMs
+    read -rA proxies < <(identity.client_qubes)
+    for proxy in "${proxies[@]}"; do
+        qube.delete "${proxy}" "proxy_vms"
+    done
+
+    # Tor gateway.
+    tor_gateway="$(identity.tor_gateway)"
+    if [[ -n "${tor_gateway}" ]]; then
+        qube.delete "${tor_gateway}" "tor_gw"
+    fi
+
+    # Net VM
+
+    # Other VMs that are tagged with the identity.
+    read -rA other_vms < <(qubes.list_all)
+    for vm in "${other_vms[@]}"; do
+        if [[ "$(qube.owner "${vm}")" == "${IDENTITY}" ]]; then
+            qube.delete "${vm}"
+        fi
+    done
+}
+

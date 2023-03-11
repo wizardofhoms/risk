@@ -1,7 +1,7 @@
 
-# _encrypt_filename takes a filename as input, and uses the currently
+# crypt.filename takes a filename as input, and uses the currently
 # set identity to produce an random name to use as a file/directory name.
-_encrypt_filename ()
+function crypt.filename ()
 {
     local encryption_key_cmd="echo '$1' | spectre -q -n -s 0 -F n -t n -u '$1' 'file_encryption_key'"
     encryption_key="$(qvm-run --pass-io "$VAULT_VM" "$encryption_key_cmd")"

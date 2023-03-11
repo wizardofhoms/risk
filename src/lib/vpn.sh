@@ -1,6 +1,6 @@
 
-# Creates a new VPN gateway from a TemplateVM
-vpn_create ()
+# proxy.vpn_create creates a new VPN gateway from a TemplateVM
+function proxy.vpn_create ()
 {
     local gw="${1}"
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
@@ -17,8 +17,8 @@ vpn_create ()
     echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
 }
 
-# Creates a new VPN gateway from an existing VPN AppVM
-vpn_clone ()
+# proxy.vpn_clone creates a new VPN gateway from an existing VPN AppVM
+function proxy.vpn_clone ()
 {
     local gw="${1}"
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
@@ -48,13 +48,13 @@ vpn_clone ()
     echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
 }
 
-# function to browse for one or more (as zip) VPN client configurations
-# in another VM, import them in our VPN VM, and run the setup wizard if
-# there is more than one configuration to choose from.
+# proxy.vpn_import_configs browses for one or more (as zip) VPN client configurations
+# in another VM, import them in our VPN VM, and run the setup wizard if there is more 
+# than one configuration to choose from.
 # $1 - Name of VPN VM
 # $2 - Name of VM in which to browse for configuration
-# $ $3 - Path to the VPN client config to which one (only) should be copied, if not a zip file
-vpn_import_configs ()
+# $3 - Path to the VPN client config to which one (only) should be copied, if not a zip file
+function proxy.vpn_import_configs ()
 {
     local name="$1"
     local config_vm="$2"
@@ -94,15 +94,15 @@ vpn_import_configs ()
     echo "$gw" > "${IDENTITY_DIR}/proxy_vms"
 }
 
-# vpn_next_vm_name returns a name for a new VPN VM, such as vpn-1,
+# proxy.vpn_next_name returns a name for a new VPN VM, such as vpn-1,
 # where the number is the next value after the ones found in existing
 # VPN vms.
-vpn_next_vm_name ()
+function proxy.vpn_next_name ()
 {
     local base_name="$1"
 
     # First get the array of ProxyVMs names
-    local proxies=( $(_identity_proxies) )
+    read -rA proxies < <(identity.proxy_qubes)
 
     local next_number=1
 
@@ -115,13 +115,13 @@ vpn_next_vm_name ()
     print "$base_name-vpn-$next_number"
 }
 
-# vpn_check__vm_is_identity_proxy fails if the VM is not listed as an identity proxy.
-vpn_check__vm_is_identity_proxy ()
+# proxy.fail_not_identity_proxy exits the program 
+# if the VM is not listed as an identity proxy.
+function proxy.fail_not_identity_proxy ()
 {
     local name="$1"
-    local proxies
 
-    proxies=($(_identity_proxies))
+    read -rA proxies < <(identity.proxy_qubes)
     for proxy in "${proxies[@]}" ; do
         if [[ $proxy == "$name" ]]; then
             found=true

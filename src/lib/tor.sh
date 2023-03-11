@@ -1,14 +1,13 @@
 
-# Creates a new TOR Whonix gateway AppVM.
+# proxy.tor_create creates a new TOR Whonix gateway AppVM.
 # $1 - Name to use for new VM
 # $2 - Netvm for this gateway
 # $3 - Label
-tor_gateway_create ()
+function proxy.tor_create ()
 {
     local gw="${1}-gw"
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
     local gw_label="${3-yellow}"
-
     local gw_template="$(config_get WHONIX_GW_TEMPLATE)"
 
     _info "Creating TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_template)"
@@ -21,9 +20,9 @@ tor_gateway_create ()
     echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
 
-# very similar to tor_gateway_create, except that we clone an existing
-# gateway AppVM instead of creating a new one from a Template.
-tor_gateway_clone ()
+# proxy.tor_clone is similar to proxy.tor_create, except that we clone 
+# an existing gateway AppVM instead of creating a new one from a Template.
+function proxy.tor_clone ()
 {
     local gw="${1}-gw"
     local gw_clone="$2"

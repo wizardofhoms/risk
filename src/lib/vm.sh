@@ -9,112 +9,21 @@
 #
 
 # Returns the name of the identity to which a VM belongs.
-_vm_owner ()
+# $1 - Qube name
+function qube.owner ()
 {
     print "$(qvm-tags "$1" "$RISK_VM_OWNER_TAG" 2>/dev/null)"
 }
 
-# Returns the template used by a given AppVM
-_vm_updatevm_template ()
-{
-    qvm-ls | grep "$(qubes-prefs updatevm)" | grep "TemplateVM" | awk '{print $1}'
-}
-
-# _vm_focused returns the name of the VM owning the currently active window.
-_vm_focused ()
-{
-    local window_class parts vm
-    window_class="$(xdotool getwindowclassname "$(xdotool getactivewindow)")"
-
-    # No colon means dom0
-    if [[ ${window_class} == *:* ]]; then
-        parts=( ${(s[:])window_class} )
-        print "${parts[1]}"
-    else
-        print "dom0"
-    fi
-}
-
-# Returns an array of all VMs
-_vm_list ()
-{
-    local -a vms
-
-    while IFS= read -r VM_NAME ; do
-        vms+=("${VM_NAME}")
-    done < <(qvm-ls --raw-list | sort)
-
-    echo "${vms[@]}"
-}
-
-# _vm_list_updateable returns all templates and standalone VMs
-_vm_list_updateable ()
-{
-    local templates=()
-    while read line ; do
-        IFS="|" read -r name class <<< "${line}"
-        if [[ "$class" == "TemplateVM" ]]; then
-            templates+=( "$name" )
-        elif [[ "$class" == "StandaloneVM" ]]; then
-            templates+=( "$name" )
-        fi
-    done < <(qvm-ls --raw-data --fields name,class | sort)
-
-    echo "${templates[@]}"
-}
-
-# _vm_args returns a list of VMs that are either explicitly named
-# in the array passed as arguments, or those belonging to some
-# "group keyword" of this same array.
-_vm_args ()
-{
-    local vms=("$@")
-    local _vm_list=()
-    local can_update=()
-    local updatevm
-
-    # Return if our only argument is empty
-
-    # All updateable VMs, except the updater one
-    read -rA can_update <<< "$(_vm_list_updateable)"
-    updatevm="$(_vm_updatevm_template)"
-    can_update=( ${can_update:#$~updatevm} )
-
-    for word in "${vms[@]}"; do
-        case "${word}" in
-            # First check for group keywords
-            all)
-                _vm_list+=( "${updatevm}" )
-                _vm_list+=( "${can_update[@]}" )
-                ;;
-            cacher)
-                _vm_list+=( "${updatevm}" )
-                ;;
-            torbrowser)
-                ;;
-            dom0)
-                ;;
-            # Else return the VM name itself
-            *)
-                for vm in "${can_update[@]}"; do
-                    [[ "${vm}" =~ ${word} ]] && _vm_list+=( "${vm}" )
-                done
-                ;;
-        esac
-
-    done
-
-    echo "${_vm_list[@]}"
-}
-
-# _vm_is_identity_proxy verifies that the identity's proxy VMs arrays contains a given VM.
-_vm_is_identity_proxy ()
+# qube.is_identity_proxy verifies that the identity's proxy VMs arrays contains a given VM.
+# $1 - Qube name
+function qube.is_identity_proxy ()
 {
     local vm="$1"
     local match proxies
 
     match=1
-    read -rA proxies < <(_identity_proxies)
+    read -rA proxies < <(identity.proxy_qubes)
 
     for proxy in "${proxies[@]}"; do
         if [[ $vm == "$proxy" ]]; then
@@ -126,11 +35,12 @@ _vm_is_identity_proxy ()
     return $match
 }
 
-# _vm_root_template returns the updateable template of a given VM.
+# qube.root_template returns the updateable template of a given VM.
 # Example: if a disposable VM is given as argument, the first resolved
 # template is the dispvm template, which itself is an AppVM, so we get
 # the template of the dispvm template.
-_vm_root_template ()
+# $1 - Qube name
+function qube.root_template ()
 {
     local vm="${1}"
     local updateable
@@ -146,22 +56,65 @@ _vm_root_template ()
     echo "${template}"
 }
 
+# qube.command_args returns a list of VMs that are either explicitly named
+# in the array passed as arguments, or those belonging to some
+# "group keyword" of this same array.
+# $@ - Any number of qubes' names, patterns or group keywords.
+function qube.command_args ()
+{
+    local vms=("$@")
+    local all=()
+    local can_update=()
+    local updatevm
+
+    # Return if our only argument is empty
+
+    # All updateable VMs, except the updater one
+    read -rA can_update <<< "$(qubes.list_all_updateable)"
+    updatevm="$(qubes.updatevm_template)"
+    can_update=( ${can_update:#$~updatevm} )
+
+    for word in "${vms[@]}"; do
+        case "${word}" in
+            # First check for group keywords
+            all)
+                all+=( "${updatevm}" )
+                all+=( "${can_update[@]}" )
+                ;;
+            cacher)
+                all+=( "${updatevm}" )
+                ;;
+            torbrowser)
+                ;;
+            dom0)
+                ;;
+            *)
+                # Else return the VM name itself
+                for vm in "${can_update[@]}"; do
+                    [[ "${vm}" =~ ${word} ]] && all+=( "${vm}" )
+                done
+                ;;
+        esac
+
+    done
+
+    echo "${all[@]}"
+}
+
+
 # ========================================================================================
 #  VM control and settings management
 # ========================================================================================
 #
 
-# vm_init_identity_settings is used once when creating
-# VMs for an identity, and requires access to argu
-
-# Enables a VM to autostart
-vm_enable_autostart ()
+# qube.enable enables a VM to autostart
+function qube.enable ()
 {
     local name="$1"
-    local autovm_starts=( "$(_identity_autovm_starts)" )
+    local enabled=( "$(identity.enabled_qubes)" )
 
     # Check if the VM is already marked autostart
-    for vm in "${autovm_starts[@]}" ; do
+    for vm in "${enabled[@]}" ; do
         if [[ $vm == "$name" ]]; then
             already_enabled=true
         fi
@@ -169,23 +122,23 @@ vm_enable_autostart ()
 
     if [[ ! $already_enabled ]]; then
         _info "Enabling VM ${name} to autostart"
-        echo "$name" >> "${IDENTITY_DIR}/autovm_starts"
+        echo "$name" >> "${IDENTITY_DIR}/autostart_vms"
     else
         _info "VM ${name} is already enabled"
     fi
 }
 
-# Disables a VM to autostart
-vm_disable_autostart ()
+# qube.disable disables a VM to autostart
+function qube.disable ()
 {
     local name="$1"
     _info "Disabling VM $name"
-    sed -i /"$name"/d "${IDENTITY_DIR}/autovm_starts"
+    sed -i /"$name"/d "${IDENTITY_DIR}/autostart_vms"
 }
 
-# vm_start [vm 1] ... [vm n]
+# qube.start [vm 1] ... [vm n]
 #Start the given VMs without executing any command.
-vm_start ()
+function qube.start ()
 {
     local ret=0
 
@@ -194,7 +147,7 @@ vm_start ()
     for vm in "$@" ; do
         [[ "$vm" == "dom0" ]] && continue
         _verbose "Starting: $vm"
-        vm_assert_running "$vm" &
+        qube.assert_running "$vm" &
         pids["$vm"]=$!
     done
 
@@ -212,9 +165,9 @@ vm_start ()
     [ -z "$failed" ]
 }
 
-# vm_shutdown [vm 1] ... [vm n]
+# qube.shutdown [vm 1] ... [vm n]
 #Shut the given VMs down.
-vm_shutdown ()
+function qube.shutdown ()
 {
     local ret=0
 
@@ -234,12 +187,12 @@ vm_shutdown ()
     return $ret
 }
 
-#vm_assert_running [vm] [start]
+#qube.assert_running [vm] [start]
 #Assert that the given VM is running. Will unpause paused VMs and may start shut down VMs.
 #[vm]: VM for which to make sure it's running.
 #[start]: If it's not running and not paused, start it (default: 0/true). If set to 1, this function will return a non-zero exit code.
 #returns: A non-zero exit code, if it's not running and/or we failed to start the VM.
-vm_assert_running ()
+function qube.assert_running ()
 {
     local vm="$1"
     local start="${2:-0}"
@@ -259,11 +212,11 @@ vm_assert_running ()
     return 0
 }
 
-# vm_delete deletes a VM belonging to the identity, and removes its from the
+# qube.delete deletes a VM belonging to the identity, and removes its from the
 # specified file. If this file is empty after this, it is deleted here.
 # $1 - VM name.
 # $2 - The file to search under ${IDENTITY_DIR}/ for deletion.
-vm_delete ()
+function qube.delete ()
 {
     local vm="${1}"
     local file="${2}"
@@ -290,96 +243,58 @@ vm_delete ()
     fi
 }
 
-# vm_shutdown_identity powers off all running VMs belonging to the identity.
-vm_shutdown_identity ()
+
+# ========================================================================================
+#  Qubes dom0 general functions (not about a single qube)
+# ========================================================================================
+#
+
+# qubes.updatevm_template Returns the template used by a given AppVM
+function qubes.updatevm_template ()
 {
-    local clients proxies tor_gateway browser_vm net_vm other_vms
-
-    # Client VMs
-    read -rA clients < <(_identity_client_vms)
-    for vm in "${clients[@]}" ; do
-        if [[ -z "${vm}" ]]; then
-            continue
-        fi
-        _info "Shutting down $vm"
-        vm_shutdown "$vm"
-    done
-
-    # Browser VMs (disposables to find from template/tag)
-    browser_vm="$(_identity_browser_vm)"
-    if [[ -n "${browser_vm}" ]]; then
-        _info "Shutting down $browser_vm"
-        vm_shutdown "$browser_vm"
-    fi
-
-    # Proxy VMs
-    read -rA proxies < <(_identity_client_vms)
-    for vm in "${proxies[@]}" ; do
-        if [[ -z "${vm}" ]]; then
-            continue
-        fi
-        _info "Shutting down $vm"
-        vm_shutdown "$vm"
-    done
-
-    # Tor gateway.
-    tor_gateway="$(_identity_tor_gateway)"
-    if [[ -n "${tor_gateway}" ]]; then
-        _info "Shutting down $tor_gateway"
-        vm_shutdown "$tor_gateway"
-    fi
-
-    # Other VMs that are tagged with the identity.
-    read -rA other_vms < <(_vm_list)
-    for vm in "${other_vms[@]}" ; do
-        if [[ -z "${vm}" ]]; then
-            continue
-        fi
-
-        if [[ "$(_vm_owner "${vm}")" == "${IDENTITY}" ]]; then
-            _info "Shutting down $vm"
-            vm_shutdown "$vm"
-        fi
-    done
+    qvm-ls | grep "$(qubes-prefs updatevm)" | grep "TemplateVM" | awk '{print $1}'
 }
 
-# vm_delete_identity deletes all VMs belonging to an identity.
-vm_delete_identity ()
+# qubes.focused_qube returns the name of the VM owning the currently active window.
+function qubes.focused_qube ()
 {
-    local clients proxies tor_gateway browser_vm net_vm other_vms
+    local window_class parts vm
+    window_class="$(xdotool getwindowclassname "$(xdotool getactivewindow)")"
 
-    # Client VMs
-    read -rA clients < <(_identity_client_vms)
-    for client in "${clients[@]}"; do
-        vm_delete "${client}" "client_vms"
-    done
-
-    # Browser VM
-    browser_vm="$(_identity_browser_vm)"
-    if [[ -n "${browser_vm}" ]]; then
-        vm_delete "${browser_vm}" "browser_vm"
+    # No colon means dom0
+    if [[ ${window_class} == *:* ]]; then
+        parts=( ${(s[:])window_class} )
+        print "${parts[1]}"
+    else
+        print "dom0"
     fi
+}
 
-    # Proxy VMs
-    read -rA proxies < <(_identity_client_vms)
-    for proxy in "${proxies[@]}"; do
-        vm_delete "${proxy}" "proxy_vms"
-    done
+# qubes.list_all returns an array of all VMs
+function qubes.list_all ()
+{
+    local -a vms
 
-    # Tor gateway.
-    tor_gateway="$(_identity_tor_gateway)"
-    if [[ -n "${tor_gateway}" ]]; then
-        vm_delete "${tor_gateway}" "tor_gw"
-    fi
+    while IFS= read -r VM_NAME ; do
+        vms+=("${VM_NAME}")
+    done < <(qvm-ls --raw-list | sort)
 
-    # Net VM
+    echo "${vms[@]}"
+}
 
-    # Other VMs that are tagged with the identity.
-    read -rA other_vms < <(_vm_list)
-    for vm in "${other_vms[@]}"; do
-        if [[ "$(_vm_owner "${vm}")" == "${IDENTITY}" ]]; then
-            vm_delete "${vm}"
+# qubes.list_all_updateable returns all templates and standalone VMs
+function qubes.list_all_updateable ()
+{
+    local templates=()
+    while read -r line ; do
+        IFS="|" read -r name class <<< "${line}"
+        if [[ "$class" == "TemplateVM" ]]; then
+            templates+=( "$name" )
+        elif [[ "$class" == "StandaloneVM" ]]; then
+            templates+=( "$name" )
         fi
-    done
+    done < <(qvm-ls --raw-data --fields name,class | sort)
+
+    echo "${templates[@]}"
 }
 

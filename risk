@@ -26,7 +26,6 @@ risk_usage() {
   echo
   # :command.usage_commands
   printf "%s\n" "$(bold "Commands:")"
-  printf "  %s   Manage the risk global configuration\n" "$(red "config")  "
   printf "  %s   Manage the hush partition attach/detach from qubes\n" "$(red "hush")    "
   printf "  %s   Manage backup devices attach/detach from qubes\n" "$(red "backup")  "
   printf "  %s   Create, manage and use identities and/or use their machines\n" "$(red "identity")"
@@ -36,6 +35,7 @@ risk_usage() {
   printf "  %s   Execute a command in a VM belong to an identity.\n" "$(red "use")     "
   printf "  %s   Browse, bookmark, verify and manage URLS/links\n" "$(red "url")     "
   printf "  %s   Strutured set of commands for managing Qubes in general\n" "$(red "qubes")   "
+  printf "  %s   Manage the risk global configuration\n" "$(red "config")  "
   printf "  %s   Show help about a command\n" "$(red "help")    "
   echo
 
@@ -49,222 +49,17 @@ risk_usage() {
     printf "    Show verbose logging\n"
     echo
 
+    # :flag.usage
+    printf "  %s\n" "--log-file, -l LOGFILE"
+    printf "    Path to log file\n"
+    echo
+
     # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
     printf "  %s\n" "--version"
     printf "    Show version number\n"
-    echo
-
-  fi
-}
-
-# :command.usage
-risk_config_usage() {
-  if [[ -n $long_usage ]]; then
-    printf "risk config - Manage the risk global configuration\n"
-    echo
-
-  else
-    printf "risk config - Manage the risk global configuration\n"
-    echo
-
-  fi
-
-  printf "%s\n" "$(bold "Usage:")"
-  printf "  risk config COMMAND\n"
-  printf "  risk config [COMMAND] --help | -h\n"
-  echo
-  # :command.usage_commands
-  printf "%s\n" "$(bold "Commands:")"
-  printf "  %s   Set a configuration variable to a value\n" "$(red "set")  "
-  printf "  %s   Print the value of a configuration variable\n" "$(red "get")  "
-  printf "  %s   Delete the value of a configuration variable\n" "$(red "unset")"
-  printf "  %s   List all configuration variables\n" "$(red "list") "
-  echo
-
-  # :command.long_usage
-  if [[ -n $long_usage ]]; then
-    printf "%s\n" "$(bold "Options:")"
-
-    # :command.usage_fixed_flags
-    printf "  %s\n" "--help, -h"
-    printf "    Show this help\n"
-    echo
-
-  fi
-}
-
-# :command.usage
-risk_config_set_usage() {
-  if [[ -n $long_usage ]]; then
-    printf "risk config set - Set a configuration variable to a value\n"
-    echo
-
-  else
-    printf "risk config set - Set a configuration variable to a value\n"
-    echo
-
-  fi
-
-  printf "%s\n" "$(bold "Usage:")"
-  printf "  risk config set KEY VALUE\n"
-  printf "  risk config set --help | -h\n"
-  echo
-
-  # :command.long_usage
-  if [[ -n $long_usage ]]; then
-    printf "%s\n" "$(bold "Options:")"
-
-    # :command.usage_fixed_flags
-    printf "  %s\n" "--help, -h"
-    printf "    Show this help\n"
-    echo
-
-    # :command.usage_args
-    printf "%s\n" "$(bold "Arguments:")"
-
-    # :argument.usage
-    printf "  %s\n" "$(blue "KEY")"
-    printf "    Name of of key to set\n"
-    echo
-
-    # :argument.usage
-    printf "  %s\n" "$(blue "VALUE")"
-    printf "    Value to assign to the key\n"
-    echo
-
-  fi
-}
-
-# :command.usage
-risk_config_get_usage() {
-  if [[ -n $long_usage ]]; then
-    printf "risk config get - Print the value of a configuration variable\n"
-    echo
-
-  else
-    printf "risk config get - Print the value of a configuration variable\n"
-    echo
-
-  fi
-
-  printf "%s\n" "$(bold "Usage:")"
-  printf "  risk config get KEY\n"
-  printf "  risk config get --help | -h\n"
-  echo
-
-  # :command.long_usage
-  if [[ -n $long_usage ]]; then
-    printf "%s\n" "$(bold "Options:")"
-
-    # :command.usage_fixed_flags
-    printf "  %s\n" "--help, -h"
-    printf "    Show this help\n"
-    echo
-
-    # :command.usage_args
-    printf "%s\n" "$(bold "Arguments:")"
-
-    # :argument.usage
-    printf "  %s\n" "$(blue "KEY")"
-    printf "    Name of of key to show\n"
-    echo
-
-  fi
-}
-
-# :command.usage
-risk_config_unset_usage() {
-  if [[ -n $long_usage ]]; then
-    printf "risk config unset - Delete the value of a configuration variable\n"
-    echo
-
-  else
-    printf "risk config unset - Delete the value of a configuration variable\n"
-    echo
-
-  fi
-
-  printf "%s\n" "$(bold "Usage:")"
-  printf "  risk config unset KEY\n"
-  printf "  risk config unset --help | -h\n"
-  echo
-
-  # :command.long_usage
-  if [[ -n $long_usage ]]; then
-    printf "%s\n" "$(bold "Options:")"
-
-    # :command.usage_fixed_flags
-    printf "  %s\n" "--help, -h"
-    printf "    Show this help\n"
-    echo
-
-    # :command.usage_args
-    printf "%s\n" "$(bold "Arguments:")"
-
-    # :argument.usage
-    printf "  %s\n" "$(blue "KEY")"
-    printf "    Name of of key to delete/unset\n"
-    echo
-
-  fi
-}
-
-# :command.usage
-risk_config_list_usage() {
-  if [[ -n $long_usage ]]; then
-    printf "risk config list - List all configuration variables\n"
-    echo
-
-  else
-    printf "risk config list - List all configuration variables\n"
-    echo
-
-  fi
-
-  printf "%s\n" "$(bold "Usage:")"
-  printf "  risk config list\n"
-  printf "  risk config list --help | -h\n"
-  echo
-
-  # :command.long_usage
-  if [[ -n $long_usage ]]; then
-    printf "%s\n" "$(bold "Options:")"
-
-    # :command.usage_fixed_flags
-    printf "  %s\n" "--help, -h"
-    printf "    Show this help\n"
-    echo
-
-  fi
-}
-
-# :command.usage
-risk_config_keys_usage() {
-  if [[ -n $long_usage ]]; then
-    printf "risk config keys - List all configuration variables as an array (for completions)\n"
-    echo
-
-  else
-    printf "risk config keys - List all configuration variables as an array (for completions)\n"
-    echo
-
-  fi
-
-  printf "%s\n" "$(bold "Usage:")"
-  printf "  risk config keys\n"
-  printf "  risk config keys --help | -h\n"
-  echo
-
-  # :command.long_usage
-  if [[ -n $long_usage ]]; then
-    printf "%s\n" "$(bold "Options:")"
-
-    # :command.usage_fixed_flags
-    printf "  %s\n" "--help, -h"
-    printf "    Show this help\n"
     echo
 
   fi
@@ -1924,6 +1719,216 @@ risk_qubes_update_usage() {
 }
 
 # :command.usage
+risk_config_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk config - Manage the risk global configuration\n"
+    echo
+
+  else
+    printf "risk config - Manage the risk global configuration\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk config COMMAND\n"
+  printf "  risk config [COMMAND] --help | -h\n"
+  echo
+  # :command.usage_commands
+  printf "%s\n" "$(bold "Commands:")"
+  printf "  %s   Set a configuration variable to a value\n" "$(red "set")  "
+  printf "  %s   Print the value of a configuration variable\n" "$(red "get")  "
+  printf "  %s   Delete the value of a configuration variable\n" "$(red "unset")"
+  printf "  %s   List all configuration variables\n" "$(red "list") "
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_config_set_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk config set - Set a configuration variable to a value\n"
+    echo
+
+  else
+    printf "risk config set - Set a configuration variable to a value\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk config set KEY VALUE\n"
+  printf "  risk config set --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "%s\n" "$(bold "Arguments:")"
+
+    # :argument.usage
+    printf "  %s\n" "$(blue "KEY")"
+    printf "    Name of of key to set\n"
+    echo
+
+    # :argument.usage
+    printf "  %s\n" "$(blue "VALUE")"
+    printf "    Value to assign to the key\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_config_get_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk config get - Print the value of a configuration variable\n"
+    echo
+
+  else
+    printf "risk config get - Print the value of a configuration variable\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk config get KEY\n"
+  printf "  risk config get --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "%s\n" "$(bold "Arguments:")"
+
+    # :argument.usage
+    printf "  %s\n" "$(blue "KEY")"
+    printf "    Name of of key to show\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_config_unset_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk config unset - Delete the value of a configuration variable\n"
+    echo
+
+  else
+    printf "risk config unset - Delete the value of a configuration variable\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk config unset KEY\n"
+  printf "  risk config unset --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "%s\n" "$(bold "Arguments:")"
+
+    # :argument.usage
+    printf "  %s\n" "$(blue "KEY")"
+    printf "    Name of of key to delete/unset\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_config_list_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk config list - List all configuration variables\n"
+    echo
+
+  else
+    printf "risk config list - List all configuration variables\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk config list\n"
+  printf "  risk config list --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_config_keys_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk config keys - List all configuration variables as an array (for completions)\n"
+    echo
+
+  else
+    printf "risk config keys - List all configuration variables as an array (for completions)\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk config keys\n"
+  printf "  risk config keys --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.usage
 risk_help_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk help - Show help about a command\n"
@@ -2219,22 +2224,47 @@ config_has_key() {
   [[ $(config_get "$1") ]]
 }
 
+# src/lib/crypt.sh
+
+# crypt.filename takes a filename as input, and uses the currently
+# set identity to produce an random name to use as a file/directory name.
+function crypt.filename ()
+{
+    local encryption_key_cmd="echo '$1' | spectre -q -n -s 0 -F n -t n -u '$1' 'file_encryption_key'"
+    encryption_key="$(qvm-run --pass-io "$VAULT_VM" "$encryption_key_cmd")"
+
+    local encrypted_identity_command="echo '$encryption_key' | spectre -q -n -s 0 -F n -t n -u '$IDENTITY' '$1'"
+
+    # -q            Quiet: just output the password/filename
+    # -n            Don't append a newline to the password output
+    # -s 0          Read passphrase from stdinput (fd 0)
+    # -F n          No config file output
+    # -t n          Output a nine characters name, without symbols
+    # -u ${user}    User for which to produce the password/name
+    print "$(qvm-run --pass-io "$VAULT_VM" "$encrypted_identity_command")"
+}
+
 # src/lib/device.sh
 
-# Checks that a given device is attached to a given VM
-check_is_device_attached ()
+# device.fail_not_attached_to exits the program if a given block device
+# (in QubesOS notation, ex. sys-usb:sda2) is not attached to a given VM.
+# $1 - Device name
+# $2 - Target qube VM
+function device.fail_not_attached_to ()
 {
     local block="$1"
     local vm="$2"
+    local ovm
 
-    local ovm=$(qvm-block list | grep "${block}" | awk {'print $4'} | cut -d" " -f1)
+    ovm=$(qvm-block list | grep "${block}" | awk '{print $4}' | cut -d" " -f1)
     if [[ ${#ovm} -eq 0 ]] || [[ ${ovm} != "$vm" ]]; then
         _failure "Device block $block is not mounted on vault ${vm}"
     fi
 }
 
-# device_backup_mounted_on returns 0 if a backup is mounted in the target vault VM.
-device_backup_mounted_on ()
+# device.backup_mounted_on returns 0 if a backup is mounted in the target vault VM.
+# $1 - Qube name (defaults to VAULT_VM)
+function device.backup_mounted_on ()
 {
     local vm="${1-$VAULT_VM}"
     local backup_status
@@ -2247,32 +2277,30 @@ device_backup_mounted_on ()
 
 # src/lib/identity.sh
 
-# Refactors
-# _identity_active > Remove ?
-
-# identity_set is used to propagate our various IDENTITY related variables
+# identity.set is used to propagate our various IDENTITY related variables
 # so that all functions that will be subsequently called can access them.
-#
 # This function also takes care of checking if there is already an active
 # identity that should be used, in case the argument is empty or none.
 #
 # $1 - The identity to use.
-identity_set ()
+function identity.set ()
 {
     local identity="$1"
 
     # This will throw an error if we don't have an identity from any source.
-    IDENTITY=$(_identity_active_or_specified "$identity")
+    IDENTITY=$(identity.active_or_specified "$identity")
     _catch "Command requires either an identity to be active or given as argument"
 
     # Set the identity directory
     IDENTITY_DIR="${RISK_IDENTITIES_DIR}/${IDENTITY}"
 }
 
-# Upon unlocking a given identity, sets the name as an ENV
-# variable that we can use in further functions and commands.
+# identity.set_active sets the name as an ENV variable that we can use in further functions and commands.
+# This function slightly differs from identity.set in that it does not set the active identity and its
+# values in the script run itself: it only populates stuff that is to be used in other calls of risks.
+#
 # $1 - The name to use. If empty, just resets the identity.
-identity_set_active ()
+function identity.set_active ()
 {
     # If the identity is empty, wipe the identity file
     if [[ -z ${1} ]] && [[ -e ${RISK_IDENTITY_FILE} ]]; then
@@ -2294,28 +2322,14 @@ identity_set_active ()
     _info "Identity '${1}' is now ACTIVE"
 }
 
-# identity_get_active returns the name of the vault active identity.
-identity_get_active ()
+# identity.active returns the name of the vault active identity.
+function identity.active ()
 {
     qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null
 }
 
-# identity_delete_directory deletes the ~/.risk/identities/<identity> directory.
-identity_delete_directory ()
-{
-    if ! _identity_active ; then
-        return
-    fi
-    if [[ -z "${IDENTITY_DIR}" ]]; then
-        return
-    fi
-
-    _info "Deleting identiy ${IDENTITY} home directory"
-    _run -rf "${IDENTITY_DIR}"
-}
-
-# Returns 0 if an identity is unlocked, 1 if not.
-_identity_active ()
+# identity.is_active returns 0 if an identity is unlocked, 1 if not.
+function identity.is_active ()
 {
     local active_identity
 
@@ -2327,14 +2341,16 @@ _identity_active ()
     return 0
 }
 
-# Given an argument potentially containing the active identity, checks
-# that either an identity is active, or that the argument is not empty.
+# identity.active_or_specified checks that either an identity is active,
+# or that the passed argument is not empty. If the identity is not empty
+# it is echoed back to the caller.
+#
 # $1 - An identity name
-# Exits the program if none is specified, or echoes the identity if found.
+#
 # Returns:
 # 0 - Identity is non-nil, provided either from arg or by the active
 # 1 - None have been given
-_identity_active_or_specified ()
+function identity.active_or_specified ()
 {
     local active_identity
 
@@ -2353,8 +2369,8 @@ _identity_active_or_specified ()
     print "$active_identity"
 }
 
-# check that no identity is active in the vault, and fail if there is.
-identity_check_none_active ()
+# identity.fail_none_active exits the program if there is no identity active or specified with args.
+function identity.fail_none_active ()
 {
     active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
     if [[ -n $active_identity ]]; then
@@ -2368,80 +2384,23 @@ identity_check_none_active ()
     fi
 }
 
-# Checks that an identity exists in the vault
-identity_check_exists ()
+# identity.fail_unknown exits the program if an identity does not exist in the vault VM.
+
+# $1 - Identity name
+function identity.fail_unknown ()
 {
     # Get the resulting encrypted name
     local encrypted_identity
-    encrypted_identity="$(_encrypt_filename "${IDENTITY}")"
+    encrypted_identity="$(crypt.filename "${IDENTITY}")"
 
     # And check the directory exists
     _run_exec "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
     _catch "Invalid identity: $1 does not exists in ${VAULT_VM}"
 }
 
-# Returns the name of the identity to which a VM belongs.
-_vm_owner ()
-{
-    print "$(qvm-tags "$1" "$RISK_VM_OWNER_TAG" 2>/dev/null)"
-}
-
-# Returns the default network VM for the active identity
-_identity_default_netvm ()
-{
-    cat "${IDENTITY_DIR}/netvm" 2>/dev/null
-}
-
-# Get the default VM label/color for an identity
-_identity_default_vm_label ()
-{
-    cat "${IDENTITY_DIR}/vm_label" 2>/dev/null
-}
-
-# Get the TOR gateway for the identity
-_identity_tor_gateway ()
-{
-    cat "${IDENTITY_DIR}/tor_gw" 2>/dev/null
-}
-
-# Get the browser VM for the identity
-_identity_browser_vm ()
-{
-    cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null
-}
-
-# _identity_proxies returns an array of proxy VMs
-# (VPNs and TOR gateways for the current identity)
-_identity_proxies ()
-{
-    [[ -f "${IDENTITY_DIR}/proxy_vms" ]] || return
-    read -d '' -r -A proxies <"${IDENTITY_DIR}/proxy_vms"
-    echo "${proxies[@]}"
-}
-
-# returns all identity VMs that are not gateways/proxies,
-# but are potentially (most of the time) accessing network
-# from one or more of these gateways.
-_identity_client_vms ()
-{
-    [[ -f "${IDENTITY_DIR}/client_vms" ]] || return
-    read -d '' -r -A clients <"${IDENTITY_DIR}/client_vms"
-    echo "${clients[@]}"
-}
-
-# returns all identity VMs that are not gateways/proxies,
-# but are potentially (most of the time) accessing network
-# from one or more of these gateways.
-_identity_autovm_starts ()
-{
-    [[ -f "${IDENTITY_DIR}/autovm_starts" ]] || return
-    read -d '' -r -A clients <"${IDENTITY_DIR}/autovm_starts"
-    echo "${clients[@]}"
-}
-
-# _get_name either returns the name given as parameter, or
+# identity.get_args_name either returns the name given as parameter, or
 # generates a random (burner) one and prints it to the screen.
-_get_name ()
+function identity.get_args_name ()
 {
     local name
 
@@ -2460,9 +2419,9 @@ _get_name ()
     print "${name}"
 }
 
-# _get_mail returns a correctly formatted mail given either a fully specified
+# identity.get_args_mail returns a correctly formatted mail given either a fully specified
 # one as positional, or a generated/concatenated one from the username argument.
-_get_mail ()
+function identity.get_args_mail ()
 {
     local name="$1"
     local email="$2"
@@ -2477,9 +2436,9 @@ _get_mail ()
     print "${name// /_}"
 }
 
-# _get_expiry returns a correctly formatted expiry date for a GPG key.
+# identity.get_args_expiry returns a correctly formatted expiry date for a GPG key.
 # If no arguments are passed to the call, the expiry date is never.
-_get_expiry ()
+function identity.get_args_expiry ()
 {
     local expiry
 
@@ -2493,8 +2452,178 @@ _get_expiry ()
     print "${expiry_date}"
 }
 
+# identity.delete_home_directory deletes the ~/.risk/identities/<identity> directory.
+function identity.delete_home_directoryy ()
+{
+    if ! _identity_active ; then
+        return
+    fi
+    if [[ -z "${IDENTITY_DIR}" ]]; then
+        return
+    fi
+
+    _info "Deleting identiy ${IDENTITY} home directory"
+    _run -rf "${IDENTITY_DIR}"
+}
+
+# ========================================================================================
+# Virtual machines / equipment functions
+# ========================================================================================
+
+# identity.netvm returns the default network VM for the active identity
+function identity.netvm ()
+{
+    cat "${IDENTITY_DIR}/netvm" 2>/dev/null
+}
+
+# identity.vm_label returns the default VM label/color for an identity
+function identity.vm_label ()
+{
+    cat "${IDENTITY_DIR}/vm_label" 2>/dev/null
+}
+
+# identity.tor_gateway returns the TOR gateway for the identity
+function identity.tor_gateway ()
+{
+    cat "${IDENTITY_DIR}/tor_gw" 2>/dev/null
+}
+
+# identity.browser_qube returns the browser VM for the identity
+function identity.browser_qube ()
+{
+    cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null
+}
+
+# identity.proxy_qubes returns an array of proxy VMs
+# (VPNs and TOR gateways for the current identity)
+function identity.proxy_qubes ()
+{
+    [[ -f "${IDENTITY_DIR}/proxy_vms" ]] || return
+    read -d '' -r -A proxies <"${IDENTITY_DIR}/proxy_vms"
+    echo "${proxies[@]}"
+}
+
+# identity.client_qubes returns all identity VMs that are not gateways/proxies,
+# but are potentially (most of the time) accessing network from one or more of
+
+# these gateways.
+function identity.client_qubes ()
+{
+    [[ -f "${IDENTITY_DIR}/client_vms" ]] || return
+    read -d '' -r -A clients <"${IDENTITY_DIR}/client_vms"
+    echo "${clients[@]}"
+}
+
+# identity.enabled_qubes returns all identity VMs that are
+
+# not gateways/proxies, but are potentially (most of the time)
+
+# accessing network from one or more of these gateways.
+function identity.enabled_qubes ()
+{
+    [[ -f "${IDENTITY_DIR}/autostart_vms" ]] || return
+    read -d '' -r -A clients <"${IDENTITY_DIR}/autostart_vms"
+    echo "${clients[@]}"
+}
+
+# identity.shutdown_qubes powers off all running VMs belonging to the identity.
+function identity.shutdown_qubes ()
+{
+    local clients proxies tor_gateway browser_vm net_vm other_vms
+
+    # Client VMs
+    read -rA clients < <(identity.client_qubes)
+    for vm in "${clients[@]}" ; do
+        if [[ -z "${vm}" ]]; then
+            continue
+        fi
+        _info "Shutting down $vm"
+        qube.shutdown "$vm"
+    done
+
+    # Browser VMs (disposables to find from template/tag)
+    browser_vm="$(identity.browser_qube)"
+    if [[ -n "${browser_vm}" ]]; then
+        _info "Shutting down $browser_vm"
+        qube.shutdown "$browser_vm"
+    fi
+
+    # Proxy VMs
+    read -rA proxies < <(identity.client_qubes)
+    for vm in "${proxies[@]}" ; do
+        if [[ -z "${vm}" ]]; then
+            continue
+        fi
+        _info "Shutting down $vm"
+        qube.shutdown "$vm"
+    done
+
+    # Tor gateway.
+    tor_gateway="$(identity.tor_gateway)"
+    if [[ -n "${tor_gateway}" ]]; then
+        _info "Shutting down $tor_gateway"
+        qube.shutdown "$tor_gateway"
+    fi
+
+    # Other VMs that are tagged with the identity.
+    read -rA other_vms < <(qubes.list_all)
+    for vm in "${other_vms[@]}" ; do
+        if [[ -z "${vm}" ]]; then
+            continue
+        fi
+
+        if [[ "$(qube.owner "${vm}")" == "${IDENTITY}" ]]; then
+            _info "Shutting down $vm"
+            qube.shutdown "$vm"
+        fi
+    done
+}
+
+# identity.delete_qubes deletes all VMs belonging to an identity.
+function identity.delete_qubes ()
+{
+    local clients proxies tor_gateway browser_vm net_vm other_vms
+
+    # Client VMs
+    read -rA clients < <(identity.client_qubes)
+    for client in "${clients[@]}"; do
+        qube.delete "${client}" "client_vms"
+    done
+
+    # Browser VM
+    browser_vm="$(identity.browser_qube)"
+    if [[ -n "${browser_vm}" ]]; then
+        qube.delete "${browser_vm}" "browser_vm"
+    fi
+
+    # Proxy VMs
+    read -rA proxies < <(identity.client_qubes)
+    for proxy in "${proxies[@]}"; do
+        qube.delete "${proxy}" "proxy_vms"
+    done
+
+    # Tor gateway.
+    tor_gateway="$(identity.tor_gateway)"
+    if [[ -n "${tor_gateway}" ]]; then
+        qube.delete "${tor_gateway}" "tor_gw"
+    fi
+
+    # Net VM
+
+    # Other VMs that are tagged with the identity.
+    read -rA other_vms < <(qubes.list_all)
+    for vm in "${other_vms[@]}"; do
+        if [[ "$(qube.owner "${vm}")" == "${IDENTITY}" ]]; then
+            qube.delete "${vm}"
+        fi
+    done
+}
+
 # src/lib/log.sh
 
+
+# If the user wants to log command output to a file.
+risks_log_file=""
 
 # Section is set either by functions or simple calls,
 # so that logging can inform on the component working.
@@ -2529,6 +2658,31 @@ log_chars=(
 )
 
 
+# _init_log_file creates the log file if does not exist,
+# and exits the script in case of failure, or if the file
+# is not writable.
+function _init_log_file ()
+{
+    risks_log_file="${args['--log-file']}"
+    [[ -z "${risks_log_file}" ]] && return
+
+    # Ensure not a directory, and if exists, is writable.
+    if [[ -d "${risks_log_file}" ]] ; then
+        risks_log_file=''
+        _failure "Log file ${risks_log_file} is a directory"
+    elif [[ -e "${risks_log_file}" ]] && [[ ! -w "${risks_log_file}" ]]; then
+        risks_log_file=''
+        _failure "Log file ${risks_log_file} is not writable"
+    fi
+
+    # Create the file if not existing, or fail.
+    if [[ ! -e "${risks_log_file}" ]]; then
+        _run touch "${risks_log_file}"
+        _catch "Failed to create log file ${risks_log_file}"
+        _info "Logging command output to file ${risks_log_file}"
+    fi
+}
+
 # Simple way of setting the section and to update the padding
 _in_section ()
 {
@@ -2542,7 +2696,9 @@ _in_section ()
     fi
 }
 
-function is_verbose_set () {
+function is_verbose_set ()
+
+{
     if [[ "${args['--verbose']}" -eq 1 ]]; then
         return 0
     else
@@ -2551,7 +2707,7 @@ function is_verbose_set () {
 }
 
 # Messaging function with pretty coloring
-function _msg()
+function _msg ()
 {
     # Check if we have been provided a section name,
     # and if not, that the section is set to a default.
@@ -2608,12 +2764,10 @@ function _msg()
 
 	[[ -n $_MSG_FD_OVERRIDE ]] && fd=$_MSG_FD_OVERRIDE
 
-    # If there is a log-file specified with flag --log-file,
-    # output the message to it, instead of the current file descriptor
-    logfile="${args[--log-file]}"
-    if [[ -n "${logfile}" ]]; then
-        ${=command} "${progname}" "${pchars}" "${msg}" >> "$logfile"
-        return $returncode
+    # If there is a log-file specified, write the output to it.
+
+    if [[ -n "${risks_log_file}" ]]; then
+        ${=command} "${progname}" "${pchars}" "${msg}" >> "$risks_log_file"
     fi
 
     # Else, print to stdout, with colors
@@ -2627,24 +2781,32 @@ function _msg()
 	return $returncode
 }
 
-function _info() {
+function _info ()
+
+{
 	local notice="message"
 	[[ "$1" = "-n" ]] && shift && notice="inline"
     option_is_set -q || _msg "$notice" "$@"
 	return 0
 }
 
-function _verbose() {
+function _verbose ()
+
+{
     is_verbose_set && _msg verbose "$@"
 	return 0
 }
 
-function _success() {
+function _success()
+
+{
     option_is_set -q || _msg success "$@"
 	return 0
 }
 
-function _warning() {
+function _warning ()
+
+{
     option_is_set -q || _msg warning "$@"
 	return 1
 }
@@ -2653,7 +2815,7 @@ function _warning() {
 # of an error exit code, and then looks at the contents of erroring
 # command's stderr buffer, which is printed just below our message.
 # We then exit the program.
-function _failure()
+function _failure ()
 {
 	typeset -i exitcode=${exitv:-1}
 
@@ -2679,7 +2841,9 @@ function _failure()
 #     exit "$exitcode"
 # }
 
-function _print() {
+function _print ()
+
+{
     option_is_set -q || _msg print "$@"
 	return 0
 }
@@ -2725,15 +2889,15 @@ clone_messenger_vm ()
 
 #
 
-# check_vm_owner verifies that the VM is owned by the current identity.
-check_valid_netvm ()
+# checkqube.owner verifies that the VM is owned by the current identity.
+function network.fail_invalid_netvm ()
 {
     local vm="$1"
     local owner
     local tor_gw
 
     # Or if the owner is either non-existant or not the good one, we must fail.
-    owner="$(_vm_owner "$vm")"
+    owner="$(qube.owner "$vm")"
     [[ -n "$owner" ]] || _failure "VM $vm has no RISKS owner. Aborting"
     [[ "$owner" == "$IDENTITY" ]] || _failure "VM $vm does not belong to identity $IDENTITY"
 
@@ -2742,21 +2906,21 @@ check_valid_netvm ()
     [[ -z "$netvm" ]] && return 0
 
     # If the VM is the whonix gateway for the identity, we are done with the chain
-    [[ "$vm" == "$(_identity_tor_gateway)" ]] && return 0
+    [[ "$vm" == "$(identity.tor_gateway)" ]] && return 0
 
     # We also return if its the sys-firewall, which does not belong to any identity.
     [[ "$vm" == "$(config_get DEFAULT_NETVM)" ]] && return 0
 
     # Or check if the netVM is in one of the identity proxies, or if its the default VM
-    _vm_is_identity_proxy "$netvm" || _failure "NetworkVM $vm is not listed as one of the identity's proxies"
+    qube.is_identity_proxy "$netvm" || _failure "NetworkVM $vm is not listed as one of the identity's proxies"
 
     # Else, we go on with the netvm and do the same steps
-    check_valid_netvm "$netvm"
+    network.fail_invalid_netvm "$netvm"
 }
 
-# network_check_identity_chain verifies that the NetVM of a given VM indeed belongs
+# network.fail_invalid_chain verifies that the NetVM of a given VM indeed belongs
 # to the same owner, and does this recursively for each NetVM found in the chain.
-network_check_identity_chain ()
+function network.fail_invalid_chain ()
 {
     local vm="$1"
     local netvm
@@ -2769,11 +2933,11 @@ network_check_identity_chain ()
     [[ -z "$netvm" ]] && return 0
 
     # This call recursively checks for all netVMs
-    check_valid_netvm "$netvm"
+    network.fail_invalid_netvm "$netvm"
 }
 
-# fail_vm_provides_network fails if the VM provides network to any other VM
-fail_vm_provides_network ()
+# network.fail_networked_qube fails if the VM provides network to any other VM
+function network.fail_networked_qube ()
 {
     local vm="$1"
     local vms connected_vms
@@ -2782,7 +2946,7 @@ fail_vm_provides_network ()
     [[ $(qvm-prefs "$vm" provides_network) == "True" ]] || return 0
 
     # Check if it provides network to any VM, and if yes, fail.
-    vms=( $(_vm_list) )
+    vms=( $(qubes.list_all) )
     for svm in "${vms[@]}" ; do
         local netvm
         if [[ "$(qvm-prefs "$svm" netvm)" == "$vm" ]]; then
@@ -2911,38 +3075,17 @@ function _catch ()
     fi
 }
 
-# src/lib/secrets.sh
+# src/lib/tor.sh
 
-# _encrypt_filename takes a filename as input, and uses the currently
-# set identity to produce an random name to use as a file/directory name.
-_encrypt_filename ()
-{
-    local encryption_key_cmd="echo '$1' | spectre -q -n -s 0 -F n -t n -u '$1' 'file_encryption_key'"
-    encryption_key="$(qvm-run --pass-io "$VAULT_VM" "$encryption_key_cmd")"
-
-    local encrypted_identity_command="echo '$encryption_key' | spectre -q -n -s 0 -F n -t n -u '$IDENTITY' '$1'"
-
-    # -q            Quiet: just output the password/filename
-    # -n            Don't append a newline to the password output
-    # -s 0          Read passphrase from stdinput (fd 0)
-    # -F n          No config file output
-    # -t n          Output a nine characters name, without symbols
-    # -u ${user}    User for which to produce the password/name
-    print "$(qvm-run --pass-io "$VAULT_VM" "$encrypted_identity_command")"
-}
-
-# src/lib/tor_gateway.sh
-
-# Creates a new TOR Whonix gateway AppVM.
+# proxy.tor_create creates a new TOR Whonix gateway AppVM.
 # $1 - Name to use for new VM
 # $2 - Netvm for this gateway
 # $3 - Label
-tor_gateway_create ()
+function proxy.tor_create ()
 {
     local gw="${1}-gw"
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
     local gw_label="${3-yellow}"
-
     local gw_template="$(config_get WHONIX_GW_TEMPLATE)"
 
     _info "Creating TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_template)"
@@ -2955,9 +3098,10 @@ tor_gateway_create ()
     echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
 
-# very similar to tor_gateway_create, except that we clone an existing
-# gateway AppVM instead of creating a new one from a Template.
-tor_gateway_clone ()
+# proxy.tor_clone is similar to proxy.tor_create, except that we clone
+
+# an existing gateway AppVM instead of creating a new one from a Template.
+function proxy.tor_clone ()
 {
     local gw="${1}-gw"
     local gw_clone="$2"
@@ -3119,112 +3263,21 @@ validate_valid_vaultvm () {
 #
 
 # Returns the name of the identity to which a VM belongs.
-_vm_owner ()
+# $1 - Qube name
+function qube.owner ()
 {
     print "$(qvm-tags "$1" "$RISK_VM_OWNER_TAG" 2>/dev/null)"
 }
 
-# Returns the template used by a given AppVM
-_vm_updatevm_template ()
-{
-    qvm-ls | grep "$(qubes-prefs updatevm)" | grep "TemplateVM" | awk '{print $1}'
-}
-
-# _vm_focused returns the name of the VM owning the currently active window.
-_vm_focused ()
-{
-    local window_class parts vm
-    window_class="$(xdotool getwindowclassname "$(xdotool getactivewindow)")"
-
-    # No colon means dom0
-    if [[ ${window_class} == *:* ]]; then
-        parts=( ${(s[:])window_class} )
-        print "${parts[1]}"
-    else
-        print "dom0"
-    fi
-}
-
-# Returns an array of all VMs
-_vm_list ()
-{
-    local -a vms
-
-    while IFS= read -r VM_NAME ; do
-        vms+=("${VM_NAME}")
-    done < <(qvm-ls --raw-list | sort)
-
-    echo "${vms[@]}"
-}
-
-# _vm_list_updateable returns all templates and standalone VMs
-_vm_list_updateable ()
-{
-    local templates=()
-    while read line ; do
-        IFS="|" read -r name class <<< "${line}"
-        if [[ "$class" == "TemplateVM" ]]; then
-            templates+=( "$name" )
-        elif [[ "$class" == "StandaloneVM" ]]; then
-            templates+=( "$name" )
-        fi
-    done < <(qvm-ls --raw-data --fields name,class | sort)
-
-    echo "${templates[@]}"
-}
-
-# _vm_args returns a list of VMs that are either explicitly named
-# in the array passed as arguments, or those belonging to some
-# "group keyword" of this same array.
-_vm_args ()
-{
-    local vms=("$@")
-    local _vm_list=()
-    local can_update=()
-    local updatevm
-
-    # Return if our only argument is empty
-
-    # All updateable VMs, except the updater one
-    read -rA can_update <<< "$(_vm_list_updateable)"
-    updatevm="$(_vm_updatevm_template)"
-    can_update=( ${can_update:#$~updatevm} )
-
-    for word in "${vms[@]}"; do
-        case "${word}" in
-            # First check for group keywords
-            all)
-                _vm_list+=( "${updatevm}" )
-                _vm_list+=( "${can_update[@]}" )
-                ;;
-            cacher)
-                _vm_list+=( "${updatevm}" )
-                ;;
-            torbrowser)
-                ;;
-            dom0)
-                ;;
-            # Else return the VM name itself
-            *)
-                for vm in "${can_update[@]}"; do
-                    [[ "${vm}" =~ ${word} ]] && _vm_list+=( "${vm}" )
-                done
-                ;;
-        esac
-
-    done
-
-    echo "${_vm_list[@]}"
-}
-
-# _vm_is_identity_proxy verifies that the identity's proxy VMs arrays contains a given VM.
-_vm_is_identity_proxy ()
+# qube.is_identity_proxy verifies that the identity's proxy VMs arrays contains a given VM.
+# $1 - Qube name
+function qube.is_identity_proxy ()
 {
     local vm="$1"
     local match proxies
 
     match=1
-    read -rA proxies < <(_identity_proxies)
+    read -rA proxies < <(identity.proxy_qubes)
 
     for proxy in "${proxies[@]}"; do
         if [[ $vm == "$proxy" ]]; then
@@ -3236,11 +3289,12 @@ _vm_is_identity_proxy ()
     return $match
 }
 
-# _vm_root_template returns the updateable template of a given VM.
+# qube.root_template returns the updateable template of a given VM.
 # Example: if a disposable VM is given as argument, the first resolved
 # template is the dispvm template, which itself is an AppVM, so we get
 # the template of the dispvm template.
-_vm_root_template ()
+# $1 - Qube name
+function qube.root_template ()
 {
     local vm="${1}"
     local updateable
@@ -3256,22 +3310,64 @@ _vm_root_template ()
     echo "${template}"
 }
 
+# qube.command_args returns a list of VMs that are either explicitly named
+# in the array passed as arguments, or those belonging to some
+# "group keyword" of this same array.
+# $@ - Any number of qubes' names, patterns or group keywords.
+function qube.command_args ()
+{
+    local vms=("$@")
+    local all=()
+    local can_update=()
+    local updatevm
+
+    # Return if our only argument is empty
+
+    # All updateable VMs, except the updater one
+    read -rA can_update <<< "$(qubes.list_all_updateable)"
+    updatevm="$(qubes.updatevm_template)"
+    can_update=( ${can_update:#$~updatevm} )
+
+    for word in "${vms[@]}"; do
+        case "${word}" in
+            # First check for group keywords
+            all)
+                all+=( "${updatevm}" )
+                all+=( "${can_update[@]}" )
+                ;;
+            cacher)
+                all+=( "${updatevm}" )
+                ;;
+            torbrowser)
+                ;;
+            dom0)
+                ;;
+            *)
+                # Else return the VM name itself
+                for vm in "${can_update[@]}"; do
+                    [[ "${vm}" =~ ${word} ]] && all+=( "${vm}" )
+                done
+                ;;
+        esac
+
+    done
+
+    echo "${all[@]}"
+}
+
 # ========================================================================================
 #  VM control and settings management
 # ========================================================================================
 #
 
-# vm_init_identity_settings is used once when creating
-# VMs for an identity, and requires access to argu
-
-# Enables a VM to autostart
-vm_enable_autostart ()
+# qube.enable enables a VM to autostart
+function qube.enable ()
 {
     local name="$1"
-    local autovm_starts=( "$(_identity_autovm_starts)" )
+    local enabled=( "$(identity.enabled_qubes)" )
 
     # Check if the VM is already marked autostart
-    for vm in "${autovm_starts[@]}" ; do
+    for vm in "${enabled[@]}" ; do
         if [[ $vm == "$name" ]]; then
             already_enabled=true
         fi
@@ -3279,23 +3375,23 @@ vm_enable_autostart ()
 
     if [[ ! $already_enabled ]]; then
         _info "Enabling VM ${name} to autostart"
-        echo "$name" >> "${IDENTITY_DIR}/autovm_starts"
+        echo "$name" >> "${IDENTITY_DIR}/autostart_vms"
     else
         _info "VM ${name} is already enabled"
     fi
 }
 
-# Disables a VM to autostart
-vm_disable_autostart ()
+# qube.disable disables a VM to autostart
+function qube.disable ()
 {
     local name="$1"
     _info "Disabling VM $name"
-    sed -i /"$name"/d "${IDENTITY_DIR}/autovm_starts"
+    sed -i /"$name"/d "${IDENTITY_DIR}/autostart_vms"
 }
 
-# vm_start [vm 1] ... [vm n]
+# qube.start [vm 1] ... [vm n]
 #Start the given VMs without executing any command.
-vm_start ()
+function qube.start ()
 {
     local ret=0
 
@@ -3304,7 +3400,7 @@ vm_start ()
     for vm in "$@" ; do
         [[ "$vm" == "dom0" ]] && continue
         _verbose "Starting: $vm"
-        vm_assert_running "$vm" &
+        qube.assert_running "$vm" &
         pids["$vm"]=$!
     done
 
@@ -3322,9 +3418,9 @@ vm_start ()
     [ -z "$failed" ]
 }
 
-# vm_shutdown [vm 1] ... [vm n]
+# qube.shutdown [vm 1] ... [vm n]
 #Shut the given VMs down.
-vm_shutdown ()
+function qube.shutdown ()
 {
     local ret=0
 
@@ -3344,12 +3440,12 @@ vm_shutdown ()
     return $ret
 }
 
-#vm_assert_running [vm] [start]
+#qube.assert_running [vm] [start]
 #Assert that the given VM is running. Will unpause paused VMs and may start shut down VMs.
 #[vm]: VM for which to make sure it's running.
 #[start]: If it's not running and not paused, start it (default: 0/true). If set to 1, this function will return a non-zero exit code.
 #returns: A non-zero exit code, if it's not running and/or we failed to start the VM.
-vm_assert_running ()
+function qube.assert_running ()
 {
     local vm="$1"
     local start="${2:-0}"
@@ -3369,11 +3465,11 @@ vm_assert_running ()
     return 0
 }
 
-# vm_delete deletes a VM belonging to the identity, and removes its from the
+# qube.delete deletes a VM belonging to the identity, and removes its from the
 # specified file. If this file is empty after this, it is deleted here.
 # $1 - VM name.
 # $2 - The file to search under ${IDENTITY_DIR}/ for deletion.
-vm_delete ()
+function qube.delete ()
 {
     local vm="${1}"
     local file="${2}"
@@ -3400,103 +3496,66 @@ vm_delete ()
     fi
 }
 
-# vm_shutdown_identity powers off all running VMs belonging to the identity.
-vm_shutdown_identity ()
+# ========================================================================================
+#  Qubes dom0 general functions (not about a single qube)
+# ========================================================================================
+#
+
+# qubes.updatevm_template returns the template of the updateVM.
+function qubes.updatevm_template ()
 {
-    local clients proxies tor_gateway browser_vm net_vm other_vms
-
-    # Client VMs
-    read -rA clients < <(_identity_client_vms)
-    for vm in "${clients[@]}" ; do
-        if [[ -z "${vm}" ]]; then
-            continue
-        fi
-        _info "Shutting down $vm"
-        vm_shutdown "$vm"
-    done
-
-    # Browser VMs (disposables to find from template/tag)
-    browser_vm="$(_identity_browser_vm)"
-    if [[ -n "${browser_vm}" ]]; then
-        _info "Shutting down $browser_vm"
-        vm_shutdown "$browser_vm"
-    fi
-
-    # Proxy VMs
-    read -rA proxies < <(_identity_client_vms)
-    for vm in "${proxies[@]}" ; do
-        if [[ -z "${vm}" ]]; then
-            continue
-        fi
-        _info "Shutting down $vm"
-        vm_shutdown "$vm"
-    done
-
-    # Tor gateway.
-    tor_gateway="$(_identity_tor_gateway)"
-    if [[ -n "${tor_gateway}" ]]; then
-        _info "Shutting down $tor_gateway"
-        vm_shutdown "$tor_gateway"
-    fi
-
-    # Other VMs that are tagged with the identity.
-    read -rA other_vms < <(_vm_list)
-    for vm in "${other_vms[@]}" ; do
-        if [[ -z "${vm}" ]]; then
-            continue
-        fi
-
-        if [[ "$(_vm_owner "${vm}")" == "${IDENTITY}" ]]; then
-            _info "Shutting down $vm"
-            vm_shutdown "$vm"
-        fi
-    done
+    qvm-ls | grep "$(qubes-prefs updatevm)" | grep "TemplateVM" | awk '{print $1}'
 }
 
-# vm_delete_identity deletes all VMs belonging to an identity.
-vm_delete_identity ()
+# qubes.focused_qube returns the name of the VM owning the currently
+
+# active window. Returns 'dom0' if the focused window is a dom0 one.
+function qubes.focused_qube ()
 {
-    local clients proxies tor_gateway browser_vm net_vm other_vms
+    local window_class parts vm
+    window_class="$(xdotool getwindowclassname "$(xdotool getactivewindow)")"
 
-    # Client VMs
-    read -rA clients < <(_identity_client_vms)
-    for client in "${clients[@]}"; do
-        vm_delete "${client}" "client_vms"
-    done
-
-    # Browser VM
-    browser_vm="$(_identity_browser_vm)"
-    if [[ -n "${browser_vm}" ]]; then
-        vm_delete "${browser_vm}" "browser_vm"
+    # No colon means dom0
+    if [[ ${window_class} == *:* ]]; then
+        parts=( ${(s[:])window_class} )
+        print "${parts[1]}"
+    else
+        print "dom0"
     fi
-
-    # Proxy VMs
-    read -rA proxies < <(_identity_client_vms)
-    for proxy in "${proxies[@]}"; do
-        vm_delete "${proxy}" "proxy_vms"
-    done
-
-    # Tor gateway.
-    tor_gateway="$(_identity_tor_gateway)"
-    if [[ -n "${tor_gateway}" ]]; then
-        vm_delete "${tor_gateway}" "tor_gw"
-    fi
-
-    # Net VM
-
-    # Other VMs that are tagged with the identity.
-    read -rA other_vms < <(_vm_list)
-    for vm in "${other_vms[@]}"; do
-        if [[ "$(_vm_owner "${vm}")" == "${IDENTITY}" ]]; then
-            vm_delete "${vm}"
-        fi
-    done
 }
 
-# src/lib/vpn_gateway.sh
+# qubes.list_all returns an array of all VMs
+function qubes.list_all ()
+{
+    local -a vms
 
-# Creates a new VPN gateway from a TemplateVM
-vpn_create ()
+    while IFS= read -r VM_NAME ; do
+        vms+=("${VM_NAME}")
+    done < <(qvm-ls --raw-list | sort)
+
+    echo "${vms[@]}"
+}
+
+# qubes.list_all_updateable returns all templates and standalone VMs
+function qubes.list_all_updateable ()
+{
+    local templates=()
+    while read -r line ; do
+        IFS="|" read -r name class <<< "${line}"
+        if [[ "$class" == "TemplateVM" ]]; then
+            templates+=( "$name" )
+        elif [[ "$class" == "StandaloneVM" ]]; then
+            templates+=( "$name" )
+        fi
+    done < <(qvm-ls --raw-data --fields name,class | sort)
+
+    echo "${templates[@]}"
+}
+
+# src/lib/vpn.sh
+
+# proxy.vpn_create creates a new VPN gateway from a TemplateVM
+function proxy.vpn_create ()
 {
     local gw="${1}"
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
@@ -3513,8 +3572,8 @@ vpn_create ()
     echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
 }
 
-# Creates a new VPN gateway from an existing VPN AppVM
-vpn_clone ()
+# proxy.vpn_clone creates a new VPN gateway from an existing VPN AppVM
+function proxy.vpn_clone ()
 {
     local gw="${1}"
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
@@ -3544,13 +3603,14 @@ vpn_clone ()
     echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
 }
 
-# function to browse for one or more (as zip) VPN client configurations
-# in another VM, import them in our VPN VM, and run the setup wizard if
-# there is more than one configuration to choose from.
+# proxy.vpn_import_configs browses for one or more (as zip) VPN client configurations
+# in another VM, import them in our VPN VM, and run the setup wizard if there is more
+
+# than one configuration to choose from.
 # $1 - Name of VPN VM
 # $2 - Name of VM in which to browse for configuration
-# $ $3 - Path to the VPN client config to which one (only) should be copied, if not a zip file
-vpn_import_configs ()
+# $3 - Path to the VPN client config to which one (only) should be copied, if not a zip file
+function proxy.vpn_import_configs ()
 {
     local name="$1"
     local config_vm="$2"
@@ -3590,15 +3650,15 @@ vpn_import_configs ()
     echo "$gw" > "${IDENTITY_DIR}/proxy_vms"
 }
 
-# vpn_next_vm_name returns a name for a new VPN VM, such as vpn-1,
+# proxy.vpn_next_name returns a name for a new VPN VM, such as vpn-1,
 # where the number is the next value after the ones found in existing
 # VPN vms.
-vpn_next_vm_name ()
+function proxy.vpn_next_name ()
 {
     local base_name="$1"
 
     # First get the array of ProxyVMs names
-    local proxies=( $(_identity_proxies) )
+    read -rA proxies < <(identity.proxy_qubes)
 
     local next_number=1
 
@@ -3611,13 +3671,14 @@ vpn_next_vm_name ()
     print "$base_name-vpn-$next_number"
 }
 
-# vpn_check__vm_is_identity_proxy fails if the VM is not listed as an identity proxy.
-vpn_check__vm_is_identity_proxy ()
+# proxy.fail_not_identity_proxy exits the program
+
+# if the VM is not listed as an identity proxy.
+function proxy.fail_not_identity_proxy ()
 {
     local name="$1"
-    local proxies
 
-    proxies=($(_identity_proxies))
+    read -rA proxies < <(identity.proxy_qubes)
     for proxy in "${proxies[@]}" ; do
         if [[ $proxy == "$name" ]]; then
             found=true
@@ -3632,8 +3693,12 @@ vpn_check__vm_is_identity_proxy ()
 
 # src/lib/web.sh
 
+# ========================================================================================
+# Virtual machines / equipment functions
+# ========================================================================================
+
 # Create a web browsing VM from a template
-web_create_browser_vm ()
+function web.browser_create ()
 {
     local web="${1}-web"
     local web_netvm="${2-$(config_get DEFAULT_NETVM)}"
@@ -3666,7 +3731,7 @@ web_create_browser_vm ()
 }
 
 # Clone a web browsing VM from an existing one
-web_clone_browser_vm ()
+function web.browser_clone ()
 {
     local web="${1}-web"
     local web_clone="$2"
@@ -3692,7 +3757,7 @@ web_clone_browser_vm ()
 }
 
 # Create a split-browser VM from a template
-web_create_split_browser_backend ()
+function web.split_backend_create ()
 {
     local web="${1}-split-web"
     local web_label="${2-gray}"
@@ -3706,7 +3771,7 @@ web_create_split_browser_backend ()
 }
 
 # Clone an existing split-browser VM, and change its dispvms
-web_clone_split_browser_backend ()
+function web.split_backend_clone ()
 {
     local web="${1}-split-web"
     local web_clone="$2"
@@ -3721,8 +3786,41 @@ web_clone_split_browser_backend ()
     qvm-tags "$web" set "$IDENTITY"
 }
 
-# create_bookmark_system_file writes and encrypts a file to store all-users bookmarks.
-create_bookmark_system_file ()
+# web.browser_set_split_dispvm updates the default disposable VM
+# used by the split browser backend to use the active identity's one.
+function web.browser_set_split_dispvm ()
+{
+    local browser_vm
+    browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
+
+    if [[ -n "${browser_vm}" ]]; then
+        _info "Setting identity browser VM with split-browser"
+        qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm "${browser_vm}"
+    fi
+}
+
+# web.browser_unset_split_dispvm removes the dispvm setting of the
+# tor split-browser backend if it is set to the identity browser VM.
+function web.browser_unset_split_dispvm ()
+{
+    local browser_vm
+    browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
+
+    if [[ -z "${browser_vm}" ]]; then
+        return
+    fi
+
+    if [[ "$(qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm)" == "${browser_vm}" ]]; then
+        qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm ''
+    fi
+}
+
+# ========================================================================================
+# Browsing activities and data
+# ========================================================================================
+#
+# web.bookmark_create_system writes and encrypts a file to store all-users bookmarks.
+function web.bookmark_create_system ()
 {
     local filename="bookmarks.tsv"
 
@@ -3737,30 +3835,23 @@ create_bookmark_system_file ()
     # And create it.
 }
 
-# create_bookmark_system_file writes and encrypts a file to store per-user bookmarks.
-web_create_identity_bookmarks ()
+# web.bookmark_create_system writes and encrypts a file to store per-user bookmarks.
+function web.bookmark_create_file ()
 {
-    local filename="$(_encrypt_filename "bookmarks.tsv")"
+    local filename="$(crypt.filename "bookmarks.tsv")"
     bookmarks_path="/home/user/.tomb/mgmt/${filename}"
     _run_exec "$VAULT_VM" "touch ${bookmarks_path}"
 }
 
-# create_bookmark_system_file writes and encrypts a file for blacklisted links.
-create_links_blacklist_file ()
+# web.bookmark_create_system writes and encrypts a file for blacklisted links.
+function web.blacklist_create_file ()
 {
     echo
 }
 
-# bookmark_system_file_exists returns 0 if the file exists, or 1.
-bookmark_system_file_exists ()
-{
-    echo
-    # _run_exec "$VAULT" "ls /home/user/.graveyard/$encrypted_identity"
-}
-
-# bookmark_display_command returns a command string
+# web.bookmark_display_command returns a command string
 # to use as the dmenu displayer of a bookmarks file.
-bookmark_display_command ()
+function web.bookmark_display_command ()
 {
     # This command will not work if qubes-split-browser is not installed in the split-browser VM
     local window_focus_command='_NET_WM_NAME="Split Browser" x11-unoverride-redirect stdbuf -oL'
@@ -3772,9 +3863,9 @@ bookmark_display_command ()
     fi
 }
 
-# _web_bookmarks_empty returns 0 if no bookmark
+# web.bookmarks_file_is_empty returns 0 if no bookmark
 # file exists in split-browser or if it is empty.
-_web_bookmarks_empty ()
+function web.bookmarks_file_is_empty ()
 {
     local split_command contents
     split_command=( qvm-run --pass-io "$(config_get SPLIT_BROWSER)" "cat .local/share/split-browser/bookmarks.tsv" )
@@ -3790,52 +3881,23 @@ _web_bookmarks_empty ()
     return 1
 }
 
-# web_set_identity_split_browser updates the default disposable VM
-# used by the split browser backend to use the active identity's one.
-web_set_identity_split_browser ()
-{
-    local browser_vm
-    browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
-
-    if [[ -n "${browser_vm}" ]]; then
-        _info "Setting identity browser VM with split-browser"
-        qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm "${browser_vm}"
-    fi
-}
-
-# web_unset_identity_split_browser removes the dispvm setting of the
-# tor split-browser backend if it is set to the identity browser VM.
-web_unset_identity_split_browser ()
-{
-    local browser_vm
-    browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
-
-    if [[ -z "${browser_vm}" ]]; then
-        return
-    fi
-
-    if [[ "$(qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm)" == "${browser_vm}" ]]; then
-        qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm ''
-    fi
-}
-
-# web_select_identity_bookmark prompts the user with bookmarks,
+# web.bookmarks_select prompts the user with bookmarks,
 # and returns the URL extracted from the selection.
-web_select_identity_bookmark ()
+function web.bookmarks_select ()
 {
     local bookmarks_command result
 
-    # bookmark_prompt=( $(bookmark_display_command) )
+    # bookmark_prompt=( $(web.bookmark_display_command) )
     bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
     qvm-run --pass-io "${vm}" "${bookmarks_command}"
     result="$(qvm-run --pass-io "${vm}" cat bookmark)"
     print "$result" | awk '{print $2}'
 }
 
-# web_pop_identity_bookmark prompts the user with bookmarks, returns the URL
+# web.bookmark_pop prompts the user with bookmarks, returns the URL
 # extracted from the selection and deletes the line in the file.
 # Returns the complete bookmark entry.
-web_pop_identity_bookmark ()
+function web.bookmark_pop ()
 {
     local bookmarks_command result bookmark_line vm
     bookmark_file=".local/share/split-browser/bookmarks.tsv"
@@ -3870,57 +3932,6 @@ get_browser_vm_from ()
 }
 
 # :command.command_functions
-
-# :command.function
-risk_config_set_command() {
-  # src/config_set_command.sh
-
-  local key value
-
-  key="${args['key']}"
-  value="${args['value']}"
-
-  config_set "$key" "$value"
-
-}
-
-# :command.function
-risk_config_get_command() {
-  # src/config_get_command.sh
-
-  local key
-
-  key="${args['key']}"
-
-  config_get "$key"
-
-}
-
-# :command.function
-risk_config_unset_command() {
-  # src/config_unset_command.sh
-
-  local key
-
-  key="${args['key']}"
-
-  config_set "$key" ""
-
-}
-
-# :command.function
-risk_config_list_command() {
-  # src/config_list_command.sh
-  config_show
-
-}
-
-# :command.function
-risk_config_keys_command() {
-  # src/config_keys_command.sh
-  config_keys
-
-}
 
 # :command.function
 risk_hush_attach_command() {
@@ -4079,11 +4090,11 @@ risk_identity_create_command() {
 
   # Variables populated from command-line args/flags
   name="${args['name']}"
-  name="$(_get_name "${name}")"
+  name="$(identity.get_args_name "${name}")"
   identity="${name// /_}"
-  expiry="$(_get_expiry "${args['expiry_date']}")"
-  email="$(_get_mail "${name}" "${args['email']}")"
-  pendrive="${args['--backup']}" # Backup is optional
+  expiry="$(identity.get_args_expiry "${args['expiry_date']}")"
+  email="$(identity.get_args_mail "${name}" "${args['email']}")"
+  pendrive="${args['--backup']}"
 
   # Other variables
   local vm_name           # Default prefix to use for newly created vm (eg. 'joe' => joe-vpn, joe-web)
@@ -4094,7 +4105,7 @@ risk_identity_create_command() {
   local clone             # A variable that might be overritten several times, used to assign a VM to clone.
 
   # Propagate the identity and its settings (in the script only)
-  identity_set "${identity}"
+  identity.set "${identity}"
 
   # Identity checks and basic setup ==========================================
 
@@ -4104,7 +4115,7 @@ risk_identity_create_command() {
   fi
 
   # or that the one we want to create does not exists already
-  if identity_check_exists "$IDENTITY" ; then
+  if identity.fail_unknown "$IDENTITY" ; then
       _failure "Identity $IDENTITY already exists"
   fi
 
@@ -4160,9 +4171,9 @@ risk_identity_create_command() {
   if [[ ${args['--no-gw']} -eq 0 ]]; then
       if [[ -n ${args['--clone-gw-from']} ]]; then
           clone="${args['--clone-gw-from']}"
-          tor_gateway_clone "$vm_name" "$clone" "$gw_netvm" "$label"
+          proxy.tor_clone "$vm_name" "$clone" "$gw_netvm" "$label"
       else
-          tor_gateway_create "$vm_name" "$gw_netvm" "$label"
+          proxy.tor_create "$vm_name" "$gw_netvm" "$label"
       fi
   else
       _info "Skipping TOR gateway"
@@ -4177,13 +4188,13 @@ risk_identity_create_command() {
   # to have a different network route.
   if [[ -n ${args['--clone-web-from']} ]]; then
       clone="${args['--clone-web-from']}"
-      web_clone_browser_vm "$vm_name" "$clone" "$web_netvm" "$label"
+      web.browser_clone "$vm_name" "$clone" "$web_netvm" "$label"
   else
-      web_create_browser_vm "$vm_name" "$web_netvm" "$label"
+      web.browser_create "$vm_name" "$web_netvm" "$label"
   fi
 
   # Per-identity bookmarks file in vault management tomb.
-  web_create_identity_bookmarks
+  web.bookmark_create_file
 
   _success "Successfully initialized infrastructure for identity $IDENTITY"
 
@@ -4203,11 +4214,11 @@ risk_identity_equip_command() {
   local clone             # A variable that might be overritten several times, used to assign a VM to clone.
 
   # Propagate the identity and its settings (in the script only)
-  identity_set "${args['identity']}"
+  identity.set "${args['identity']}"
 
   # Identity checks and basic setup ==========================================
 
-  identity_check_exists "$IDENTITY"
+  identity.fail_unknown "$IDENTITY"
 
   _in_section "identity" 8 && _info "Creating infrastructure for identity $IDENTITY"
 
@@ -4234,9 +4245,9 @@ risk_identity_equip_command() {
   if [[ ${args['--no-gw']} -eq 0 ]]; then
       if [[ -n ${args['--clone-gw-from']} ]]; then
           clone="${args['--clone-gw-from']}"
-          tor_gateway_clone "$vm_name" "$clone" "$gw_netvm" "$label"
+          proxy.tor_clone "$vm_name" "$clone" "$gw_netvm" "$label"
       else
-          tor_gateway_create "$vm_name" "$gw_netvm" "$label"
+          proxy.tor_create "$vm_name" "$gw_netvm" "$label"
       fi
   else
       _info "Skipping TOR gateway"
@@ -4251,13 +4262,13 @@ risk_identity_equip_command() {
   # to have a different network route.
   if [[ -n ${args['--clone-web-from']} ]]; then
       clone="${args['--clone-web-from']}"
-      web_clone_browser_vm "$vm_name" "$clone" "$web_netvm" "$label"
+      web.browser_clone "$vm_name" "$clone" "$web_netvm" "$label"
   else
-      web_create_browser_vm "$vm_name" "$web_netvm" "$label"
+      web.browser_create "$vm_name" "$web_netvm" "$label"
   fi
 
   # Per-identity bookmarks file in vault management tomb.
-  web_create_identity_bookmarks
+  web.bookmark_create_file
 
   _success "Successfully initialized infrastructure for identity $IDENTITY"
 
@@ -4270,25 +4281,25 @@ risk_identity_delete_command() {
   local delete_vault_cmd
 
   # First check the identity is valid
-  identity_set "${args['identity']}"
-  identity_check_exists
+  identity.set "${args['identity']}"
+  identity.fail_unknown
 
   # Check access to hush device in vault
   sdcard_block="$(config_get SDCARD_BLOCK)"
-  check_is_device_attached "${sdcard_block}" "${VAULT_VM}"
+  device.fail_not_attached_to "${sdcard_block}" "${VAULT_VM}"
 
   # Close the identity and all its running VMs
   risk_identity_stop_command
 
   _info "Deleting identity VMs"
-  vm_delete_identity
+  identity.delete_qubes
 
   _info "Deleting identity in vault"
   delete_vault_cmd=( risks identity delete "${IDENTITY}" )
 
   # If a backup medium is mounted and backup
   # removal is asked, add the corresponding flags.
-  if device_backup_mounted_on "${VAULT_VM}"; then
+  if device.backup_mounted_on "${VAULT_VM}"; then
       if [[ "${args['--backup']}" -eq 1 ]]; then
           delete_vault_cmd+=( --backup )
       fi
@@ -4297,7 +4308,7 @@ risk_identity_delete_command() {
   _run_qube_term "${VAULT_VM}" "${delete_vault_cmd[@]}"
 
   # Finally, delete its dom0 directory.
-  identity_delete_directory
+  identity.delete_home_directory
 
   _success "Successfully deleted identity $IDENTITY"
 
@@ -4308,18 +4319,18 @@ risk_identity_nake_command() {
   # src/identity_nake_command.sh
 
   # First check the identity is valid
-  identity_set "${args['identity']}"
-  identity_check_exists
+  identity.set "${args['identity']}"
+  identity.fail_unknown
 
   # Close the identity and all its running VMs
   _info "Stopping machines of identity $IDENTITY"
-  vm_shutdown_identity
+  identity.shutdown_qubes
 
   # If the identity browser VM is used with the split-browser backend.
-  web_unset_identity_split_browser
+  web.browser_unset_split_dispvm
 
   _info "Deleting identity VMs"
-  vm_delete_identity
+  identity.delete_qubes
 
   _success "Successfully deleted VMs of identity $IDENTITY"
 
@@ -4333,14 +4344,14 @@ risk_identity_open_command() {
 
   sdcard_block="$(config_get SDCARD_BLOCK)"
 
-  identity_set "${args['identity']}"
+  identity.set "${args['identity']}"
 
   # 1 - Check that hush is mounted on vault
-  check_is_device_attached "${sdcard_block}" "${VAULT_VM}"
+  device.fail_not_attached_to "${sdcard_block}" "${VAULT_VM}"
 
   # 2 - Check that no identity is currently opened
   # The second line should be empty, as opposed to being an encrypted coffin name
-  identity_check_none_active "$IDENTITY"
+  identity.fail_none_active "$IDENTITY"
 
   # 3 - Send commands to vault
   _info "Opening identity $IDENTITY"
@@ -4348,7 +4359,7 @@ risk_identity_open_command() {
   _catch "Failed to open identity"
 
   # Set the identity browser VM, if any, as the disposable VM of split-browser backend.
-  web_set_identity_split_browser
+  web.browser_set_split_dispvm
 
   _info "Identity $IDENTITY is active"
 
@@ -4361,14 +4372,14 @@ risk_identity_close_command() {
   local active_identity
 
   # Check we have an active identity
-  active_identity="$(identity_get_active)"
+  active_identity="$(identity.active)"
   if [[ -z $active_identity ]]; then
       _info "No active identity to close"
       return
   fi
 
   # If the identity browser VM is used with the split-browser backend.
-  web_unset_identity_split_browser
+  web.browser_unset_split_dispvm
 
   _info "Closing identity $active_identity"
 
@@ -4386,13 +4397,13 @@ risk_identity_start_command() {
   local active_identity enabled_vms
 
   # Check the identity is valid, and open in vault if needed.
-  identity_set "${args['identity']}"
-  identity_check_exists
+  identity.set "${args['identity']}"
+  identity.fail_unknown
 
-  active_identity="$(identity_get_active)"
+  active_identity="$(identity.active)"
   if [[ -n "${active_identity}" ]]; then
       if [[ "${active_identity}" != "${IDENTITY}" ]]; then
-          identity_check_none_active "$IDENTITY"
+          identity.fail_none_active "$IDENTITY"
       fi
       _info "Identity ${IDENTITY} already opened in vault"
   else
@@ -4400,13 +4411,13 @@ risk_identity_start_command() {
   fi
 
   # Start all enabled identity machines
-  read -rA enabled_vms < <(_identity_autovm_starts)
+  read -rA enabled_vms < <(identity.enabled_qubes)
   for vm in "${enabled_vms[@]}"; do
       if [[ -z "${vm}" ]]; then
           continue
       fi
       _info "Starting VM ${vm}"
-      _run vm_start "${vm}"
+      _run qube.start "${vm}"
   done
 
   _success "Opened identity '$IDENTITY' and started enabled VMs"
@@ -4419,10 +4430,10 @@ risk_identity_stop_command() {
 
   # Else get the active identity
   local active_identity
-  active_identity=$(_identity_active_or_specified)
+  active_identity=$(identity.active_or_specified)
 
   _info "Stopping machines of identity $active_identity"
-  vm_shutdown_identity
+  identity.shutdown_qubes
 
   _info "Closing identity in vault"
   risk_identity_close_command
@@ -4443,7 +4454,7 @@ risk_identity_restrict_command() {
 risk_identity_current_command() {
   # src/identity_current_command.sh
   # Simply print the active identity in the vault
-  _identity_active_or_specified
+  identity.active_or_specified
 
 }
 
@@ -4461,23 +4472,23 @@ risk_slam_command() {
 
   # Else get the active identity, and propagate values to the script
   local active_identity
-  active_identity=$(_identity_active_or_specified)
-  identity_set "$active_identity"
+  active_identity=$(identity.active_or_specified)
+  identity.set "$active_identity"
 
   _info "Slamming infrastructure, vault and devices: identity $active_identity"
 
   # First shut down all client VMs
-  read -rA client_vms < <(identity_client_vms)
+  read -rA client_vms < <(identity.client_qubes)
   for vm in "${client_vms[@]}" ; do
       _info "Shutting down $vm"
-      vm_shutdown "$vm"
+      qube.shutdown "$vm"
   done
 
   # Do the same for proxyVMs
-  read -rA proxy_vms < <(identity_proxies)
+  read -rA proxy_vms < <(identity.proxy_qubes)
   for vm in "${proxy_vms[@]}" ; do
       _info "Shutting down $vm"
-      vm_shutdown "$vm"
+      qube.shutdown "$vm"
   done
 
   # Close the identity in the vault, unmount hush and backup
@@ -4493,13 +4504,13 @@ risk_slam_command() {
 risk_vpn_create_command() {
   # src/vpn_create_command.sh
 
-  identity_set
+  identity.set
 
   # Prepare some settings for this new VM
   local name netvm clone template label
 
   name="${args['vm']:-$(cat "${IDENTITY_DIR}/vm_name" 2>/dev/null)}"
-  label="${args['--label']:=$(_identity_default_vm_label)}"
+  label="${args['--label']:=$(identity.vm_label)}"
   netvm="$(config_or_flag "${args['--netvm']}" DEFAULT_NETVM)"
   clone="$(config_or_flag "${args['--from']}" VPN_VM)"
   template="$(config_or_flag "${args['--template']}" VPN_TEMPLATE)"
@@ -4510,7 +4521,7 @@ risk_vpn_create_command() {
   # either the configured default one, or the name of the identity.
   # In this case, we add 'vpn-1' to it (number varying).
   if [[ -z "${args['vm']}" ]]; then
-      name="$(vpn_next_vm_name "$name")"
+      name="$(proxy.vpn_next_name "$name")"
   fi
 
   # 1 - Creation
@@ -4519,10 +4530,10 @@ risk_vpn_create_command() {
   # or we create it from a template.
   if [[ "${args['--clone']}" -eq 1 ]]; then
       _info "Cloning VPN gateway (from VM $clone)"
-      vpn_clone "$name" "$netvm" "$label" "$clone"
+      proxy.vpn_clone "$name" "$netvm" "$label" "$clone"
   else
       _info "Creating VPN gateway (from template $template)"
-      vpn_create "$name" "$netvm" "$label" "$template"
+      proxy.vpn_create "$name" "$netvm" "$label" "$template"
   fi
 
   # Tag the VM with its owner
@@ -4550,7 +4561,7 @@ risk_vpn_create_command() {
 risk_vpn_setup_command() {
   # src/vpn_setup_command.sh
 
-  identity_set
+  identity.set
 
   local name config_vm client_conf_path netvm
 
@@ -4576,7 +4587,7 @@ risk_vpn_setup_command() {
 
       # Here, find all existing client VMs (not gateways)
       # and change their netVMs to this one.
-      local clients=($(_identity_client_vms))
+      read -rA clients < <(identity.client_qubes)
       for client in "${clients[@]}"; do
           if [[ -n "$client" ]]; then
               _verbose "Changing $client netVM"
@@ -4591,7 +4602,7 @@ risk_vpn_setup_command() {
       _run_exec "$name" /usr/local/bin/setup_VPN
   elif [[ -n "${args['--config-in']}" ]]; then
       # Or if we are asked to browse one or more configuration files in another VM.
-      vpn_import_configs "$name" "$config_vm" "$client_conf_path"
+      proxy.vpn_import_configs "$name" "$config_vm" "$client_conf_path"
   fi
 
 }
@@ -4606,10 +4617,10 @@ risk_vpn_start_command() {
 
   # First check all the network VMs that will be started
   # actually belong to the identity, otherwise we fail.
-  network_check_identity_chain "$name"
+  network.fail_invalid_chain "$name"
 
   # Then start the VM, which will start all dependent ones.
-  vm_start "$name"
+  qube.start "$name"
   _catch "Failed to start $name"
 
   _info "Started VM $name"
@@ -4623,7 +4634,7 @@ risk_vpn_stop_command() {
   local name="${args['vm']}"
 
   _info "Shutting down gateway $name"
-  vm_shutdown "$name"
+  qube.shutdown "$name"
   _catch "Failed to shutdown $name"
   _info "Shut down $name"
 
@@ -4635,11 +4646,7 @@ risk_vpn_enable_command() {
 
   identity_set
 
-  local name autovm_starts already_enabled
-
-  name="${args['vm']}"
-
-  vm_enable_autostart "$name"
+  qube.enable "${args['vm']}"
 
 }
 
@@ -4651,7 +4658,7 @@ risk_vpn_disable_command() {
 
   local name="${args['vm']}"
 
-  vm_disable_autostart "$name"
+  qube.disable "$name"
 
 }
 
@@ -4663,25 +4670,25 @@ risk_vpn_delete_command() {
 
   name="${args['vm']}"
 
-  identity_set
+  identity.set
 
   # Check that the selected VM is indeed one of the identity
   # proxy VMs, so that we don't accidentally delete another one.
-  vpn_check__vm_is_identity_proxy "$name"
+  vpn_check_qube.is_identity_proxy "$name"
 
   # Do not even attempt to delete if the VM provides network to another VM.
-  fail_vm_provides_network "$vm"
+  network.fail_networked_qube "$vm"
 
   _info "Deleting gateway VM $name"
 
   # If the VPN was the default NetVM for the identity,
   # update the NetVM to Whonix.
-  netvm="$(_identity_default_netvm)"
+  netvm="$(identity.netvm)"
   if [[ $netvm == "$name" ]]; then
       _warning "Gateway $name is the default NetVM for identity clients !"
 
       # Check if we have a TOR gateway
-      local tor_gw=$(_identity_tor_gateway)
+      local tor_gw=$(identity.tor_gateway)
 
       if [[ -n $tor_gw ]]; then
           _info -n "Updating the default identity NetVM to $tor_gw"
@@ -4701,7 +4708,7 @@ risk_vpn_delete_command() {
   _catch "Failed to delete (fully or partially) VM $name"
 
   # Remove from VMs marked autostart
-  sed -i /"$name"/d "${IDENTITY_DIR}/autovm_starts"
+  sed -i /"$name"/d "${IDENTITY_DIR}/autostart_vms"
   # And remove from proxy VMs
   sed -i /"$name"/d "${IDENTITY_DIR}/proxy_vms"
 
@@ -4721,13 +4728,13 @@ risk_vm_add_command() {
 
   vm="${args['vm']}"
 
-  identity_set
+  identity.set
 
   # We need a valid identity
-  identity_check_exists "$IDENTITY"
+  identity.fail_unknown "$IDENTITY"
 
   # Check VM ownership
-  vm_owner=$(_vm_owner "$vm")
+  vm_owner=$(qube.owner "$vm")
 
   # If already belongs to an identity, ask for confirmation to update the settings.
   if [[ -n "$vm_owner" ]] && [[ "$vm_owner" != "$IDENTITY" ]]; then
@@ -4749,12 +4756,12 @@ risk_vm_add_command() {
   # or with the netvm flag, which has precedence.
   if [[ "$(qvm-tags "$vm" netvm)" != 'None' ]]; then
       _info "VM is networked. Updating its network VM"
-      local netvm="$(_identity_default_netvm)"
+      local netvm="$(identity.netvm)"
 
       # If the user overrode the default netVM, check that it belongs
       # to the identity, or ask confirmation.
       if [[ -n "${args['--netvm']}" ]]; then
-          netvm_owner=$(_vm_owner "${args['--netvm']}")
+          netvm_owner=$(qube.owner "${args['--netvm']}")
           if [[ "$vm_owner" != "$IDENTITY" ]]; then
               _warning "Network VM $vm already belongs to $vm_owner"
               printf >&2 '%s ' "Do you really want to use this VM as netvm for $vm? (YES/n)"
@@ -4787,7 +4794,7 @@ risk_vm_add_command() {
   fi
 
   # Enable autostart if asked to
-  [[ "${args['--enable']}" -eq 1 ]] && vm_enable_autostart "$vm"
+  [[ "${args['--enable']}" -eq 1 ]] && qube.enable "$vm"
 
   _success "Succesfully set VM $vm as belonging to identity $IDENTITY"
 
@@ -4800,22 +4807,22 @@ risk_vm_delete_command() {
 
   vm="${args['vm']}"
 
-  identity_set
+  identity.set
 
   # Check VM ownership
-  [[ "$(_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
+  [[ "$(qube.owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
   # Do not even attempt to delete if the VM provides network to another VM.
-  fail_vm_provides_network "$vm"
+  network.fail_networked_qube "$vm"
 
   # If the VM is a gateway, just call the VPN command to do the work.
-  if _vm_is_identity_proxy "$vm" ; then
+  if qube.is_identity_proxy "$vm" ; then
       risk_vpn_delete_command
       return
   fi
 
   # Remove from autostart enabled commands
-  sed -i /"$vm"/d "${IDENTITY_DIR}/autovm_starts"
+  sed -i /"$vm"/d "${IDENTITY_DIR}/autoqube.starts"
 
   # Finally, delete the VM,
   _run qvm-remove "$vm"
@@ -4830,12 +4837,12 @@ risk_vm_enable_command() {
 
   vm="${args['vm']}"
 
-  identity_set
+  identity.set
 
   # Check VM ownership
-  [[ "$(_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
+  [[ "$(qube.owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
-  vm_enable_autostart "$vm"
+  qube.enable "$vm"
 
 }
 
@@ -4846,12 +4853,12 @@ risk_vm_disable_command() {
 
   vm="${args['vm']}"
 
-  identity_set
+  identity.set
 
   # Check VM ownership
-  [[ "$(_vm_owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
+  [[ "$(qube.owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
-  vm_disable_autostart "$vm"
+  qube.disable "$vm"
 
 }
 
@@ -4866,8 +4873,8 @@ risk_use_command() {
   arguments="${other_args[@]}"
 
   local owner active_identity
-  owner=$(_vm_owner "$vm")
-  active_identity="$(_identity_active_or_specified)"
+  owner=$(qube.owner "$vm")
+  active_identity="$(identity.active_or_specified)"
 
   # If the VM does not belong to any identity, then we don't have
   # to interact with any of them, and this branch is skipped.
@@ -4918,14 +4925,14 @@ risk_url_bookmark_command() {
   local url               # The URL to bookmark
   local title             # The URL page title to use if/when prompting the user for input.
 
-  identity_set ""
+  identity.set ""
 
   url="${args['url']}"
   split_vm="$(config_get SPLIT_BROWSER)"
-  active_vm="$(_vm_focused)"
+  active_vm="$(qubes.focused_qube)"
 
   if [[ -z "${url}" ]]; then
-      if _web_bookmarks_empty; then
+      if web.bookmarks_file_is_empty; then
           _info "No bookmarks file in ${split_vm}, prompting user to enter it."
           zenity_prompt="zenity --text 'URL Bookmark' --forms --add-entry='URL' --add-entry='Page Title' --separator=\$'\t'"
           result="$(qvm-run --pass-io "${active_vm}" "${zenity_prompt}")"
@@ -4933,7 +4940,7 @@ risk_url_bookmark_command() {
           title="$( echo "${result}" | cut -f 2- -d $'\t')"
       else
           _info "No URL argument, starting dmenu with bookmarks list in ${split_vm}"
-          bookmark_entry="$(web_pop_identity_bookmark)"
+          bookmark_entry="$(web.bookmark_pop)"
           url="$( echo "${bookmark_entry}" | awk '{print $2}' )"
           title="$( echo "${bookmark_entry}" | awk '{print $3}' )"
       fi
@@ -4948,7 +4955,7 @@ risk_url_bookmark_command() {
   fi
 
   _info "Transfering entry to vault bookmarks file."
-  bookmarks_path="/home/user/.tomb/mgmt/$(_encrypt_filename 'bookmarks.tsv')"
+  bookmarks_path="/home/user/.tomb/mgmt/$(crypt.filename 'bookmarks.tsv')"
 
   if ! qvm-run --pass-io "${VAULT_VM}" "cat ${bookmarks_path} | grep ${url}" &>/dev/null; then
   # grep -m 1 -F -- \$'\t'${url}\$'\t'"
@@ -4982,7 +4989,7 @@ risk_qubes_update_command() {
   # src/qubes_update_command.sh
   # Analyze the arguments and extract all VMs
   # corresponding to those names/groups.
-  read -rA vms < <(_vm_args "${args['vms']}" "${other_args[@]}")
+  read -rA vms < <(qube.command_args "${args['vms']}" "${other_args[@]}")
 
   # Update matching VMs.
   if [[ -n "${vms[*]}" ]]; then
@@ -5004,17 +5011,68 @@ risk_qubes_update_command() {
   # If torbrowser update is required, get identity browsing VM template and update
   # We need to know for which identity to update, so we need one active.
   if [[ ${args['vms']} == torbrowser ]] || [[ ${other_args[(r)torbrowser]} == torbrowser ]]; then
-      identity_set
+      identity.set
 
       local browser_vm browser_template
-      browser_vm="$(_identity_browser_vm)"
+      browser_vm="$(identity.browser_qube)"
 
       if [[ -n "${browser_vm}" ]]; then
-          browser_template="$(_vm_root_template "${browser_vm}")"
+          browser_template="$(qube.root_template "${browser_vm}")"
           _info "Updating Tor browser in ${browser_template}"
           _run_qube_term "${browser_template}" sudo update-torbrowser
       fi
   fi
+
+}
+
+# :command.function
+risk_config_set_command() {
+  # src/config_set_command.sh
+
+  local key value
+
+  key="${args['key']}"
+  value="${args['value']}"
+
+  config_set "$key" "$value"
+
+}
+
+# :command.function
+risk_config_get_command() {
+  # src/config_get_command.sh
+
+  local key
+
+  key="${args['key']}"
+
+  config_get "$key"
+
+}
+
+# :command.function
+risk_config_unset_command() {
+  # src/config_unset_command.sh
+
+  local key
+
+  key="${args['key']}"
+
+  config_set "$key" ""
+
+}
+
+# :command.function
+risk_config_list_command() {
+  # src/config_list_command.sh
+  config_show
+
+}
+
+# :command.function
+risk_config_keys_command() {
+  # src/config_keys_command.sh
+  config_keys
 
 }
 
@@ -5066,6 +5124,21 @@ parse_requirements() {
         shift
         ;;
 
+      # :flag.case
+      --log-file | -l)
+
+        # :flag.case_arg
+        if [[ -n ${2+x} ]]; then
+
+          args['--log-file']="$2"
+          shift
+          shift
+        else
+          printf "%s\n" "--log-file requires an argument: --log-file, -l LOGFILE" >&2
+          exit 1
+        fi
+        ;;
+
       *)
         break
         ;;
@@ -5078,13 +5151,6 @@ parse_requirements() {
 
   case $action in
     -*) ;;
-
-    config)
-      action="config"
-      shift
-      risk_config_parse_requirements "$@"
-      shift $#
-      ;;
 
     hush)
       action="hush"
@@ -5149,6 +5215,13 @@ parse_requirements() {
       shift $#
       ;;
 
+    config)
+      action="config"
+      shift
+      risk_config_parse_requirements "$@"
+      shift $#
+      ;;
+
     help)
       action="help"
       shift
@@ -5168,365 +5241,6 @@ parse_requirements() {
       ;;
 
   esac
-
-  # :command.parse_requirements_while
-  while [[ $# -gt 0 ]]; do
-    key="$1"
-    case "$key" in
-
-      -?*)
-        printf "invalid option: %s\n" "$key" >&2
-        exit 1
-        ;;
-
-      *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
-        printf "invalid argument: %s\n" "$key" >&2
-        exit 1
-
-        ;;
-
-    esac
-  done
-
-}
-
-# :command.parse_requirements
-risk_config_parse_requirements() {
-  # :command.fixed_flags_filter
-  while [[ $# -gt 0 ]]; do
-    case "${1:-}" in
-      --help | -h)
-        long_usage=yes
-        risk_config_usage
-        exit
-        ;;
-
-      *)
-        break
-        ;;
-
-    esac
-  done
-
-  # :command.command_filter
-  action=${1:-}
-
-  case $action in
-    -*) ;;
-
-    set)
-      action="set"
-      shift
-      risk_config_set_parse_requirements "$@"
-      shift $#
-      ;;
-
-    get)
-      action="get"
-      shift
-      risk_config_get_parse_requirements "$@"
-      shift $#
-      ;;
-
-    unset)
-      action="unset"
-      shift
-      risk_config_unset_parse_requirements "$@"
-      shift $#
-      ;;
-
-    list)
-      action="list"
-      shift
-      risk_config_list_parse_requirements "$@"
-      shift $#
-      ;;
-
-    keys)
-      action="keys"
-      shift
-      risk_config_keys_parse_requirements "$@"
-      shift $#
-      ;;
-
-    # :command.command_fallback
-    "")
-      risk_config_usage >&2
-      exit 1
-      ;;
-
-    *)
-      printf "invalid command: %s\n" "$action" >&2
-      exit 1
-      ;;
-
-  esac
-
-  # :command.parse_requirements_while
-  while [[ $# -gt 0 ]]; do
-    key="$1"
-    case "$key" in
-
-      -?*)
-        printf "invalid option: %s\n" "$key" >&2
-        exit 1
-        ;;
-
-      *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
-        printf "invalid argument: %s\n" "$key" >&2
-        exit 1
-
-        ;;
-
-    esac
-  done
-
-}
-
-# :command.parse_requirements
-risk_config_set_parse_requirements() {
-  # :command.fixed_flags_filter
-  while [[ $# -gt 0 ]]; do
-    case "${1:-}" in
-      --help | -h)
-        long_usage=yes
-        risk_config_set_usage
-        exit
-        ;;
-
-      *)
-        break
-        ;;
-
-    esac
-  done
-
-  # :command.command_filter
-  action="config set"
-
-  # :command.parse_requirements_while
-  while [[ $# -gt 0 ]]; do
-    key="$1"
-    case "$key" in
-
-      -?*)
-        printf "invalid option: %s\n" "$key" >&2
-        exit 1
-        ;;
-
-      *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
-        if [[ -z ${args['key']+x} ]]; then
-
-          args['key']=$1
-          shift
-        elif [[ -z ${args['value']+x} ]]; then
-
-          args['value']=$1
-          shift
-        else
-          printf "invalid argument: %s\n" "$key" >&2
-          exit 1
-        fi
-
-        ;;
-
-    esac
-  done
-
-  # :command.required_args_filter
-  if [[ -z ${args['key']+x} ]]; then
-    printf "missing required argument: KEY\nusage: risk config set KEY VALUE\n" >&2
-    exit 1
-  fi
-  if [[ -z ${args['value']+x} ]]; then
-    printf "missing required argument: VALUE\nusage: risk config set KEY VALUE\n" >&2
-    exit 1
-  fi
-
-}
-
-# :command.parse_requirements
-risk_config_get_parse_requirements() {
-  # :command.fixed_flags_filter
-  while [[ $# -gt 0 ]]; do
-    case "${1:-}" in
-      --help | -h)
-        long_usage=yes
-        risk_config_get_usage
-        exit
-        ;;
-
-      *)
-        break
-        ;;
-
-    esac
-  done
-
-  # :command.command_filter
-  action="config get"
-
-  # :command.parse_requirements_while
-  while [[ $# -gt 0 ]]; do
-    key="$1"
-    case "$key" in
-
-      -?*)
-        printf "invalid option: %s\n" "$key" >&2
-        exit 1
-        ;;
-
-      *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
-        if [[ -z ${args['key']+x} ]]; then
-
-          args['key']=$1
-          shift
-        else
-          printf "invalid argument: %s\n" "$key" >&2
-          exit 1
-        fi
-
-        ;;
-
-    esac
-  done
-
-  # :command.required_args_filter
-  if [[ -z ${args['key']+x} ]]; then
-    printf "missing required argument: KEY\nusage: risk config get KEY\n" >&2
-    exit 1
-  fi
-
-}
-
-# :command.parse_requirements
-risk_config_unset_parse_requirements() {
-  # :command.fixed_flags_filter
-  while [[ $# -gt 0 ]]; do
-    case "${1:-}" in
-      --help | -h)
-        long_usage=yes
-        risk_config_unset_usage
-        exit
-        ;;
-
-      *)
-        break
-        ;;
-
-    esac
-  done
-
-  # :command.command_filter
-  action="config unset"
-
-  # :command.parse_requirements_while
-  while [[ $# -gt 0 ]]; do
-    key="$1"
-    case "$key" in
-
-      -?*)
-        printf "invalid option: %s\n" "$key" >&2
-        exit 1
-        ;;
-
-      *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
-        if [[ -z ${args['key']+x} ]]; then
-
-          args['key']=$1
-          shift
-        else
-          printf "invalid argument: %s\n" "$key" >&2
-          exit 1
-        fi
-
-        ;;
-
-    esac
-  done
-
-  # :command.required_args_filter
-  if [[ -z ${args['key']+x} ]]; then
-    printf "missing required argument: KEY\nusage: risk config unset KEY\n" >&2
-    exit 1
-  fi
-
-}
-
-# :command.parse_requirements
-risk_config_list_parse_requirements() {
-  # :command.fixed_flags_filter
-  while [[ $# -gt 0 ]]; do
-    case "${1:-}" in
-      --help | -h)
-        long_usage=yes
-        risk_config_list_usage
-        exit
-        ;;
-
-      *)
-        break
-        ;;
-
-    esac
-  done
-
-  # :command.command_filter
-  action="config list"
-
-  # :command.parse_requirements_while
-  while [[ $# -gt 0 ]]; do
-    key="$1"
-    case "$key" in
-
-      -?*)
-        printf "invalid option: %s\n" "$key" >&2
-        exit 1
-        ;;
-
-      *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
-        printf "invalid argument: %s\n" "$key" >&2
-        exit 1
-
-        ;;
-
-    esac
-  done
-
-}
-
-# :command.parse_requirements
-risk_config_keys_parse_requirements() {
-  # :command.fixed_flags_filter
-  while [[ $# -gt 0 ]]; do
-    case "${1:-}" in
-      --help | -h)
-        long_usage=yes
-        risk_config_keys_usage
-        exit
-        ;;
-
-      *)
-        break
-        ;;
-
-    esac
-  done
-
-  # :command.command_filter
-  action="config keys"
 
   # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
@@ -8454,6 +8168,365 @@ risk_qubes_update_parse_requirements() {
 }
 
 # :command.parse_requirements
+risk_config_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_config_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action=${1:-}
+
+  case $action in
+    -*) ;;
+
+    set)
+      action="set"
+      shift
+      risk_config_set_parse_requirements "$@"
+      shift $#
+      ;;
+
+    get)
+      action="get"
+      shift
+      risk_config_get_parse_requirements "$@"
+      shift $#
+      ;;
+
+    unset)
+      action="unset"
+      shift
+      risk_config_unset_parse_requirements "$@"
+      shift $#
+      ;;
+
+    list)
+      action="list"
+      shift
+      risk_config_list_parse_requirements "$@"
+      shift $#
+      ;;
+
+    keys)
+      action="keys"
+      shift
+      risk_config_keys_parse_requirements "$@"
+      shift $#
+      ;;
+
+    # :command.command_fallback
+    "")
+      risk_config_usage >&2
+      exit 1
+      ;;
+
+    *)
+      printf "invalid command: %s\n" "$action" >&2
+      exit 1
+      ;;
+
+  esac
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        printf "invalid argument: %s\n" "$key" >&2
+        exit 1
+
+        ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
+risk_config_set_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_config_set_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="config set"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        if [[ -z ${args['key']+x} ]]; then
+
+          args['key']=$1
+          shift
+        elif [[ -z ${args['value']+x} ]]; then
+
+          args['value']=$1
+          shift
+        else
+          printf "invalid argument: %s\n" "$key" >&2
+          exit 1
+        fi
+
+        ;;
+
+    esac
+  done
+
+  # :command.required_args_filter
+  if [[ -z ${args['key']+x} ]]; then
+    printf "missing required argument: KEY\nusage: risk config set KEY VALUE\n" >&2
+    exit 1
+  fi
+  if [[ -z ${args['value']+x} ]]; then
+    printf "missing required argument: VALUE\nusage: risk config set KEY VALUE\n" >&2
+    exit 1
+  fi
+
+}
+
+# :command.parse_requirements
+risk_config_get_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_config_get_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="config get"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        if [[ -z ${args['key']+x} ]]; then
+
+          args['key']=$1
+          shift
+        else
+          printf "invalid argument: %s\n" "$key" >&2
+          exit 1
+        fi
+
+        ;;
+
+    esac
+  done
+
+  # :command.required_args_filter
+  if [[ -z ${args['key']+x} ]]; then
+    printf "missing required argument: KEY\nusage: risk config get KEY\n" >&2
+    exit 1
+  fi
+
+}
+
+# :command.parse_requirements
+risk_config_unset_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_config_unset_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="config unset"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        if [[ -z ${args['key']+x} ]]; then
+
+          args['key']=$1
+          shift
+        else
+          printf "invalid argument: %s\n" "$key" >&2
+          exit 1
+        fi
+
+        ;;
+
+    esac
+  done
+
+  # :command.required_args_filter
+  if [[ -z ${args['key']+x} ]]; then
+    printf "missing required argument: KEY\nusage: risk config unset KEY\n" >&2
+    exit 1
+  fi
+
+}
+
+# :command.parse_requirements
+risk_config_list_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_config_list_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="config list"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        printf "invalid argument: %s\n" "$key" >&2
+        exit 1
+
+        ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
+risk_config_keys_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_config_keys_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="config keys"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        printf "invalid argument: %s\n" "$key" >&2
+        exit 1
+
+        ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
 risk_help_parse_requirements() {
   # :command.fixed_flags_filter
   while [[ $# -gt 0 ]]; do
@@ -8507,14 +8580,12 @@ risk_help_parse_requirements() {
 initialize() {
   version="0.1.0"
   long_usage=''
-  set -euo pipefail
+  uo pipefail
 
   # src/initialize.sh
 
   # Connected terminal
   typeset -H _TTY
-  GPG_TTY=$(tty)  # Needed for GPG operations
-  export GPG_TTY
 
   # Remove verbose errors when * don't yield any match in ZSH
   setopt +o nomatch
@@ -8522,15 +8593,18 @@ initialize() {
   # The generated script makes use of BASH_REMATCH, set compat for ZSH
   setopt BASH_REMATCH
 
+  # Use colors unless told not to
+  { ! option_is_set --no-color } && { autoload -Uz colors && colors }
+
+  # Set log file if specified via flags.
+  _init_log_file
+
 
   # Don't run as root
   if [[ $EUID -eq 0 ]]; then
      echo "This script must be run as user"
      exit 2
   fi
-
-  # Use colors unless told not to
-  { ! option_is_set --no-color } && { autoload -Uz colors && colors }
 
   # Configuration file -------------------------------------------------------------------------------
   #
@@ -8569,60 +8643,6 @@ run() {
   initialize
 
   case "$action" in
-    "config")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_config_usage
-      else
-        risk_config_command
-      fi
-      ;;
-
-    "config set")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_config_set_usage
-      else
-        risk_config_set_command
-      fi
-      ;;
-
-    "config get")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_config_get_usage
-      else
-        risk_config_get_command
-      fi
-      ;;
-
-    "config unset")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_config_unset_usage
-      else
-        risk_config_unset_command
-      fi
-      ;;
-
-    "config list")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_config_list_usage
-      else
-        risk_config_list_command
-      fi
-      ;;
-
-    "config keys")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_config_keys_usage
-      else
-        risk_config_keys_command
-      fi
-      ;;
-
     "hush")
       if [[ ${args['--help']:-} ]]; then
         long_usage=yes
@@ -8980,6 +9000,60 @@ run() {
         risk_qubes_update_usage
       else
         risk_qubes_update_command
+      fi
+      ;;
+
+    "config")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_config_usage
+      else
+        risk_config_command
+      fi
+      ;;
+
+    "config set")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_config_set_usage
+      else
+        risk_config_set_command
+      fi
+      ;;
+
+    "config get")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_config_get_usage
+      else
+        risk_config_get_command
+      fi
+      ;;
+
+    "config unset")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_config_unset_usage
+      else
+        risk_config_unset_command
+      fi
+      ;;
+
+    "config list")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_config_list_usage
+      else
+        risk_config_list_command
+      fi
+      ;;
+
+    "config keys")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_config_keys_usage
+      else
+        risk_config_keys_command
       fi
       ;;
 

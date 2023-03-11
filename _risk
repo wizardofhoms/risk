@@ -29,10 +29,10 @@ _risk ()
     else
         local ret=1
         local line state
+
         _arguments -C \
             "${_flags_base[@]}" \
-            '(- : *)'--version'[Print risk version and exit]' \
-            "1: :_risk_commands" \
+            "*: :_risk_commands" \
             && ret=0
     fi
 }
@@ -495,8 +495,10 @@ _url ()
 
 # Flags that are present on all commands
 _flags_base=(
-    '(-v --verbose)'{-v,--verbose}'[Enable verbose logging]'
+    '(- : *)'--version'[Print risks version and exit]' \
     '(- : *)'{-h,--help}'[Print help for the command]'
+    '(-v --verbose)'{-v,--verbose}'[Enable verbose logging]'
+    '(-l --log-file)'{-l,--log-file}'[Path to log file]:log file:_files'
 )
 
 ## Base flags needed when creating/cloning a VM

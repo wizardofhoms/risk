@@ -22,7 +22,7 @@ fi
 # If torbrowser update is required, get identity browsing VM template and update
 # We need to know for which identity to update, so we need one active.
 if [[ ${args['vms']} == torbrowser ]] || [[ ${other_args[(r)torbrowser]} == torbrowser ]]; then
-    identity.set 
+    identity.set
 
     local browser_vm browser_template
     browser_vm="$(identity.browser_qube)"

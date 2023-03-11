@@ -6,9 +6,12 @@ flags:
   - long: --verbose
     short: -v
     help: "Show verbose logging"
+  - long: --log-file
+    short: -l
+    help: "Path to log file"
+    arg: logfile
 
 commands:
-- import: src/config_commands.yml
   # Drives/partitions
 - import: src/hush_commands.yml
 - import: src/backup_commands.yml
@@ -22,6 +25,7 @@ commands:
 - import: src/url_commands.yml
   # Qubes
 - import: src/qubes_commands.yml
+- import: src/config_commands.yml
 
 - name: help
   help: Show help about a command

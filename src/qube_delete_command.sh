@@ -22,6 +22,8 @@ fi
 
 # Remove from autostart enabled commands
 sed -i /"$vm"/d "${IDENTITY_DIR}/autostart_vms"
+sed -i /"$vm"/d "${IDENTITY_DIR}/proxy_vms"
+sed -i /"$vm"/d "${IDENTITY_DIR}/client_vms"
 
 # Finally, delete the VM,
 _run qvm-remove "$vm"

@@ -384,7 +384,7 @@ _qube ()
             add)
                 _arguments -C \
                     "${_flags_network[@]}" \
-                    '(-E --enable)'{-E,--enable}'[Autostart this VM when the identity is started]'
+                    '(-E --enable)'{-E,--enable}'[Autostart this VM when the identity is started]' \
                     '--default-netvm[Set this VM as the default NetVM for all client machines for identity (browser, messaging, etc)]' \
                     '1::VM to tag with identity settings:_known_vms' \
                     && ret=0
@@ -599,8 +599,17 @@ _updateable_vms ()
 # Returns all the VMs belonging to the active identity
 _identity_vms ()
 {
+    local proxies=() vms=()
+    local browser_vm tor_gateway
+    local identity_dir="$(_identity_dir)"
+
     proxies=($(_identity_proxies))
     vms=($(_identity_clients))
+
+    tor_gateway="$(cat ${identity_dir}/tor_gw)"
+    [[ -n ${tor_gateway} ]] && proxies+=( ${tor_gateway} )
+    browser_vm="$(cat ${identity_dir}/browser_vm)"
+    [[ -n ${browser_vm} ]] && vms+=( ${browser_vm} )
 
     [[ -z "${proxies}" ]] && [[ -z "${vms}" ]] \
         && _message "No VMs belong to this identity" && return
@@ -785,7 +794,7 @@ _identity_dir ()
     # Get the vault vm, and then the identity  directory
     local vault_vm active_identity identity_dir
     vault_vm=$(risk config get VAULT_VM)
-    active_identity=$(qvm-run --pass-io "$vault_vm" 'risks identity' 2>/dev/null)
+    active_identity=$(qvm-run --pass-io "$vault_vm" 'risks identity active' 2>/dev/null)
     identity_dir="${HOME}/.risk/identities/${active_identity}"
     print ${identity_dir}
 }

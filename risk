@@ -1427,11 +1427,8 @@ risk_url_usage() {
   echo
   # :command.usage_commands
   printf "%s\n" "$(bold "Commands:")"
-  printf "  %s   Open a target URL into a target VM, or bookmarks with no arguments.\n" "$(red "open")     "
-  printf "  %s   Verify the authenticity/signatures and reputation of an onion URL.\n" "$(red "verify")   "
-  printf "  %s   Add an onion to the user/system bookmarks without verifying it.\n" "$(red "bookmark") "
-  printf "  %s   Add an onion to the system list of blacklisted onions\n" "$(red "blacklist")"
-  printf "  %s   refresh the authenticity files, refered links and current news for an onion.\n" "$(red "news")     "
+  printf "  %s   Open a target URL into a target VM, or bookmarks with no arguments.\n" "$(red "open")    "
+  printf "  %s   Add an onion to the user/system bookmarks without verifying it.\n" "$(red "bookmark")"
   echo
 
   # :command.long_usage
@@ -1484,43 +1481,6 @@ risk_url_open_usage() {
 }
 
 # :command.usage
-risk_url_verify_usage() {
-  if [[ -n $long_usage ]]; then
-    printf "risk url verify - Verify the authenticity/signatures and reputation of an onion URL.\n"
-    echo
-
-  else
-    printf "risk url verify - Verify the authenticity/signatures and reputation of an onion URL.\n"
-    echo
-
-  fi
-
-  printf "%s\n" "$(bold "Usage:")"
-  printf "  risk url verify [URL]\n"
-  printf "  risk url verify --help | -h\n"
-  echo
-
-  # :command.long_usage
-  if [[ -n $long_usage ]]; then
-    printf "%s\n" "$(bold "Options:")"
-
-    # :command.usage_fixed_flags
-    printf "  %s\n" "--help, -h"
-    printf "    Show this help\n"
-    echo
-
-    # :command.usage_args
-    printf "%s\n" "$(bold "Arguments:")"
-
-    # :argument.usage
-    printf "  %s\n" "$(blue "URL")"
-    printf "    URL to verify\n"
-    echo
-
-  fi
-}
-
-# :command.usage
 risk_url_bookmark_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk url bookmark - Add an onion to the user/system bookmarks without verifying it.\n"
@@ -1563,80 +1523,6 @@ risk_url_bookmark_usage() {
     # :argument.usage
     printf "  %s\n" "$(blue "URL")"
     printf "    URL to bookmark (optional, if empty the split-bookmarks file is opened, or\n    the user is prompted for URL/info)\n"
-    echo
-
-  fi
-}
-
-# :command.usage
-risk_url_blacklist_usage() {
-  if [[ -n $long_usage ]]; then
-    printf "risk url blacklist - Add an onion to the system list of blacklisted onions\n"
-    echo
-
-  else
-    printf "risk url blacklist - Add an onion to the system list of blacklisted onions\n"
-    echo
-
-  fi
-
-  printf "%s\n" "$(bold "Usage:")"
-  printf "  risk url blacklist [URL]\n"
-  printf "  risk url blacklist --help | -h\n"
-  echo
-
-  # :command.long_usage
-  if [[ -n $long_usage ]]; then
-    printf "%s\n" "$(bold "Options:")"
-
-    # :command.usage_fixed_flags
-    printf "  %s\n" "--help, -h"
-    printf "    Show this help\n"
-    echo
-
-    # :command.usage_args
-    printf "%s\n" "$(bold "Arguments:")"
-
-    # :argument.usage
-    printf "  %s\n" "$(blue "URL")"
-    printf "    URL to blacklist\n"
-    echo
-
-  fi
-}
-
-# :command.usage
-risk_url_news_usage() {
-  if [[ -n $long_usage ]]; then
-    printf "risk url news - refresh the authenticity files, refered links and current news for an onion.\n"
-    echo
-
-  else
-    printf "risk url news - refresh the authenticity files, refered links and current news for an onion.\n"
-    echo
-
-  fi
-
-  printf "%s\n" "$(bold "Usage:")"
-  printf "  risk url news [URL]\n"
-  printf "  risk url news --help | -h\n"
-  echo
-
-  # :command.long_usage
-  if [[ -n $long_usage ]]; then
-    printf "%s\n" "$(bold "Options:")"
-
-    # :command.usage_fixed_flags
-    printf "  %s\n" "--help, -h"
-    printf "    Show this help\n"
-    echo
-
-    # :command.usage_args
-    printf "%s\n" "$(bold "Arguments:")"
-
-    # :argument.usage
-    printf "  %s\n" "$(blue "URL")"
-    printf "    URL to fetch news for\n"
     echo
 
   fi
@@ -4993,16 +4879,6 @@ risk_url_open_command() {
 }
 
 # :command.function
-risk_url_verify_command() {
-  # src/url_verify_command.sh
-  echo "# this file is located in 'src/url_verify_command.sh'"
-  echo "# code for 'risk url verify' goes here"
-  echo "# you can edit it freely and regenerate (it will not be overwritten)"
-  inspect_args
-
-}
-
-# :command.function
 risk_url_bookmark_command() {
   # src/url_bookmark_command.sh
 
@@ -5044,26 +4920,6 @@ risk_url_bookmark_command() {
   if ! web.bookmark_exists "${url}" ; then
       web.bookmark_save "${bookmark_entry}"
   fi
-
-}
-
-# :command.function
-risk_url_blacklist_command() {
-  # src/url_blacklist_command.sh
-  echo "# this file is located in 'src/url_blacklist_command.sh'"
-  echo "# code for 'risk url blacklist' goes here"
-  echo "# you can edit it freely and regenerate (it will not be overwritten)"
-  inspect_args
-
-}
-
-# :command.function
-risk_url_news_command() {
-  # src/url_news_command.sh
-  echo "# this file is located in 'src/url_news_command.sh'"
-  echo "# code for 'risk url news' goes here"
-  echo "# you can edit it freely and regenerate (it will not be overwritten)"
-  inspect_args
 
 }
 
@@ -7791,31 +7647,10 @@ risk_url_parse_requirements() {
       shift $#
       ;;
 
-    verify)
-      action="verify"
-      shift
-      risk_url_verify_parse_requirements "$@"
-      shift $#
-      ;;
-
     bookmark)
       action="bookmark"
       shift
       risk_url_bookmark_parse_requirements "$@"
-      shift $#
-      ;;
-
-    blacklist)
-      action="blacklist"
-      shift
-      risk_url_blacklist_parse_requirements "$@"
-      shift $#
-      ;;
-
-    news)
-      action="news"
-      shift
-      risk_url_news_parse_requirements "$@"
       shift $#
       ;;
 
@@ -7906,56 +7741,6 @@ risk_url_open_parse_requirements() {
 }
 
 # :command.parse_requirements
-risk_url_verify_parse_requirements() {
-  # :command.fixed_flags_filter
-  while [[ $# -gt 0 ]]; do
-    case "${1:-}" in
-      --help | -h)
-        long_usage=yes
-        risk_url_verify_usage
-        exit
-        ;;
-
-      *)
-        break
-        ;;
-
-    esac
-  done
-
-  # :command.command_filter
-  action="url verify"
-
-  # :command.parse_requirements_while
-  while [[ $# -gt 0 ]]; do
-    key="$1"
-    case "$key" in
-
-      -?*)
-        printf "invalid option: %s\n" "$key" >&2
-        exit 1
-        ;;
-
-      *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
-        if [[ -z ${args['url']+x} ]]; then
-
-          args['url']=$1
-          shift
-        else
-          printf "invalid argument: %s\n" "$key" >&2
-          exit 1
-        fi
-
-        ;;
-
-    esac
-  done
-
-}
-
-# :command.parse_requirements
 risk_url_bookmark_parse_requirements() {
   # :command.fixed_flags_filter
   while [[ $# -gt 0 ]]; do
@@ -7995,106 +7780,6 @@ risk_url_bookmark_parse_requirements() {
         args['--system']=1
         shift
         ;;
-
-      -?*)
-        printf "invalid option: %s\n" "$key" >&2
-        exit 1
-        ;;
-
-      *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
-        if [[ -z ${args['url']+x} ]]; then
-
-          args['url']=$1
-          shift
-        else
-          printf "invalid argument: %s\n" "$key" >&2
-          exit 1
-        fi
-
-        ;;
-
-    esac
-  done
-
-}
-
-# :command.parse_requirements
-risk_url_blacklist_parse_requirements() {
-  # :command.fixed_flags_filter
-  while [[ $# -gt 0 ]]; do
-    case "${1:-}" in
-      --help | -h)
-        long_usage=yes
-        risk_url_blacklist_usage
-        exit
-        ;;
-
-      *)
-        break
-        ;;
-
-    esac
-  done
-
-  # :command.command_filter
-  action="url blacklist"
-
-  # :command.parse_requirements_while
-  while [[ $# -gt 0 ]]; do
-    key="$1"
-    case "$key" in
-
-      -?*)
-        printf "invalid option: %s\n" "$key" >&2
-        exit 1
-        ;;
-
-      *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
-        if [[ -z ${args['url']+x} ]]; then
-
-          args['url']=$1
-          shift
-        else
-          printf "invalid argument: %s\n" "$key" >&2
-          exit 1
-        fi
-
-        ;;
-
-    esac
-  done
-
-}
-
-# :command.parse_requirements
-risk_url_news_parse_requirements() {
-  # :command.fixed_flags_filter
-  while [[ $# -gt 0 ]]; do
-    case "${1:-}" in
-      --help | -h)
-        long_usage=yes
-        risk_url_news_usage
-        exit
-        ;;
-
-      *)
-        break
-        ;;
-
-    esac
-  done
-
-  # :command.command_filter
-  action="url news"
-
-  # :command.parse_requirements_while
-  while [[ $# -gt 0 ]]; do
-    key="$1"
-    case "$key" in
 
       -?*)
         printf "invalid option: %s\n" "$key" >&2
@@ -9030,39 +8715,12 @@ run() {
       fi
       ;;
 
-    "url verify")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_url_verify_usage
-      else
-        risk_url_verify_command
-      fi
-      ;;
-
     "url bookmark")
       if [[ ${args['--help']:-} ]]; then
         long_usage=yes
         risk_url_bookmark_usage
       else
         risk_url_bookmark_command
-      fi
-      ;;
-
-    "url blacklist")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_url_blacklist_usage
-      else
-        risk_url_blacklist_command
-      fi
-      ;;
-
-    "url news")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_url_news_usage
-      else
-        risk_url_news_command
       fi
       ;;
 

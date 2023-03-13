@@ -11,9 +11,6 @@ setopt BASH_REMATCH
 # Use colors unless told not to
 { ! option_is_set --no-color } && { autoload -Uz colors && colors }
 
-# Set log file if specified via flags.
-_init_log_file
-
 ## Checks ##
 
 # Don't run as root
@@ -44,6 +41,6 @@ typeset -gr DOM0_TERMINAL=$(config_get DOM0_TERMINAL)
 typeset -gr VM_TERMINAL=$(config_get VM_TERMINAL)
 
 # Working state variables --------------------------------------------------------------------------
-typeset -r IDENTITY            # The identity to use for this single risk execution
-typeset -g IDENTITY_DIR        # The directory where to store identity settings
-
+typeset -r IDENTITY                 # The identity to use for this single risk execution
+typeset -g IDENTITY_DIR             # The directory where to store identity settings
+typeset -g IDENTITY_BOOKMARKS_FILE  # The file in mgmt tomb storing user bookmarks.

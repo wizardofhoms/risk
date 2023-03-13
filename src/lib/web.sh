@@ -12,17 +12,18 @@ function web.browser_create ()
     local ws_template="$(config_get WHONIX_WS_TEMPLATE)"
     local template_disp="$(qvm-prefs "${ws_template}" template_for_dispvms 2>/dev/null)"
 
-    _info "Creating web browsing VM (name: $web / netvm: $web_netvm / template: $ws_template)"
-    local create_command=(qvm-create "${web}" --property netvm="$web_netvm" --label="$web_label" --template="$ws_template")
-
     # If the template used is a disposable_template,
     # this means we must create a named disposable VM.
     if [[ "${template_disp}" == True ]]; then
-        create_command+=(--class DispVM)
+        _verbose "VM template is a disposable template, cloning it instead"
+        web.browser_clone "${1}" "${ws_template}" "${netvm}" "${web_label}"
+        return
     fi
 
     # Generate the VM
-    "${create_command[@]}"
+    _info "Creating web browsing VM (name: $web / netvm: $web_netvm / template: $ws_template)"
+    _run qvm-create "${web}" --property netvm="$web_netvm" --label="$web_label" --template="$ws_template"
+
     if [[ $? -gt 0 ]]; then
         _warning "Failed to create browser VM $web" && return
     fi
@@ -96,29 +97,48 @@ function web.split_backend_clone ()
 # used by the split browser backend to use the active identity's one.
 function web.browser_set_split_dispvm ()
 {
-    local browser_vm
+    local browser_vm split_backend filename copy_command
+
+    split_backend="$(config_get SPLIT_BROWSER)"
     browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
 
-    if [[ -n "${browser_vm}" ]]; then
-        _info "Setting identity browser VM with split-browser"
-        qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm "${browser_vm}"
-    fi
+    filename="$(crypt.filename "bookmarks.tsv")"
+    local bookmarks_file="/home/user/.tomb/mgmt/${filename}"
+    local bookmarks_split_file="/home/user/.local/share/split-browser/bookmarks.tsv"
+
+    [[ -z "${browser_vm}" ]] && return
+
+    # Use this browser as the split dispVM
+    _info "Setting identity browser VM with split-browser"
+    qvm-prefs "${split_backend}" default_dispvm "${browser_vm}"
+
+    # And copy identity bookmarks from vault to the split-backend.
+    _info "Transfering identity bookmarks to split-backend"
+    copy_command="qvm-copy-to-vm ${split_backend} ${bookmarks_file}" 
+    qvm-run "${VAULT_VM}" "${copy_command}" &>/dev/null
+    _run_qube "${split_backend}" "mv QubesIncoming/${VAULT_VM}/${filename} ${bookmarks_split_file}"
 }
 
 # web.browser_unset_split_dispvm removes the dispvm setting of the
 # tor split-browser backend if it is set to the identity browser VM.
 function web.browser_unset_split_dispvm ()
 {
-    local browser_vm
+    local browser_vm split_backend filename
+
     browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
+    split_backend="$(config_get SPLIT_BROWSER)"
 
-    if [[ -z "${browser_vm}" ]]; then
-        return
+    filename="$(crypt.filename "bookmarks.tsv")"
+    local bookmarks_backend_path="/home/user/.local/share/split-browser/bookmarks.tsv"
+
+    [[ -z "${browser_vm}" ]] && return
+
+    if [[ "$(qvm-prefs "${split_backend}" default_dispvm)" == "${browser_vm}" ]]; then
+        qvm-prefs "${split_backend}" default_dispvm ''
     fi
 
-    if [[ "$(qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm)" == "${browser_vm}" ]]; then
-        qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm ''
-    fi
+    _info "Removing identity bookmarks from split-backend"
+    _run_qube "${split_backend}" "shred -u ${bookmarks_backend_path}"
 }
 
 # ========================================================================================
@@ -227,6 +247,59 @@ function web.bookmark_pop ()
     qvm-run --pass-io "${vm}" "${remove_command}"
 
     print "${line}"
+}
+
+# web.bookmark_prompt opens a zenity prompt in the focused qube
+# for the user to enter a URL and an optional page itle.
+function web.bookmark_prompt ()
+{
+    local zenity_prompt result active_vm
+    active_vm="$(qubes.focused_qube)"
+
+    zenity_prompt="zenity --text 'URL Bookmark' --forms --add-entry='URL' --add-entry='Page Title' --separator=\$'\t'"
+    qvm-run --pass-io "${active_vm}" "${zenity_prompt}"
+}
+
+# web.bookmark_exists returns 0 if the bookmark 
+# is found in the user bookmarks file, or 1 if not.
+# $1 - Bookmark URL path.
+function web.bookmark_exists ()
+{
+    local url="${1}"
+
+    qvm-run --pass-io "${VAULT_VM}" "cat ${IDENTITY_BOOKMARKS_FILE} | grep ${url}" &>/dev/null
+}
+
+# web.bookmark_save writes a bookmark in split-browser 
+# format to the identity's bookmarks file.
+# $1 - Bookmark entry
+function web.bookmark_save ()
+{
+    local bookmark_entry="$1"
+    qvm-run --pass-io "${VAULT_VM}" "echo '${bookmark_entry}' >> ${IDENTITY_BOOKMARKS_FILE}"
+}
+
+# web.bookmark_open_in attempts to a URL with the system browser of a qube.
+# $1 - URL to open.
+# $2 - Target qube.
+function web.bookmark_open_in ()
+{
+    local url="$1"
+    local qube="$2"
+
+    _info "Opening ${url} in ${qube}"
+    _run qvm-run "${qube}" "x-www-browser ${url}" &
+}
+
+# web.bookmark_open_split attempts to open a URL with the split-browser backend.
+function web.bookmark_open_split ()
+{
+    local url="$1"
+    local qube
+    qube="$(config_get SPLIT_BROWSER)"
+
+    _info "Opening ${url} in ${qube}"
+    _run qvm-run "${qube}" "split-browser ${url}" &
 }
 
 # get_browser_vm_from requires a VM name to be passed as argument.

@@ -101,6 +101,29 @@ function qube.command_args ()
     echo "${all[@]}"
 }
 
+# qube.is_browser_instance returns 0 if the qube is either 
+# the identity browser qube itself, or a disposable based on it.
+# $1 - Qube name
+function qube.is_browser_instance ()
+{
+    local qube="$1"
+    local qube_class
+
+    [[ "${qube}" == "dom0" ]] && return 1
+    [[ -z "${qube}" ]] && return 1
+
+    # Get the type of qube, and return if not compatible.
+    qube_class="$(qvm-prefs "${qube}" klass 2>/dev/null)"
+    [[ "${qube_class}" == "TemplateVM" ]] && return 1
+
+    # If it's a disposable, use the template.
+    if [[ "${qube_class}" == "DispVM" ]]; then
+        qube="$(qvm-prefs "${qube}" template)" 
+    fi
+
+    [[ "${qube}" == "$(identity.browser_qube)" ]] || return 1
+}
+
 
 # ========================================================================================
 #  VM control and settings management

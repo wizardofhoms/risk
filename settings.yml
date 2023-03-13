@@ -12,7 +12,7 @@ target_dir: .
 lib_dir: lib
 
 # When true, enable bash strict mode (set -euo pipefail). Empty is no strict mode.
-strict: ''
+strict: false
 
 # When true, the generated script will use tab indentation instead of spaces
 # (every 2 leading spaces will be converted to a tab character)

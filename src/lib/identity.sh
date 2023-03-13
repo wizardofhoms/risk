@@ -13,8 +13,9 @@ function identity.set ()
     IDENTITY=$(identity.active_or_specified "$identity")
     _catch "Command requires either an identity to be active or given as argument"
 
-    # Set the identity directory
+    # Set the identity directory and other settings.
     IDENTITY_DIR="${RISK_IDENTITIES_DIR}/${IDENTITY}"
+    IDENTITY_BOOKMARKS_FILE="/home/user/.tomb/mgmt/$(crypt.filename 'bookmarks.tsv')"
 }
 
 # identity.set_active sets the name as an ENV variable that we can use in further functions and commands.

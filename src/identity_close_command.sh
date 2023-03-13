@@ -1,6 +1,8 @@
 
 local active_identity
 
+identity.set
+
 # Check we have an active identity
 active_identity="$(identity.active)"
 if [[ -z $active_identity ]]; then

@@ -14,10 +14,8 @@ default:
 	# since we handle our errors ourselves
 	sed -i 's/set -e//g' risk
 
-	# Move the initialize call from its current position to within 
-	# the run function, so that flags are accessible immediately.
-	sed -i 'N;$$!P;D' risk
-	sed -i '/parse_requirements "$${/a \ \ initialize' risk
+	# Add call after initialize but before run to setup log
+	sed -i '/parse_requirements "$${/a \ \ _init_log_file' risk
 	
 release:
 	# Update the version line string

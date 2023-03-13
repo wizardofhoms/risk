@@ -2291,8 +2291,9 @@ function identity.set ()
     IDENTITY=$(identity.active_or_specified "$identity")
     _catch "Command requires either an identity to be active or given as argument"
 
-    # Set the identity directory
+    # Set the identity directory and other settings.
     IDENTITY_DIR="${RISK_IDENTITIES_DIR}/${IDENTITY}"
+    IDENTITY_BOOKMARKS_FILE="/home/user/.tomb/mgmt/$(crypt.filename 'bookmarks.tsv')"
 }
 
 # identity.set_active sets the name as an ENV variable that we can use in further functions and commands.
@@ -3355,6 +3356,31 @@ function qube.command_args ()
     echo "${all[@]}"
 }
 
+# qube.is_browser_instance returns 0 if the qube is either
+
+# the identity browser qube itself, or a disposable based on it.
+# $1 - Qube name
+function qube.is_browser_instance ()
+{
+    local qube="$1"
+    local qube_class
+
+    [[ "${qube}" == "dom0" ]] && return 1
+    [[ -z "${qube}" ]] && return 1
+
+    # Get the type of qube, and return if not compatible.
+    qube_class="$(qvm-prefs "${qube}" klass 2>/dev/null)"
+    [[ "${qube_class}" == "TemplateVM" ]] && return 1
+
+    # If it's a disposable, use the template.
+    if [[ "${qube_class}" == "DispVM" ]]; then
+        qube="$(qvm-prefs "${qube}" template)"
+
+    fi
+
+    [[ "${qube}" == "$(identity.browser_qube)" ]] || return 1
+}
+
 # ========================================================================================
 #  VM control and settings management
 # ========================================================================================
@@ -3706,17 +3732,18 @@ function web.browser_create ()
     local ws_template="$(config_get WHONIX_WS_TEMPLATE)"
     local template_disp="$(qvm-prefs "${ws_template}" template_for_dispvms 2>/dev/null)"
 
-    _info "Creating web browsing VM (name: $web / netvm: $web_netvm / template: $ws_template)"
-    local create_command=(qvm-create "${web}" --property netvm="$web_netvm" --label="$web_label" --template="$ws_template")
-
     # If the template used is a disposable_template,
     # this means we must create a named disposable VM.
     if [[ "${template_disp}" == True ]]; then
-        create_command+=(--class DispVM)
+        _verbose "VM template is a disposable template, cloning it instead"
+        web.browser_clone "${1}" "${ws_template}" "${netvm}" "${web_label}"
+        return
     fi
 
     # Generate the VM
-    "${create_command[@]}"
+    _info "Creating web browsing VM (name: $web / netvm: $web_netvm / template: $ws_template)"
+    _run qvm-create "${web}" --property netvm="$web_netvm" --label="$web_label" --template="$ws_template"
+
     if [[ $? -gt 0 ]]; then
         _warning "Failed to create browser VM $web" && return
     fi
@@ -3790,29 +3817,49 @@ function web.split_backend_clone ()
 # used by the split browser backend to use the active identity's one.
 function web.browser_set_split_dispvm ()
 {
-    local browser_vm
+    local browser_vm split_backend filename copy_command
+
+    split_backend="$(config_get SPLIT_BROWSER)"
     browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
 
-    if [[ -n "${browser_vm}" ]]; then
-        _info "Setting identity browser VM with split-browser"
-        qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm "${browser_vm}"
-    fi
+    filename="$(crypt.filename "bookmarks.tsv")"
+    local bookmarks_file="/home/user/.tomb/mgmt/${filename}"
+    local bookmarks_split_file="/home/user/.local/share/split-browser/bookmarks.tsv"
+
+    [[ -z "${browser_vm}" ]] && return
+
+    # Use this browser as the split dispVM
+    _info "Setting identity browser VM with split-browser"
+    qvm-prefs "${split_backend}" default_dispvm "${browser_vm}"
+
+    # And copy identity bookmarks from vault to the split-backend.
+    _info "Transfering identity bookmarks to split-backend"
+    copy_command="qvm-copy-to-vm ${split_backend} ${bookmarks_file}"
+
+    qvm-run "${VAULT_VM}" "${copy_command}" &>/dev/null
+    _run_qube "${split_backend}" "mv QubesIncoming/${VAULT_VM}/${filename} ${bookmarks_split_file}"
 }
 
 # web.browser_unset_split_dispvm removes the dispvm setting of the
 # tor split-browser backend if it is set to the identity browser VM.
 function web.browser_unset_split_dispvm ()
 {
-    local browser_vm
+    local browser_vm split_backend filename
+
     browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
+    split_backend="$(config_get SPLIT_BROWSER)"
 
-    if [[ -z "${browser_vm}" ]]; then
-        return
+    filename="$(crypt.filename "bookmarks.tsv")"
+    local bookmarks_backend_path="/home/user/.local/share/split-browser/bookmarks.tsv"
+
+    [[ -z "${browser_vm}" ]] && return
+
+    if [[ "$(qvm-prefs "${split_backend}" default_dispvm)" == "${browser_vm}" ]]; then
+        qvm-prefs "${split_backend}" default_dispvm ''
     fi
 
-    if [[ "$(qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm)" == "${browser_vm}" ]]; then
-        qvm-prefs "$(config_get SPLIT_BROWSER)" default_dispvm ''
-    fi
+    _info "Removing identity bookmarks from split-backend"
+    _run_qube "${split_backend}" "shred -u ${bookmarks_backend_path}"
 }
 
 # ========================================================================================
@@ -3921,6 +3968,61 @@ function web.bookmark_pop ()
     qvm-run --pass-io "${vm}" "${remove_command}"
 
     print "${line}"
+}
+
+# web.bookmark_prompt opens a zenity prompt in the focused qube
+# for the user to enter a URL and an optional page itle.
+function web.bookmark_prompt ()
+{
+    local zenity_prompt result active_vm
+    active_vm="$(qubes.focused_qube)"
+
+    zenity_prompt="zenity --text 'URL Bookmark' --forms --add-entry='URL' --add-entry='Page Title' --separator=\$'\t'"
+    qvm-run --pass-io "${active_vm}" "${zenity_prompt}"
+}
+
+# web.bookmark_exists returns 0 if the bookmark
+
+# is found in the user bookmarks file, or 1 if not.
+# $1 - Bookmark URL path.
+function web.bookmark_exists ()
+{
+    local url="${1}"
+
+    qvm-run --pass-io "${VAULT_VM}" "cat ${IDENTITY_BOOKMARKS_FILE} | grep ${url}" &>/dev/null
+}
+
+# web.bookmark_save writes a bookmark in split-browser
+
+# format to the identity's bookmarks file.
+# $1 - Bookmark entry
+function web.bookmark_save ()
+{
+    local bookmark_entry="$1"
+    qvm-run --pass-io "${VAULT_VM}" "echo '${bookmark_entry}' >> ${IDENTITY_BOOKMARKS_FILE}"
+}
+
+# web.bookmark_open_in attempts to a URL with the system browser of a qube.
+# $1 - URL to open.
+# $2 - Target qube.
+function web.bookmark_open_in ()
+{
+    local url="$1"
+    local qube="$2"
+
+    _info "Opening ${url} in ${qube}"
+    _run qvm-run "${qube}" "x-www-browser ${url}" &
+}
+
+# web.bookmark_open_split attempts to open a URL with the split-browser backend.
+function web.bookmark_open_split ()
+{
+    local url="$1"
+    local qube
+    qube="$(config_get SPLIT_BROWSER)"
+
+    _info "Opening ${url} in ${qube}"
+    _run qvm-run "${qube}" "split-browser ${url}" &
 }
 
 # get_browser_vm_from requires a VM name to be passed as argument.
@@ -4370,6 +4472,8 @@ risk_identity_close_command() {
   # src/identity_close_command.sh
 
   local active_identity
+
+  identity.set
 
   # Check we have an active identity
   active_identity="$(identity.active)"
@@ -4899,10 +5003,40 @@ risk_use_command() {
 # :command.function
 risk_url_open_command() {
   # src/url_open_command.sh
-  echo "# this file is located in 'src/url_open_command.sh'"
-  echo "# code for 'risk url open' goes here"
-  echo "# you can edit it freely and regenerate (it will not be overwritten)"
-  inspect_args
+
+  local url               # URL link to open
+  local split_vm          # The split-browser backend qube.
+  local active_vm         # Qube of the focused window.
+
+  identity.set
+
+  url="${args['url']}"
+  split_vm="$(config_get SPLIT_BROWSER)"
+  active_vm="$(qubes.focused_qube)"
+
+  # Get the bookmark entry from either split-browser file, args, or user-input in prompt.
+  if [[ -z "${url}" ]]; then
+      if ! web.bookmarks_file_is_empty; then
+          _info "No URL argument, starting dmenu with bookmarks list in ${split_vm}"
+          url="$( web.bookmark_select | awk '{print $2}' )"
+      else
+          _info "Bookmark file is empty, and no URL argument was given." && return
+      fi
+  fi
+
+  # We either have an entry, or some information to build one, otherwise abort.
+  if [[ -z "${url}" ]]; then
+      _info "No bookmark entry or URL selected or entered, aborting." && return
+  fi
+
+  # And open the link in the appropriate qube.
+  # If the focused VM is a disposable browser, do not go through split-browser to open it.
+  # Else, pass the URL as a split-browser command argument.
+  if qube.is_browser_instance "${active_vm}"; then
+      web.bookmark_open_in "${url}" "${active_vm}"
+  else
+      web.bookmark_open_split "${url}"
+  fi
 
 }
 
@@ -4920,22 +5054,21 @@ risk_url_verify_command() {
 risk_url_bookmark_command() {
   # src/url_bookmark_command.sh
 
-  local active_vm         # The VM owning the focused window
   local bookmark_entry    # Complete entry (date/url/title)
   local url               # The URL to bookmark
   local title             # The URL page title to use if/when prompting the user for input.
+  local split_vm          # The split-browser backend qube.
 
-  identity.set ""
+  identity.set
 
   url="${args['url']}"
   split_vm="$(config_get SPLIT_BROWSER)"
-  active_vm="$(qubes.focused_qube)"
 
+  # Get the bookmark entry from either split-browser file, args, or user-input in prompt.
   if [[ -z "${url}" ]]; then
       if web.bookmarks_file_is_empty; then
           _info "No bookmarks file in ${split_vm}, prompting user to enter it."
-          zenity_prompt="zenity --text 'URL Bookmark' --forms --add-entry='URL' --add-entry='Page Title' --separator=\$'\t'"
-          result="$(qvm-run --pass-io "${active_vm}" "${zenity_prompt}")"
+          result="$(web.bookmark_prompt)"
           url="$( echo "${result}" | cut -f 1 -d $'\t')"
           title="$( echo "${result}" | cut -f 2- -d $'\t')"
       else
@@ -4954,12 +5087,10 @@ risk_url_bookmark_command() {
       bookmark_entry="$(date --rfc-3339=seconds)"$'\t'"$url"$'\t'"$title"
   fi
 
+  # Transfer the results to the vault's user bookmarks file.
   _info "Transfering entry to vault bookmarks file."
-  bookmarks_path="/home/user/.tomb/mgmt/$(crypt.filename 'bookmarks.tsv')"
-
-  if ! qvm-run --pass-io "${VAULT_VM}" "cat ${bookmarks_path} | grep ${url}" &>/dev/null; then
-  # grep -m 1 -F -- \$'\t'${url}\$'\t'"
-      qvm-run --pass-io "${VAULT_VM}" "echo '${bookmark_entry}' >> ${bookmarks_path}"
+  if ! web.bookmark_exists "${url}" ; then
+      web.bookmark_save "${bookmark_entry}"
   fi
 
 }
@@ -8580,7 +8711,7 @@ risk_help_parse_requirements() {
 initialize() {
   version="0.1.0"
   long_usage=''
-  uo pipefail
+  
 
   # src/initialize.sh
 
@@ -8595,9 +8726,6 @@ initialize() {
 
   # Use colors unless told not to
   { ! option_is_set --no-color } && { autoload -Uz colors && colors }
-
-  # Set log file if specified via flags.
-  _init_log_file
 
 
   # Don't run as root
@@ -8628,8 +8756,9 @@ initialize() {
   typeset -gr VM_TERMINAL=$(config_get VM_TERMINAL)
 
   # Working state variables --------------------------------------------------------------------------
-  typeset -r IDENTITY            # The identity to use for this single risk execution
-  typeset -g IDENTITY_DIR        # The directory where to store identity settings
+  typeset -r IDENTITY                 # The identity to use for this single risk execution
+  typeset -g IDENTITY_DIR             # The directory where to store identity settings
+  typeset -g IDENTITY_BOOKMARKS_FILE  # The file in mgmt tomb storing user bookmarks.
 
 }
 
@@ -8640,7 +8769,7 @@ run() {
   declare -a input=()
   normalize_input "$@"
   parse_requirements "${input[@]}"
-  initialize
+  _init_log_file
 
   case "$action" in
     "hush")
@@ -9069,4 +9198,5 @@ run() {
   esac
 }
 
+initialize
 run "$@"

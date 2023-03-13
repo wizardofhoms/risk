@@ -1,21 +1,19 @@
 
-local active_vm         # The VM owning the focused window
 local bookmark_entry    # Complete entry (date/url/title)
 local url               # The URL to bookmark
 local title             # The URL page title to use if/when prompting the user for input.
+local split_vm          # The split-browser backend qube.
 
-identity.set ""
+identity.set
 
 url="${args['url']}"
 split_vm="$(config_get SPLIT_BROWSER)"
-active_vm="$(qubes.focused_qube)"
 
-## 1 - Get the bookmark entry from either split-browser file, args, or user-input in prompt.
+# Get the bookmark entry from either split-browser file, args, or user-input in prompt.
 if [[ -z "${url}" ]]; then
     if web.bookmarks_file_is_empty; then
         _info "No bookmarks file in ${split_vm}, prompting user to enter it."
-        zenity_prompt="zenity --text 'URL Bookmark' --forms --add-entry='URL' --add-entry='Page Title' --separator=\$'\t'"
-        result="$(qvm-run --pass-io "${active_vm}" "${zenity_prompt}")"
+        result="$(web.bookmark_prompt)"
         url="$( echo "${result}" | cut -f 1 -d $'\t')"
         title="$( echo "${result}" | cut -f 2- -d $'\t')"
     else
@@ -34,11 +32,8 @@ if [[ -z "${bookmark_entry}" ]] ; then
     bookmark_entry="$(date --rfc-3339=seconds)"$'\t'"$url"$'\t'"$title"
 fi
 
-## 2 - Transfer the results to the vault's user bookmarks file.
+# Transfer the results to the vault's user bookmarks file.
 _info "Transfering entry to vault bookmarks file."
-bookmarks_path="/home/user/.tomb/mgmt/$(crypt.filename 'bookmarks.tsv')"
-
-if ! qvm-run --pass-io "${VAULT_VM}" "cat ${bookmarks_path} | grep ${url}" &>/dev/null; then
-# grep -m 1 -F -- \$'\t'${url}\$'\t'"
-    qvm-run --pass-io "${VAULT_VM}" "echo '${bookmark_entry}' >> ${bookmarks_path}"
+if ! web.bookmark_exists "${url}" ; then
+    web.bookmark_save "${bookmark_entry}"
 fi

@@ -197,7 +197,6 @@ _identity_commands ()
         'start:Start the identity in the vault and all of its enabled VMs'
         'stop:Stops all machines belonging to an identity, and close its vault if active'
         'equip:Creates the default infrastructure for an already exiting identity'
-        'restrict:Forbid VMs not belonging to the identity from split/copy features when not active'
         'nake:Delete the VMs belonging to an identity, but not the identity in the vault'
     )
     _describe -t commands 'identity commands' subcmds && ret=0
@@ -446,10 +445,10 @@ _url_commands ()
     local -a subcmds 
     subcmds=(
         'open:Open a target URL into a target VM, or bookmarks with no arguments'
-        'verify:Verify the authenticity/signatures and reputation of an onion URL'
         'bookmark:Add an onion to the user/system bookmarks without verifying it'
-        'blacklist:Add an onion to the system list of blacklisted onions'
-        'news:refresh the authenticity files, refered links and current news for an onion'
+        # 'verify:Verify the authenticity/signatures and reputation of an onion URL'
+        # 'blacklist:Add an onion to the system list of blacklisted onions'
+        # 'news:refresh the authenticity files, refered links and current news for an onion'
     )
     _describe -t commands 'url commands' subcmds && ret=0
 }

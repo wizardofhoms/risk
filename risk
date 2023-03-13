@@ -2064,9 +2064,6 @@ WHONIX_GW_TEMPLATE=whonix-gw-16
 ; Default TemplateVM to use for VPN VMs
 VPN_TEMPLATE=sys-vpn
 
-; Default TemplateVM to use for split-browser backend
-SPLIT_BROWSER_TEMPLATE=
-
 ; Default AppVMs ================================================== #
 ;
 ; These VMs are used when we create new machines by cloning
@@ -2847,43 +2844,6 @@ function _print ()
 {
     option_is_set -q || _msg print "$@"
 	return 0
-}
-
-# src/lib/messenger.sh
-
-# Creates a new Messaging AppVM.
-# $1 - Name to use for new VM
-# $2 - Netvm for this VM
-# $3 - Label
-create_messenger_vm ()
-{
-    local msg="${1}-msg"
-    local netvm="${2-$(config_get DEFAULT_NETVM)}"
-    local gw_label="${3-orange}"
-
-    local ws_template="$(config_get WHONIX_WS_TEMPLATE)"
-
-    local -a create_command
-    create_command+=(qvm-create --property netvm="$netvm" --label "$gw_label" --template "$ws_template")
-
-    _info "Creating messaging VM (name: $msg / netvm: $netvm / template: $ws_template)"
-}
-
-# very similar to create_messenger_vm , except that we clone
-# an existing AppVM instead of creating a new one from a Template.
-clone_messenger_vm ()
-{
-    local msg="${1}-msg"
-    local gw_clone="$2"
-    local netvm="${3-$(config_get DEFAULT_NETVM)}"
-    local gw_label="${4-orange}"
-
-    create_command+=(qvm-clone "${gw_clone}" "${msg}")
-
-    local label_command=(qvm-prefs "$msg" label "$gw_label")
-    local netvm_command=(qvm-prefs "$msg" netvm "$netvm")
-
-    _info "Cloning messaging VM (name: $msg / netvm: $netvm / template: $gw_clone)"
 }
 
 # src/lib/network.sh
@@ -4023,14 +3983,6 @@ function web.bookmark_open_split ()
 
     _info "Opening ${url} in ${qube}"
     _run qvm-run "${qube}" "split-browser ${url}" &
-}
-
-# get_browser_vm_from requires a VM name to be passed as argument.
-# If this VM is a disposable based on the identity's browser VM,
-# the argument is returned, otherwise the identity's browser VM.
-get_browser_vm_from ()
-{
-    echo
 }
 
 # :command.command_functions

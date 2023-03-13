@@ -1,4 +1,6 @@
 
+identity.set
+
 # Else get the active identity
 local active_identity
 active_identity=$(identity.active_or_specified)

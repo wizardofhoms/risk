@@ -2385,9 +2385,8 @@ function identity.shutdown_qubes ()
     # Client VMs
     read -rA clients < <(identity.client_qubes)
     for vm in "${clients[@]}" ; do
-        if [[ -z "${vm}" ]]; then
-            continue
-        fi
+        [[ -z "${vm}" ]] && continue
+
         _info "Shutting down $vm"
         qube.shutdown "$vm"
     done
@@ -2400,11 +2399,10 @@ function identity.shutdown_qubes ()
     fi
 
     # Proxy VMs
-    read -rA proxies < <(identity.client_qubes)
+    read -rA proxies < <(identity.proxy_qubes)
     for vm in "${proxies[@]}" ; do
-        if [[ -z "${vm}" ]]; then
-            continue
-        fi
+        [[ -z "${vm}" ]] && continue
+
         _info "Shutting down $vm"
         qube.shutdown "$vm"
     done
@@ -2419,9 +2417,7 @@ function identity.shutdown_qubes ()
     # Other VMs that are tagged with the identity.
     read -rA other_vms < <(qubes.list_all)
     for vm in "${other_vms[@]}" ; do
-        if [[ -z "${vm}" ]]; then
-            continue
-        fi
+        [[ -z "${vm}" ]] && continue
 
         if [[ "$(qube.owner "${vm}")" == "${IDENTITY}" ]]; then
             _info "Shutting down $vm"
@@ -4347,6 +4343,8 @@ risk_identity_start_command() {
 risk_identity_stop_command() {
   # src/identity_stop_command.sh
 
+  identity.set
+
   # Else get the active identity
   local active_identity
   active_identity=$(identity.active_or_specified)
@@ -4722,6 +4720,8 @@ risk_qube_delete_command() {
 
   # Remove from autostart enabled commands
   sed -i /"$vm"/d "${IDENTITY_DIR}/autostart_vms"
+  sed -i /"$vm"/d "${IDENTITY_DIR}/proxy_vms"
+  sed -i /"$vm"/d "${IDENTITY_DIR}/client_vms"
 
   # Finally, delete the VM,
   _run qvm-remove "$vm"

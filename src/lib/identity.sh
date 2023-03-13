@@ -255,9 +255,8 @@ function identity.shutdown_qubes ()
     # Client VMs
     read -rA clients < <(identity.client_qubes)
     for vm in "${clients[@]}" ; do
-        if [[ -z "${vm}" ]]; then
-            continue
-        fi
+        [[ -z "${vm}" ]] && continue
+
         _info "Shutting down $vm"
         qube.shutdown "$vm"
     done
@@ -270,11 +269,10 @@ function identity.shutdown_qubes ()
     fi
 
     # Proxy VMs
-    read -rA proxies < <(identity.client_qubes)
+    read -rA proxies < <(identity.proxy_qubes)
     for vm in "${proxies[@]}" ; do
-        if [[ -z "${vm}" ]]; then
-            continue
-        fi
+        [[ -z "${vm}" ]] && continue
+
         _info "Shutting down $vm"
         qube.shutdown "$vm"
     done
@@ -289,9 +287,7 @@ function identity.shutdown_qubes ()
     # Other VMs that are tagged with the identity.
     read -rA other_vms < <(qubes.list_all)
     for vm in "${other_vms[@]}" ; do
-        if [[ -z "${vm}" ]]; then
-            continue
-        fi
+        [[ -z "${vm}" ]] && continue
 
         if [[ "$(qube.owner "${vm}")" == "${IDENTITY}" ]]; then
             _info "Shutting down $vm"

@@ -1,5 +1,5 @@
 
-local delete_vault_cmd
+local delete_vault_cmd sdcard_block
 
 # First check the identity is valid
 identity.set "${args['identity']}"

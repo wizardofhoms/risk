@@ -41,3 +41,12 @@ contains() {
         return 1    # $substring is not in $string
     fi
 }
+
+# prompt_question asks the user to answer a question prompt.
+# $@ - A question string.
+prompt_question ()
+{
+    printf >&2 '%s ' "$*" 
+    read -r ans
+    echo "${ans}"
+}

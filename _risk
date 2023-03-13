@@ -383,7 +383,8 @@ _qube ()
             add)
                 _arguments -C \
                     "${_flags_network[@]}" \
-                    '--set-default[Set this VM as the default NetVM for all client machines for identity (browser, messaging, etc)]' \
+                    '(-E --enable)'{-E,--enable}'[Autostart this VM when the identity is started]'
+                    '--default-netvm[Set this VM as the default NetVM for all client machines for identity (browser, messaging, etc)]' \
                     '1::VM to tag with identity settings:_known_vms' \
                     && ret=0
                 ;;

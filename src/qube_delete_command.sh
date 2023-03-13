@@ -3,9 +3,13 @@ local vm
 vm="${args['vm']}"
 
 identity.set
+identity.fail_unknown "$IDENTITY"
 
 # Check VM ownership
-[[ "$(qube.owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
+if [[ "$(qube.owner "$vm")" != "$IDENTITY" ]]; then
+    _info "VM $vm does not belong to $IDENTITY"
+    return
+fi
 
 # Do not even attempt to delete if the VM provides network to another VM.
 network.fail_networked_qube "$vm"
@@ -17,7 +21,7 @@ if qube.is_identity_proxy "$vm" ; then
 fi
 
 # Remove from autostart enabled commands
-sed -i /"$vm"/d "${IDENTITY_DIR}/autoqube.starts"
+sed -i /"$vm"/d "${IDENTITY_DIR}/autostart_vms"
 
 # Finally, delete the VM,
 _run qvm-remove "$vm"

@@ -2962,6 +2962,16 @@ contains() {
     fi
 }
 
+# prompt_question asks the user to answer a question prompt.
+# $@ - A question string.
+prompt_question ()
+{
+    printf >&2 '%s ' "$*"
+
+    read -r ans
+    echo "${ans}"
+}
+
 # src/lib/validations/validate_devices.sh
 
 validate_device () {
@@ -4155,7 +4165,7 @@ risk_identity_equip_command() {
 risk_identity_delete_command() {
   # src/identity_delete_command.sh
 
-  local delete_vault_cmd
+  local delete_vault_cmd sdcard_block
 
   # First check the identity is valid
   identity.set "${args['identity']}"
@@ -4593,26 +4603,24 @@ risk_vpn_delete_command() {
 risk_qube_add_command() {
   # src/qube_add_command.sh
 
-  local vm vm_owner
+  local vm owner               # Variables for the target VM
+  local netvm netvm_owner      # Variables for any netvm found/used.
+  local chown chnet            # Questions variable (ex. do you want to blablabla)
 
   vm="${args['vm']}"
 
   identity.set
-
-  # We need a valid identity
   identity.fail_unknown "$IDENTITY"
 
   # Check VM ownership
-  vm_owner=$(qube.owner "$vm")
+  owner=$(qube.owner "$vm")
 
   # If already belongs to an identity, ask for confirmation to update the settings.
-  if [[ -n "$vm_owner" ]] && [[ "$vm_owner" != "$IDENTITY" ]]; then
-      _warning "VM $vm already belongs to $vm_owner"
-      printf >&2 '%s ' "Do you really want to assign a new identity ($IDENTITY) to this VM ? (YES/n)"
-      read ans
-
-      if [[ "$ans" != 'YES' ]]; then
-          _info "Aborting identity change. Exiting"
+  if [[ -n "$owner" ]] && [[ "$owner" != "$IDENTITY" ]]; then
+      _warning "VM $vm already belongs to $owner"
+      chown=$(prompt_question "Do you really want to assign a new identity ($IDENTITY) to this VM ? (YES/n)")
+      if [[ "$chown" != 'YES' ]]; then
+          _info "Aborting qube owner change. Exiting"
           exit 0
       fi
   fi
@@ -4624,20 +4632,20 @@ risk_qube_add_command() {
   # Change its network VM, either with the default for the identity,
   # or with the netvm flag, which has precedence.
   if [[ "$(qvm-tags "$vm" netvm)" != 'None' ]]; then
-      _info "VM is networked. Updating its network VM"
-      local netvm="$(identity.netvm)"
+      _info "Qube is networked. Updating its network VM"
+      netvm="$(identity.netvm)"
 
-      # If the user overrode the default netVM, check that it belongs
-      # to the identity, or ask confirmation.
+      # If the user overrode the default netVM, check that
+      # it belongs to the identity, or ask confirmation.
       if [[ -n "${args['--netvm']}" ]]; then
-          netvm_owner=$(qube.owner "${args['--netvm']}")
-          if [[ "$vm_owner" != "$IDENTITY" ]]; then
-              _warning "Network VM $vm already belongs to $vm_owner"
-              printf >&2 '%s ' "Do you really want to use this VM as netvm for $vm? (YES/n)"
-              read ans
+          netvm="${args['--netvm']}"
+          netvm_owner=$(qube.owner "${netvm}")
 
-              if [[ "$ans" == 'YES' ]]; then
-                  netvm="${args['--netvm']}"
+          if [[ -n "${netvm_owner}" ]] && [[ "$netvm_owner" != "$IDENTITY" ]]; then
+              _warning "Network VM $netvm already belongs to $netvm_owner"
+              chnet=$(prompt_question "Do you really want to use this VM as netvm for $netvm? (YES/n)")
+              if [[ "$chnet" != 'YES' ]]; then
+                  netvm="$(identity.netvm)"
               fi
           fi
       fi
@@ -4656,7 +4664,7 @@ risk_qube_add_command() {
       echo "$vm" > "${IDENTITY_DIR}/proxy_vms"
 
       # If the user specified to use it as the default netvm
-      if [[ ${args['--set-default']} -eq 1 ]]; then
+      if [[ ${args['--default-netvm']} -eq 1 ]]; then
           echo "$vm" > "${IDENTITY_DIR}/net_vm"
           _info "Setting '$vm' as default NetVM for all client machines"
       fi
@@ -4677,9 +4685,13 @@ risk_qube_delete_command() {
   vm="${args['vm']}"
 
   identity.set
+  identity.fail_unknown "$IDENTITY"
 
   # Check VM ownership
-  [[ "$(qube.owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
+  if [[ "$(qube.owner "$vm")" != "$IDENTITY" ]]; then
+      _info "VM $vm does not belong to $IDENTITY"
+      return
+  fi
 
   # Do not even attempt to delete if the VM provides network to another VM.
   network.fail_networked_qube "$vm"
@@ -4691,7 +4703,7 @@ risk_qube_delete_command() {
   fi
 
   # Remove from autostart enabled commands
-  sed -i /"$vm"/d "${IDENTITY_DIR}/autoqube.starts"
+  sed -i /"$vm"/d "${IDENTITY_DIR}/autostart_vms"
 
   # Finally, delete the VM,
   _run qvm-remove "$vm"

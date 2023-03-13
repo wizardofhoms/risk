@@ -52,3 +52,6 @@ commands:
       - long: --identity
         short: -I
         help: "Check for templates of all VMs belong to an identity"
+
+  - name: list
+    help: "Show all qubes belonging to the active identity"

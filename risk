@@ -1160,6 +1160,7 @@ risk_qube_usage() {
   printf "  %s   Enable an identity VM to autostart\n" "$(red "enable") "
   printf "  %s   Disable an identity VM to autostart\n" "$(red "disable")"
   printf "  %s   Update one or more VM templates, by name patterns or filters\n" "$(red "update") "
+  printf "  %s   Show all qubes belonging to the active identity\n" "$(red "list")   "
   echo
 
   # :command.long_usage
@@ -1376,6 +1377,35 @@ risk_qube_update_usage() {
     # :argument.usage
     printf "  %s\n" "$(blue "VMS")"
     printf "    An arbitrary list of VMs name patterns to update.\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_qube_list_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk qube list - Show all qubes belonging to the active identity\n"
+    echo
+
+  else
+    printf "risk qube list - Show all qubes belonging to the active identity\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk qube list\n"
+  printf "  risk qube list --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
     echo
 
   fi
@@ -2294,7 +2324,7 @@ function identity.delete_home_directoryy ()
 # identity.netvm returns the default network VM for the active identity
 function identity.netvm ()
 {
-    cat "${IDENTITY_DIR}/netvm" 2>/dev/null
+    cat "${IDENTITY_DIR}/net_vm" 2>/dev/null
 }
 
 # identity.vm_label returns the default VM label/color for an identity
@@ -4545,30 +4575,28 @@ risk_vpn_disable_command() {
 risk_vpn_delete_command() {
   # src/vpn_delete_command.sh
 
-  local name
+  local vm
+  local tor_gw
 
-  name="${args['vm']}"
+  vm="${args['vm']}"
 
   identity.set
 
-  # Check that the selected VM is indeed one of the identity
-  # proxy VMs, so that we don't accidentally delete another one.
-  vpn_check_qube.is_identity_proxy "$name"
-
-  # Do not even attempt to delete if the VM provides network to another VM.
+  # Fail if either the VM does not belong to the identity,
+  # or if it provides network to some of the identity qubes.
+  proxy.fail_not_identity_proxy "$vm"
   network.fail_networked_qube "$vm"
 
-  _info "Deleting gateway VM $name"
+  _info "Deleting gateway VM $vm"
 
   # If the VPN was the default NetVM for the identity,
   # update the NetVM to Whonix.
   netvm="$(identity.netvm)"
-  if [[ $netvm == "$name" ]]; then
-      _warning "Gateway $name is the default NetVM for identity clients !"
+  if [[ $netvm == "$vm" ]]; then
+      _warning "Gateway $vm is the default NetVM for identity clients !"
 
       # Check if we have a TOR gateway
-      local tor_gw=$(identity.tor_gateway)
-
+      tor_gw=$(identity.tor_gateway)
       if [[ -n $tor_gw ]]; then
           _info -n "Updating the default identity NetVM to $tor_gw"
           echo "$tor_gw" > "${IDENTITY_DIR}/net_vm"
@@ -4577,25 +4605,15 @@ risk_vpn_delete_command() {
       fi
   fi
 
-  # Check if there are some existing VMs that use this gateway as NetVM,
-  # and change their netVM to None: this is unpractical, especially for
-  # those that might be up, but it's better than assigning a new netVM
-  # despite this presenting a security risk.
-
   # Delete without asking to confirm
-  echo "y" | _run qvm-remove "$name"
-  _catch "Failed to delete (fully or partially) VM $name"
+  echo "y" | _run qvm-remove "$vm"
+  _catch "Failed to delete (fully or partially) VM $vm"
 
-  # Remove from VMs marked autostart
-  sed -i /"$name"/d "${IDENTITY_DIR}/autostart_vms"
-  # And remove from proxy VMs
-  sed -i /"$name"/d "${IDENTITY_DIR}/proxy_vms"
+  # Remove this VM name from the relevant files.
+  sed -i /"$vm"/d "${IDENTITY_DIR}/autostart_vms"
+  sed -i /"$vm"/d "${IDENTITY_DIR}/proxy_vms"
 
-  # Finally, delete the VM,
-  _run qvm-remove "$name"
-  _catch "Failed to delete VM $name:"
-
-  _info "Deleted $name"
+  _info "Deleted $vm"
 
 }
 
@@ -4629,8 +4647,8 @@ risk_qube_add_command() {
   _run qvm-tags "$vm" set "$IDENTITY"
   _catch "Failed to tag VM with identity"
 
-  # Change its network VM, either with the default for the identity,
-  # or with the netvm flag, which has precedence.
+  # If the target qube is networked, change its network VM, either with
+  # the default for the identity, or with the netvm flag, which has precedence.
   if [[ "$(qvm-tags "$vm" netvm)" != 'None' ]]; then
       _info "Qube is networked. Updating its network VM"
       netvm="$(identity.netvm)"
@@ -4673,7 +4691,7 @@ risk_qube_add_command() {
   # Enable autostart if asked to
   [[ "${args['--enable']}" -eq 1 ]] && qube.enable "$vm"
 
-  _success "Succesfully set VM $vm as belonging to identity $IDENTITY"
+  _success "Successfully set VM $vm as belonging to identity $IDENTITY"
 
 }
 
@@ -4780,6 +4798,40 @@ risk_qube_update_command() {
           _info "Updating Tor browser in ${browser_template}"
           _run_qube_term "${browser_template}" sudo update-torbrowser
       fi
+  fi
+
+}
+
+# :command.function
+risk_qube_list_command() {
+  # src/qube_list_command.sh
+
+  local clients proxies
+
+  identity.set
+
+  # Defaults
+  _warning "Global values and defaults:"
+  [[ -n "$(identity.netvm)" ]] && _info "${fg[blue]}Default netVM${fg[white]}: $(identity.netvm)"
+  [[ -n "$(identity.tor_gateway)" ]] && _info "${fg[blue]}Tor gateway${fg[white]}: \t$(identity.tor_gateway)"
+  [[ -n "$(identity.browser_qube)" ]] && _info "${fg[blue]}Browser qube${fg[white]}: \t$(identity.browser_qube)"
+
+  # Network VMs
+  read -rA proxies < <(identity.proxy_qubes)
+  if [[ -n "${proxies[*]}" ]]; then
+      echo && _warning "Proxy qubes:"
+      for proxy in "${proxies[@]}"; do
+          printf "\t\t%s" "${proxy}"
+      done
+  fi
+
+  # Client VMs
+  read -rA clients < <(identity.client_qubes)
+  if [[ -n "${clients[*]}" ]]; then
+      echo && _warning "Client qubes:"
+      for client in "${clients[@]}"; do
+          printf "\t\t%s" "${client}"
+      done
   fi
 
 }
@@ -7152,6 +7204,13 @@ risk_qube_parse_requirements() {
       shift $#
       ;;
 
+    list)
+      action="list"
+      shift
+      risk_qube_list_parse_requirements "$@"
+      shift $#
+      ;;
+
     # :command.command_fallback
     "")
       risk_qube_usage >&2
@@ -7497,6 +7556,50 @@ risk_qube_update_parse_requirements() {
           other_args+=("$1")
           shift
         fi
+
+        ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
+risk_qube_list_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_qube_list_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="qube list"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        printf "invalid argument: %s\n" "$key" >&2
+        exit 1
 
         ;;
 
@@ -8506,6 +8609,15 @@ run() {
         risk_qube_update_usage
       else
         risk_qube_update_command
+      fi
+      ;;
+
+    "qube list")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_qube_list_usage
+      else
+        risk_qube_list_command
       fi
       ;;
 

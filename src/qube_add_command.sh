@@ -25,7 +25,7 @@ fi
 _run qvm-tags "$vm" set "$IDENTITY"
 _catch "Failed to tag VM with identity"
 
-# If the target qube is networked, change its network VM, either with 
+# If the target qube is networked, change its network VM, either with
 # the default for the identity, or with the netvm flag, which has precedence.
 if [[ "$(qvm-tags "$vm" netvm)" != 'None' ]]; then
     _info "Qube is networked. Updating its network VM"

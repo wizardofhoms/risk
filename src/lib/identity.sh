@@ -197,7 +197,7 @@ function identity.delete_home_directoryy ()
 # identity.netvm returns the default network VM for the active identity
 function identity.netvm ()
 {
-    cat "${IDENTITY_DIR}/netvm" 2>/dev/null
+    cat "${IDENTITY_DIR}/net_vm" 2>/dev/null
 }
 
 # identity.vm_label returns the default VM label/color for an identity

@@ -1,28 +1,26 @@
 
-local name
+local vm
+local tor_gw
 
-name="${args['vm']}"
+vm="${args['vm']}"
 
 identity.set
 
-# Check that the selected VM is indeed one of the identity
-# proxy VMs, so that we don't accidentally delete another one.
-vpn_check_qube.is_identity_proxy "$name"
-
-# Do not even attempt to delete if the VM provides network to another VM.
+# Fail if either the VM does not belong to the identity,
+# or if it provides network to some of the identity qubes.
+proxy.fail_not_identity_proxy "$vm"
 network.fail_networked_qube "$vm"
 
-_info "Deleting gateway VM $name"
+_info "Deleting gateway VM $vm"
 
 # If the VPN was the default NetVM for the identity,
 # update the NetVM to Whonix.
 netvm="$(identity.netvm)"
-if [[ $netvm == "$name" ]]; then
-    _warning "Gateway $name is the default NetVM for identity clients !"
+if [[ $netvm == "$vm" ]]; then
+    _warning "Gateway $vm is the default NetVM for identity clients !"
 
     # Check if we have a TOR gateway
-    local tor_gw=$(identity.tor_gateway)
-
+    tor_gw=$(identity.tor_gateway)
     if [[ -n $tor_gw ]]; then
         _info -n "Updating the default identity NetVM to $tor_gw"
         echo "$tor_gw" > "${IDENTITY_DIR}/net_vm"
@@ -31,22 +29,12 @@ if [[ $netvm == "$name" ]]; then
     fi
 fi
 
-# Check if there are some existing VMs that use this gateway as NetVM,
-# and change their netVM to None: this is unpractical, especially for
-# those that might be up, but it's better than assigning a new netVM
-# despite this presenting a security risk.
-
 # Delete without asking to confirm
-echo "y" | _run qvm-remove "$name"
-_catch "Failed to delete (fully or partially) VM $name"
+echo "y" | _run qvm-remove "$vm"
+_catch "Failed to delete (fully or partially) VM $vm"
 
-# Remove from VMs marked autostart
-sed -i /"$name"/d "${IDENTITY_DIR}/autostart_vms"
-# And remove from proxy VMs
-sed -i /"$name"/d "${IDENTITY_DIR}/proxy_vms"
+# Remove this VM name from the relevant files.
+sed -i /"$vm"/d "${IDENTITY_DIR}/autostart_vms"
+sed -i /"$vm"/d "${IDENTITY_DIR}/proxy_vms"
 
-# Finally, delete the VM,
-_run qvm-remove "$name"
-_catch "Failed to delete VM $name:"
-
-_info "Deleted $name"
+_info "Deleted $vm"

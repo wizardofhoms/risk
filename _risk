@@ -361,6 +361,7 @@ _qube_commands ()
         'enable:Enable an identity VM to autostart'
         'disable:Disable an identity VM from autostart'
         'update:Update one or more VM templates, by name patterns or filters'
+        'list:Show qubes belonging to the active identity, and related global settings'
     )
     _describe -t commands 'vm commands' subcmds && ret=0
 }

@@ -32,9 +32,6 @@ WHONIX_GW_TEMPLATE=whonix-gw-16
 ; Default TemplateVM to use for VPN VMs
 VPN_TEMPLATE=sys-vpn
 
-; Default TemplateVM to use for split-browser backend
-SPLIT_BROWSER_TEMPLATE=
-
 ; Default AppVMs ================================================== #
 ;
 ; These VMs are used when we create new machines by cloning

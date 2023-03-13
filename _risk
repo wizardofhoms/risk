@@ -21,9 +21,8 @@ _risk ()
             (identity)  _identity ;;
             (vpn)       _vpn ;;
             (config)    _config ;;
-            (vm)        _vm ;;
+            (qube)      _qube ;;
             (use)       _use ;;
-            (qubes)     _qubes ;;
             (url)       _url ;;
         esac
     else
@@ -52,8 +51,7 @@ _risk_commands ()
         'slam:Close identity and/or associated stores in the vault only, and detach hush/backup'
         'config:Manage the global risk configuration settings from the CLI'
         'use:Execute a command in a VM belong to an identity'
-        'vm:Manage generic VMs (identity settings, enable/disable, etc)'
-        'qubes:Strutured set of commands for managing Qubes in general'
+        'qube:Manage generic VMs (identity qubes, update/enable/disable, etc)'
         'url:Browse, bookmark, verify and manage URLS/links'
     )
 
@@ -353,8 +351,8 @@ _use ()
         && ret=0
 }
 
-# Subcommands for the vm command
-_vm_commands ()
+# Subcommands for the qube command
+_qube_commands ()
 {
     local -a subcmds 
     subcmds=(
@@ -362,18 +360,19 @@ _vm_commands ()
         'delete:Delete a VM belonging to the current identity'
         'enable:Enable an identity VM to autostart'
         'disable:Disable an identity VM from autostart'
+        'update:Update one or more VM templates, by name patterns or filters'
     )
     _describe -t commands 'vm commands' subcmds && ret=0
 }
 
-# Completion dispatcher for vm command
-_vm ()
+# Completion dispatcher for qube command
+_qube ()
 {
     local ret=1
     local line state
 
     _arguments -C \
-        "1: :_vm_commands" \
+        "1: :_qube_commands" \
         "*::arg:->args" \
         && ret=0
 
@@ -403,34 +402,6 @@ _vm ()
                     '1:Disable an identity VM to autostart:_enabled_identity_vms' \
                     && ret=0
                 ;;
-            esac
-    esac
-}
-
-# Qubes management helper commands
-_qubes_commands () {
-    local -a subcmds 
-    subcmds=(
-        'update:Update one or more VM templates, by name patterns or filters'
-    )
-    _describe -t commands 'qubes commands' subcmds && ret=0
-}
-
-# Completion dispatcher for qubes commands
-_qubes ()
-{
-    local ret=1
-    local line state
-
-    _arguments -C \
-        "1: :_qubes_commands" \
-        "*::arg:->args" \
-        && ret=0
-
-    # Arguments completion
-    case $state in
-        args)
-            case $line[1] in
             update)
                 _domain_vm_keywords
                 _known_vms

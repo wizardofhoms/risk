@@ -20,11 +20,10 @@ commands:
 - import: src/slam_commands.yml
   # Infrastructure
 - import: src/vpn_commands.yml
-- import: src/vm_commands.yml
+- import: src/qube_commands.yml
 - import: src/use_commands.yml
 - import: src/url_commands.yml
-  # Qubes
-- import: src/qubes_commands.yml
+  # Others
 - import: src/config_commands.yml
 
 - name: help

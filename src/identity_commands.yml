@@ -105,9 +105,6 @@ commands:
   - name: stop
     help: Stops all machines belonging to an identity, and close its vault if active.
   
-  - name: restrict
-    help: Forbid VMs not belonging to the identity from split/copy features when not active 
-
   # Hidden commands
   - name: current
     help: Prints the active identity as a raw string, to be used by prompts.

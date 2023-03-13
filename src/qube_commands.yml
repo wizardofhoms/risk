@@ -1,6 +1,6 @@
 # Commands used to manage generic VMs (non gateways)
-name: vm
-help: Manage generic VMs (identity settings, enable/disable, etc)
+name: qube 
+help: Manage qubes (identity settings, update/enable/disable, etc)
 
 commands:
   - name: add
@@ -40,3 +40,15 @@ commands:
       - name: vm
         help: "VM to disable from autostart"
         required: true
+
+  - name: update
+    help: "Update one or more VM templates, by name patterns or filters"
+    catch_all: true
+    args:
+      - name: vms 
+        help: An arbitrary list of VMs name patterns to update.
+        required: false 
+    flags:
+      - long: --identity
+        short: -I
+        help: "Check for templates of all VMs belong to an identity"

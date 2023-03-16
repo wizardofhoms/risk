@@ -27,8 +27,9 @@ hush/backup devices, opening identies, create new ones along with some associate
 # Documentation
 
 * [Software used](https://github.com/wizardofhoms/risk/wiki/Software-Used)
+* [Components workflow](./Components-Workflow)
 * [Installation](https://github.com/wizardofhoms/risk/wiki/Installation)
 * [Usage tutorial](https://github.com/wizardofhoms/risk/wiki/Usage-Tutorial)
-* [Additional workflows](/https://github.com/wizardofhoms/risk/wiki/Additional-Workflows)
-* [Command-line API](/https://github.com/wizardofhoms/risk/wiki/Command-Line-API)
-* [Development](/https://github.com/wizardofhoms/risk/wiki/Development)
+* [Additional workflows](https://github.com/wizardofhoms/risk/wiki/Additional-Workflows)
+* [Command-line API](https://github.com/wizardofhoms/risk/wiki/Command-Line-API)
+* [Development](https://github.com/wizardofhoms/risk/wiki/Development)

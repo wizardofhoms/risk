@@ -67,26 +67,25 @@ function qube.command_args ()
     local can_update=()
     local updatevm
 
-    # Return if our only argument is empty
+    [[ -z "${vms[*]}" ]] && return
 
     # All updateable VMs, except the updater one
-    read -rA can_update <<< "$(qubes.list_all_updateable)"
+    read -rA can_update < <(qubes.list_all_updateable)
     updatevm="$(qubes.updatevm_template)"
-    can_update=( ${can_update:#$~updatevm} )
+    read -rA can_update <<< "${can_update:#$~updatevm}"
 
     for word in "${vms[@]}"; do
         case "${word}" in
-            # First check for group keywords
+            torbrowser|dom0)
+                # Tor browser is handled in the risk_qube_update_command function.
+                # Dom0 is handled in the risk_qube_update_command function.
+                ;;
             all)
                 all+=( "${updatevm}" )
                 all+=( "${can_update[@]}" )
                 ;;
-            cacher)
+            *cacher)
                 all+=( "${updatevm}" )
-                ;;
-            torbrowser)
-                ;;
-            dom0)
                 ;;
             *)
                 # Else return the VM name itself

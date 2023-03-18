@@ -21,7 +21,11 @@ function web.browser_create ()
     fi
 
     # Generate the VM
-    _info "Creating web browsing VM (name: $web / netvm: $web_netvm / template: $ws_template)"
+    _info "New browser VM"
+    _info "Name:          $web"
+    _info "Netvm:         $netvm"
+    _info "Template:   $ws_template"
+
     _run qvm-create "${web}" --property netvm="$web_netvm" --label="$web_label" --template="$ws_template"
 
     if [[ $? -gt 0 ]]; then
@@ -44,6 +48,11 @@ function web.browser_clone ()
     local web_clone="$2"
     local netvm="${3-$(config_get DEFAULT_NETVM)}"
     local web_label="${4-orange}"
+
+    _info "New browser VM"
+    _info "Name:          $web"
+    _info "Netvm:         $netvm"
+    _info "Cloned from:   $web_clone"
 
     _info "Cloning web browsing VM (name: $web / netvm: $netvm / template: $web_clone)"
     _run qvm-clone "${web_clone}" "${web}"

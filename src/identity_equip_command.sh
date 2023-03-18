@@ -33,7 +33,7 @@ echo "$vm_name" > "${IDENTITY_DIR}/vm_label"
 config_get DEFAULT_NETVM > "${IDENTITY_DIR}/net_vm"
 
 # Network VMs ==============================================================
-_in_section "network" && _info "Creating network VMs"
+_in_section "network" && echo && _warning "Creating network VMs"
 gw_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
 # 1 - Tor gateway, if not explicitly disabled
@@ -49,7 +49,7 @@ else
 fi
 
 # Browser VMs ==============================================================
-_in_section "web" && _info "Creating browsing VMs"
+_in_section "web" && echo && _warning "Creating browsing VMs"
 web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
 # Browser VMs are disposable, but we make a template for this identity,

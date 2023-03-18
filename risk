@@ -2898,7 +2898,11 @@ function proxy.tor_create ()
     local gw_label="${3-yellow}"
     local gw_template="$(config_get WHONIX_GW_TEMPLATE)"
 
-    _info "Creating TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_template)"
+    _info "New TOR gateway qube"
+    _info "Name:      $gw"
+    _info "Netvm:     $netvm"
+    _info "Template:  $gw_template"
+
     _run qvm-create "${gw}" --property netvm="$netvm" --label "$gw_label" --template "$gw_template"
     _run qvm-prefs "$gw" provides_network true
 
@@ -2918,7 +2922,11 @@ function proxy.tor_clone ()
     local netvm="${3-$(config_get DEFAULT_NETVM)}"
     local gw_label="${4-yellow}"
 
-    _info "Cloning TOR gateway VM (name: $gw / netvm: $netvm / template: $gw_clone)"
+    _info "New TOR gateway qube"
+    _info "Name:          $gw"
+    _info "Netvm:         $netvm"
+    _info "Cloned from:   $gw_clone"
+
     _run qvm-clone "${gw_clone}" "${gw}"
     _catch "Failed to clone VM ${gw_clone}"
 
@@ -3141,26 +3149,25 @@ function qube.command_args ()
     local can_update=()
     local updatevm
 
-    # Return if our only argument is empty
+    [[ -z "${vms[*]}" ]] && return
 
     # All updateable VMs, except the updater one
-    read -rA can_update <<< "$(qubes.list_all_updateable)"
+    read -rA can_update < <(qubes.list_all_updateable)
     updatevm="$(qubes.updatevm_template)"
-    can_update=( ${can_update:#$~updatevm} )
+    read -rA can_update <<< "${can_update:#$~updatevm}"
 
     for word in "${vms[@]}"; do
         case "${word}" in
-            # First check for group keywords
+            torbrowser|dom0)
+                # Tor browser is handled in the risk_qube_update_command function.
+                # Dom0 is handled in the risk_qube_update_command function.
+                ;;
             all)
                 all+=( "${updatevm}" )
                 all+=( "${can_update[@]}" )
                 ;;
-            cacher)
+            *cacher)
                 all+=( "${updatevm}" )
-                ;;
-            torbrowser)
-                ;;
-            dom0)
                 ;;
             *)
                 # Else return the VM name itself
@@ -3407,7 +3414,11 @@ function proxy.vpn_create ()
     local gw_label="${3:=blue}"
     local template="${4:=$(config_get VPN_TEMPLATE)}"
 
-    _verbose "VPN gateway properties (name: $gw / netvm: $netvm / template: $template)"
+    _info "New VPN qube"
+    _info "Name:      $gw"
+    _info "Netvm:     $netvm"
+    _info "Template:  $template"
+
     _run qvm-create --property netvm="$netvm" --label "$gw_label" --template "$template"
 
     _info "Getting network from $netvm"
@@ -3426,7 +3437,11 @@ function proxy.vpn_clone ()
     local gw_clone="$4"
 
     # Create the VPN
-    _verbose "VPN gateway properties (name: $gw / netvm: $netvm / clone: $gw_clone)"
+    _info "New VPN qube"
+    _info "Name:          $gw"
+    _info "Netvm:         $netvm"
+    _info "Cloned from:   $gw_clone"
+
     _run qvm-clone "${gw_clone}" "${gw}"
     _catch "Failed to clone VM ${gw_clone}"
 
@@ -3560,7 +3575,11 @@ function web.browser_create ()
     fi
 
     # Generate the VM
-    _info "Creating web browsing VM (name: $web / netvm: $web_netvm / template: $ws_template)"
+    _info "New browser VM"
+    _info "Name:          $web"
+    _info "Netvm:         $netvm"
+    _info "Template:   $ws_template"
+
     _run qvm-create "${web}" --property netvm="$web_netvm" --label="$web_label" --template="$ws_template"
 
     if [[ $? -gt 0 ]]; then
@@ -3583,6 +3602,11 @@ function web.browser_clone ()
     local web_clone="$2"
     local netvm="${3-$(config_get DEFAULT_NETVM)}"
     local web_label="${4-orange}"
+
+    _info "New browser VM"
+    _info "Name:          $web"
+    _info "Netvm:         $netvm"
+    _info "Cloned from:   $web_clone"
 
     _info "Cloning web browsing VM (name: $web / netvm: $netvm / template: $web_clone)"
     _run qvm-clone "${web_clone}" "${web}"
@@ -4077,7 +4101,7 @@ risk_identity_create_command() {
   fi
 
   # Network VMs ==============================================================
-  _in_section "network" && _info "Creating network VMs:"
+  _in_section "network" && echo && _warning "Creating network VMs"
   gw_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
   # 1 - Tor gateway, if not explicitly disabled
@@ -4093,7 +4117,7 @@ risk_identity_create_command() {
   fi
 
   # Browser VMs ==============================================================
-  _in_section "web" && _info "Creating browsing VMs:"
+  _in_section "web" && echo && _warning "Creating browsing VMs"
   web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
   # Browser VMs are disposable, but we make a template for this identity,
@@ -4151,7 +4175,7 @@ risk_identity_equip_command() {
   config_get DEFAULT_NETVM > "${IDENTITY_DIR}/net_vm"
 
   # Network VMs ==============================================================
-  _in_section "network" && _info "Creating network VMs"
+  _in_section "network" && echo && _warning "Creating network VMs"
   gw_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
   # 1 - Tor gateway, if not explicitly disabled
@@ -4167,7 +4191,7 @@ risk_identity_equip_command() {
   fi
 
   # Browser VMs ==============================================================
-  _in_section "web" && _info "Creating browsing VMs"
+  _in_section "web" && echo && _warning "Creating browsing VMs"
   web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
   # Browser VMs are disposable, but we make a template for this identity,
@@ -4259,14 +4283,10 @@ risk_identity_open_command() {
 
   identity.set "${args['identity']}"
 
-  # 1 - Check that hush is mounted on vault
   device.fail_not_attached_to "${sdcard_block}" "${VAULT_VM}"
-
-  # 2 - Check that no identity is currently opened
-  # The second line should be empty, as opposed to being an encrypted coffin name
   identity.fail_none_active "$IDENTITY"
 
-  # 3 - Send commands to vault
+  # Send commands to vault
   _info "Opening identity $IDENTITY"
   _run_qube_term "$VAULT_VM" risks identity open "$IDENTITY"
   _catch "Failed to open identity"

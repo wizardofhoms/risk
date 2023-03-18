@@ -255,6 +255,8 @@ function identity.shutdown_qubes ()
     # Client VMs
     read -rA clients < <(identity.client_qubes)
     for vm in "${clients[@]}" ; do
+        [[ $(qube.assert_running) -gt 0 ]] && continue
+
         [[ -z "${vm}" ]] && continue
 
         _info "Shutting down $vm"
@@ -264,14 +266,17 @@ function identity.shutdown_qubes ()
     # Browser VMs (disposables to find from template/tag)
     browser_vm="$(identity.browser_qube)"
     if [[ -n "${browser_vm}" ]]; then
-        _info "Shutting down $browser_vm"
-        qube.shutdown "$browser_vm"
+        if qube.assert_running; then
+            _info "Shutting down $browser_vm"
+            qube.shutdown "$browser_vm"
+        fi
     fi
 
     # Proxy VMs
     read -rA proxies < <(identity.proxy_qubes)
     for vm in "${proxies[@]}" ; do
         [[ -z "${vm}" ]] && continue
+        [[ $(qube.assert_running) -gt 0 ]] && continue
 
         _info "Shutting down $vm"
         qube.shutdown "$vm"
@@ -280,14 +285,17 @@ function identity.shutdown_qubes ()
     # Tor gateway.
     tor_gateway="$(identity.tor_gateway)"
     if [[ -n "${tor_gateway}" ]]; then
-        _info "Shutting down $tor_gateway"
-        qube.shutdown "$tor_gateway"
+        if qube.assert_running; then
+            _info "Shutting down $tor_gateway"
+            qube.shutdown "$tor_gateway"
+        fi
     fi
 
     # Other VMs that are tagged with the identity.
     read -rA other_vms < <(qubes.list_all)
     for vm in "${other_vms[@]}" ; do
         [[ -z "${vm}" ]] && continue
+        [[ $(qube.assert_running) -gt 0 ]] && continue
 
         if [[ "$(qube.owner "${vm}")" == "${IDENTITY}" ]]; then
             _info "Shutting down $vm"

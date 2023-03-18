@@ -7,26 +7,26 @@
 function web.browser_create ()
 {
     local web="${1}-web"
-    local web_netvm="${2-$(config_get DEFAULT_NETVM)}"
-    local web_label="${3-orange}"
-    local ws_template="$(config_get WHONIX_WS_TEMPLATE)"
-    local template_disp="$(qvm-prefs "${ws_template}" template_for_dispvms 2>/dev/null)"
+    local netvm="${2-$(config_get DEFAULT_NETVM)}"
+    local label="${3-orange}"
+    local template="$(config_get WHONIX_WS_TEMPLATE)"
+    local template_disp="$(qvm-prefs "${template}" template_for_dispvms 2>/dev/null)"
 
     # If the template used is a disposable_template,
     # this means we must create a named disposable VM.
     if [[ "${template_disp}" == True ]]; then
         _verbose "VM template is a disposable template, cloning it instead"
-        web.browser_clone "${1}" "${ws_template}" "${netvm}" "${web_label}"
+        web.browser_clone "${1}" "${template}" "${netvm}" "${label}"
         return
     fi
 
     # Generate the VM
     _info "New browser VM"
-    _info "Name:          $web"
-    _info "Netvm:         $netvm"
-    _info "Template:   $ws_template"
+    _info "Name:       $web"
+    _info "Netvm:      $netvm"
+    _info "Template:   $template"
 
-    _run qvm-create "${web}" --property netvm="$web_netvm" --label="$web_label" --template="$ws_template"
+    _run qvm-create "${web}" --property netvm="$netvm" --label="$label" --template="$template"
 
     if [[ $? -gt 0 ]]; then
         _warning "Failed to create browser VM $web" && return
@@ -47,7 +47,7 @@ function web.browser_clone ()
     local web="${1}-web"
     local web_clone="$2"
     local netvm="${3-$(config_get DEFAULT_NETVM)}"
-    local web_label="${4-orange}"
+    local label="${4-orange}"
 
     _info "New browser VM"
     _info "Name:          $web"
@@ -60,7 +60,7 @@ function web.browser_clone ()
         _warning "Failed to clone browser VM $web" && return
     fi
 
-    _run qvm-prefs "$web" label "$web_label"
+    _run qvm-prefs "$web" label "$label"
     _run qvm-prefs "$web" netvm "$netvm"
 
     # Only mark this VM as disposable template when it's not one already.
@@ -118,11 +118,11 @@ function web.browser_set_split_dispvm ()
     [[ -z "${browser_vm}" ]] && return
 
     # Use this browser as the split dispVM
-    _info "Setting identity browser VM with split-browser"
+    _info "Setting split-browser: $browser_vm"
     qvm-prefs "${split_backend}" default_dispvm "${browser_vm}"
 
     # And copy identity bookmarks from vault to the split-backend.
-    _info "Transfering identity bookmarks to split-backend"
+    _info "Bookmarks: copying"
     copy_command="qvm-copy-to-vm ${split_backend} ${bookmarks_file}" 
     qvm-run "${VAULT_VM}" "${copy_command}" &>/dev/null
     _run_qube "${split_backend}" "mv QubesIncoming/${VAULT_VM}/${filename} ${bookmarks_split_file}"
@@ -146,7 +146,8 @@ function web.browser_unset_split_dispvm ()
         qvm-prefs "${split_backend}" default_dispvm ''
     fi
 
-    _info "Removing identity bookmarks from split-backend"
+    _info "Bookmarks: removed"
+    _run_qube "${split_backend}" "qvm-copy-to-vm ${VAULT_VM} ${bookmarks_backend_path}"
     _run_qube "${split_backend}" "shred -u ${bookmarks_backend_path}"
 }
 

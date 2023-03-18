@@ -2385,6 +2385,8 @@ function identity.shutdown_qubes ()
     # Client VMs
     read -rA clients < <(identity.client_qubes)
     for vm in "${clients[@]}" ; do
+        [[ $(qube.assert_running) -gt 0 ]] && continue
+
         [[ -z "${vm}" ]] && continue
 
         _info "Shutting down $vm"
@@ -2394,14 +2396,17 @@ function identity.shutdown_qubes ()
     # Browser VMs (disposables to find from template/tag)
     browser_vm="$(identity.browser_qube)"
     if [[ -n "${browser_vm}" ]]; then
-        _info "Shutting down $browser_vm"
-        qube.shutdown "$browser_vm"
+        if qube.assert_running; then
+            _info "Shutting down $browser_vm"
+            qube.shutdown "$browser_vm"
+        fi
     fi
 
     # Proxy VMs
     read -rA proxies < <(identity.proxy_qubes)
     for vm in "${proxies[@]}" ; do
         [[ -z "${vm}" ]] && continue
+        [[ $(qube.assert_running) -gt 0 ]] && continue
 
         _info "Shutting down $vm"
         qube.shutdown "$vm"
@@ -2410,14 +2415,17 @@ function identity.shutdown_qubes ()
     # Tor gateway.
     tor_gateway="$(identity.tor_gateway)"
     if [[ -n "${tor_gateway}" ]]; then
-        _info "Shutting down $tor_gateway"
-        qube.shutdown "$tor_gateway"
+        if qube.assert_running; then
+            _info "Shutting down $tor_gateway"
+            qube.shutdown "$tor_gateway"
+        fi
     fi
 
     # Other VMs that are tagged with the identity.
     read -rA other_vms < <(qubes.list_all)
     for vm in "${other_vms[@]}" ; do
         [[ -z "${vm}" ]] && continue
+        [[ $(qube.assert_running) -gt 0 ]] && continue
 
         if [[ "$(qube.owner "${vm}")" == "${IDENTITY}" ]]; then
             _info "Shutting down $vm"
@@ -3561,26 +3569,26 @@ function proxy.fail_not_identity_proxy ()
 function web.browser_create ()
 {
     local web="${1}-web"
-    local web_netvm="${2-$(config_get DEFAULT_NETVM)}"
-    local web_label="${3-orange}"
-    local ws_template="$(config_get WHONIX_WS_TEMPLATE)"
-    local template_disp="$(qvm-prefs "${ws_template}" template_for_dispvms 2>/dev/null)"
+    local netvm="${2-$(config_get DEFAULT_NETVM)}"
+    local label="${3-orange}"
+    local template="$(config_get WHONIX_WS_TEMPLATE)"
+    local template_disp="$(qvm-prefs "${template}" template_for_dispvms 2>/dev/null)"
 
     # If the template used is a disposable_template,
     # this means we must create a named disposable VM.
     if [[ "${template_disp}" == True ]]; then
         _verbose "VM template is a disposable template, cloning it instead"
-        web.browser_clone "${1}" "${ws_template}" "${netvm}" "${web_label}"
+        web.browser_clone "${1}" "${template}" "${netvm}" "${label}"
         return
     fi
 
     # Generate the VM
     _info "New browser VM"
-    _info "Name:          $web"
-    _info "Netvm:         $netvm"
-    _info "Template:   $ws_template"
+    _info "Name:       $web"
+    _info "Netvm:      $netvm"
+    _info "Template:   $template"
 
-    _run qvm-create "${web}" --property netvm="$web_netvm" --label="$web_label" --template="$ws_template"
+    _run qvm-create "${web}" --property netvm="$netvm" --label="$label" --template="$template"
 
     if [[ $? -gt 0 ]]; then
         _warning "Failed to create browser VM $web" && return
@@ -3601,7 +3609,7 @@ function web.browser_clone ()
     local web="${1}-web"
     local web_clone="$2"
     local netvm="${3-$(config_get DEFAULT_NETVM)}"
-    local web_label="${4-orange}"
+    local label="${4-orange}"
 
     _info "New browser VM"
     _info "Name:          $web"
@@ -3614,7 +3622,7 @@ function web.browser_clone ()
         _warning "Failed to clone browser VM $web" && return
     fi
 
-    _run qvm-prefs "$web" label "$web_label"
+    _run qvm-prefs "$web" label "$label"
     _run qvm-prefs "$web" netvm "$netvm"
 
     # Only mark this VM as disposable template when it's not one already.
@@ -3672,11 +3680,11 @@ function web.browser_set_split_dispvm ()
     [[ -z "${browser_vm}" ]] && return
 
     # Use this browser as the split dispVM
-    _info "Setting identity browser VM with split-browser"
+    _info "Setting split-browser: $browser_vm"
     qvm-prefs "${split_backend}" default_dispvm "${browser_vm}"
 
     # And copy identity bookmarks from vault to the split-backend.
-    _info "Transfering identity bookmarks to split-backend"
+    _info "Bookmarks: copying"
     copy_command="qvm-copy-to-vm ${split_backend} ${bookmarks_file}"
 
     qvm-run "${VAULT_VM}" "${copy_command}" &>/dev/null
@@ -3701,7 +3709,8 @@ function web.browser_unset_split_dispvm ()
         qvm-prefs "${split_backend}" default_dispvm ''
     fi
 
-    _info "Removing identity bookmarks from split-backend"
+    _info "Bookmarks: removed"
+    _run_qube "${split_backend}" "qvm-copy-to-vm ${VAULT_VM} ${bookmarks_backend_path}"
     _run_qube "${split_backend}" "shred -u ${bookmarks_backend_path}"
 }
 
@@ -4133,7 +4142,7 @@ risk_identity_create_command() {
   # Per-identity bookmarks file in vault management tomb.
   web.bookmark_create_file
 
-  _success "Successfully initialized infrastructure for identity $IDENTITY"
+  echo && _success "Successfully initialized infrastructure for identity $IDENTITY"
 
 }
 
@@ -4157,18 +4166,19 @@ risk_identity_equip_command() {
 
   identity.fail_unknown "$IDENTITY"
 
-  _in_section "identity" 8 && _info "Creating infrastructure for identity $IDENTITY"
+  _info "Creating qubes for identity $IDENTITY"
 
   # Make a directory for this identity, and store the associated VM name
+  _in_section "network" 8 && echo && _warning "Global identity qubes settings"
   [[ -e ${IDENTITY_DIR} ]] || mkdir -p "$IDENTITY_DIR"
 
   # If the user wants to use a different vm_name for the VMs
   vm_name="${args['--prefix']-$IDENTITY}"
-  _info "Using '$name' as VM prefix"
+  _info "VM prefix:    $name"
   echo "$vm_name" > "${IDENTITY_DIR}/vm_name"
 
   label="${args['--label']-orange}"
-  _info "Using label '$label' as VM default label"
+  _info "Label:        $label"
   echo "$vm_name" > "${IDENTITY_DIR}/vm_label"
 
   # Prepare the root NetVM for this identity
@@ -4207,7 +4217,7 @@ risk_identity_equip_command() {
   # Per-identity bookmarks file in vault management tomb.
   web.bookmark_create_file
 
-  _success "Successfully initialized infrastructure for identity $IDENTITY"
+  echo && _in_section 'risk' && _success "Successfully initialized infrastructure for identity $IDENTITY"
 
 }
 
@@ -4260,16 +4270,16 @@ risk_identity_nake_command() {
   identity.fail_unknown
 
   # Close the identity and all its running VMs
-  _info "Stopping machines of identity $IDENTITY"
+  _warning "Stopping machines of identity $IDENTITY"
   identity.shutdown_qubes
 
   # If the identity browser VM is used with the split-browser backend.
   web.browser_unset_split_dispvm
 
-  _info "Deleting identity VMs"
+  echo && _warning "Deleting identity VMs"
   identity.delete_qubes
 
-  _success "Successfully deleted VMs of identity $IDENTITY"
+  echo && _success "Successfully deleted VMs of identity $IDENTITY"
 
 }
 
@@ -4292,9 +4302,10 @@ risk_identity_open_command() {
   _catch "Failed to open identity"
 
   # Set the identity browser VM, if any, as the disposable VM of split-browser backend.
+  _in_section "web"
   web.browser_set_split_dispvm
 
-  _info "Identity $IDENTITY is active"
+  _in_section "risk" && _info "Identity $IDENTITY is active"
 
 }
 
@@ -4314,9 +4325,10 @@ risk_identity_close_command() {
   fi
 
   # If the identity browser VM is used with the split-browser backend.
+  _in_section "web"
   web.browser_unset_split_dispvm
 
-  _info "Closing identity $active_identity"
+  _in_section "risk" && _info "Closing identity $active_identity"
 
   _run_qube_term "${VAULT_VM}" risks identity close "$active_identity"
   _catch "Failed to close identity $active_identity"
@@ -4355,7 +4367,7 @@ risk_identity_start_command() {
       _run qube.start "${vm}"
   done
 
-  _success "Opened identity '$IDENTITY' and started enabled VMs"
+  _in_section 'risk' && _success "Opened identity '$IDENTITY' and started enabled VMs"
 
 }
 

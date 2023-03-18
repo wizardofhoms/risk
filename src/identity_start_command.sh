@@ -25,4 +25,4 @@ for vm in "${enabled_vms[@]}"; do
     _run qube.start "${vm}"
 done
 
-_success "Opened identity '$IDENTITY' and started enabled VMs"
+_in_section 'risk' && _success "Opened identity '$IDENTITY' and started enabled VMs"

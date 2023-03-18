@@ -14,6 +14,7 @@ _run_qube_term "$VAULT_VM" risks identity open "$IDENTITY"
 _catch "Failed to open identity"
 
 # Set the identity browser VM, if any, as the disposable VM of split-browser backend.
+_in_section "web"
 web.browser_set_split_dispvm
 
-_info "Identity $IDENTITY is active"
+_in_section "risk" && _info "Identity $IDENTITY is active"

@@ -15,18 +15,19 @@ identity.set "${args['identity']}"
 
 identity.fail_unknown "$IDENTITY"
 
-_in_section "identity" 8 && _info "Creating infrastructure for identity $IDENTITY"
+_info "Creating qubes for identity $IDENTITY"
 
 # Make a directory for this identity, and store the associated VM name
+_in_section "network" 8 && echo && _warning "Global identity qubes settings"
 [[ -e ${IDENTITY_DIR} ]] || mkdir -p "$IDENTITY_DIR"
 
 # If the user wants to use a different vm_name for the VMs
 vm_name="${args['--prefix']-$IDENTITY}"
-_info "Using '$name' as VM prefix"
+_info "VM prefix:    $name"
 echo "$vm_name" > "${IDENTITY_DIR}/vm_name"
 
 label="${args['--label']-orange}"
-_info "Using label '$label' as VM default label"
+_info "Label:        $label"
 echo "$vm_name" > "${IDENTITY_DIR}/vm_label"
 
 # Prepare the root NetVM for this identity
@@ -66,4 +67,4 @@ fi
 web.bookmark_create_file
 
 ## All done ##
-_success "Successfully initialized infrastructure for identity $IDENTITY"
+echo && _in_section 'risk' && _success "Successfully initialized infrastructure for identity $IDENTITY"

@@ -110,4 +110,4 @@ fi
 web.bookmark_create_file
 
 ## All done ##
-_success "Successfully initialized infrastructure for identity $IDENTITY"
+echo && _success "Successfully initialized infrastructure for identity $IDENTITY"

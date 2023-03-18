@@ -11,9 +11,10 @@ if [[ -z $active_identity ]]; then
 fi
 
 # If the identity browser VM is used with the split-browser backend.
+_in_section "web"
 web.browser_unset_split_dispvm
 
-_info "Closing identity $active_identity"
+_in_section "risk" && _info "Closing identity $active_identity"
 
 _run_qube_term "${VAULT_VM}" risks identity close "$active_identity"
 _catch "Failed to close identity $active_identity"

@@ -121,6 +121,18 @@ function identity.fail_unknown ()
     _catch "Invalid identity: $1 does not exists in ${VAULT_VM}"
 }
 
+# identity.fail_exists exits the program if the given identity name already exists in the vault.
+function identity.fail_exists ()
+{
+    # Get the resulting encrypted name
+    local encrypted_identity
+    encrypted_identity="$(crypt.filename "${IDENTITY}")"
+
+    # And check the directory exists
+    qvm-run --pass-io "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
+    [[ $? -eq 0 ]] && _failure "Identity ${IDENTITY} already exists in ${VAULT_VM}"
+}
+
 # identity.get_args_name either returns the name given as parameter, or
 # generates a random (burner) one and prints it to the screen.
 function identity.get_args_name ()
@@ -176,7 +188,7 @@ function identity.get_args_expiry ()
 }
 
 # identity.delete_home_directory deletes the ~/.risk/identities/<identity> directory.
-function identity.delete_home_directoryy ()
+function identity.delete_home_directory ()
 {
     if ! _identity_active ; then
         return

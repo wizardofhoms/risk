@@ -359,7 +359,7 @@ risk_identity_create_usage() {
   fi
 
   printf "%s\n" "$(bold "Usage:")"
-  printf "  risk identity create NAME EMAIL EXPIRY_DATE [OPTIONS]\n"
+  printf "  risk identity create [IDENTITY] [EMAIL] [EXPIRY_DATE] [OPTIONS]\n"
   printf "  risk identity create --help | -h\n"
   echo
 
@@ -369,6 +369,26 @@ risk_identity_create_usage() {
 
     # :command.usage_flags
     # :flag.usage
+    printf "  %s\n" "--backup, -b"
+    printf "    Device file of the backup drive (must be a whole drive without a partition\n    number, eg. /dev/sdb)\n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "--burner, -B"
+    printf "    Generate a random username, and only generate GPG/Pass stores\n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "--vault-only"
+    printf "    Only create the identity in the vault: do not create any machines\n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "--mail, -m"
+    printf "    Mail provider to use for the GPG key (appended to the name when no full mail\n    is given as arg)\n"
+    echo
+
+    # :flag.usage
     printf "  %s\n" "--prefix, -P NAME"
     printf "    Use a different name for naming identity VMs\n"
     echo
@@ -376,16 +396,6 @@ risk_identity_create_usage() {
     # :flag.usage
     printf "  %s\n" "--label, -L COLOR"
     printf "    Specify a label color to be used for all VMs belonging to this identity\n"
-    echo
-
-    # :flag.usage
-    printf "  %s\n" "--backup, -b"
-    printf "    Device file of the backup drive (must be a whole drive without a partition\n    number, eg. /dev/sdb)\n"
-    echo
-
-    # :flag.usage
-    printf "  %s\n" "--vault-only"
-    printf "    Only create the identity in the vault: do not create any machines\n"
     echo
 
     # :flag.usage
@@ -417,7 +427,7 @@ risk_identity_create_usage() {
     printf "%s\n" "$(bold "Arguments:")"
 
     # :argument.usage
-    printf "  %s\n" "$(blue "NAME")"
+    printf "  %s\n" "$(blue "IDENTITY")"
     printf "    Name of the identity for which to initialize infrastructure\n"
     echo
 
@@ -2249,6 +2259,18 @@ function identity.fail_unknown ()
     _catch "Invalid identity: $1 does not exists in ${VAULT_VM}"
 }
 
+# identity.fail_exists exits the program if the given identity name already exists in the vault.
+function identity.fail_exists ()
+{
+    # Get the resulting encrypted name
+    local encrypted_identity
+    encrypted_identity="$(crypt.filename "${IDENTITY}")"
+
+    # And check the directory exists
+    qvm-run --pass-io "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
+    [[ $? -eq 0 ]] && _failure "Identity ${IDENTITY} already exists in ${VAULT_VM}"
+}
+
 # identity.get_args_name either returns the name given as parameter, or
 # generates a random (burner) one and prints it to the screen.
 function identity.get_args_name ()
@@ -2304,7 +2326,7 @@ function identity.get_args_expiry ()
 }
 
 # identity.delete_home_directory deletes the ~/.risk/identities/<identity> directory.
-function identity.delete_home_directoryy ()
+function identity.delete_home_directory ()
 {
     if ! _identity_active ; then
         return
@@ -4032,117 +4054,45 @@ risk_backup_detach_command() {
 risk_identity_create_command() {
   # src/identity_create_command.sh
 
-  # Variables setup ==========================================================
-
-  # Variables populated from command-line args/flags
-  name="${args['name']}"
+  name="${args['identity']}"
   name="$(identity.get_args_name "${name}")"
   identity="${name// /_}"
-  expiry="$(identity.get_args_expiry "${args['expiry_date']}")"
   email="$(identity.get_args_mail "${name}" "${args['email']}")"
   pendrive="${args['--backup']}"
 
-  # Other variables
-  local vm_name           # Default prefix to use for newly created vm (eg. 'joe' => joe-vpn, joe-web)
-  local label             # Default label color to use for all VMs, varies if not specified
-  local other_args        # Other args/flags to pass to vault identity create command (backup/burner, etc)
-  local gw_netvm          # NetVM for the tor gateway
-  local web_netvm         # NetVM for the Web browser VM
-  local clone             # A variable that might be overritten several times, used to assign a VM to clone.
+  local other_args
 
-  # Propagate the identity and its settings (in the script only)
+  # 0 - Safety checks
   identity.set "${identity}"
 
-  # Identity checks and basic setup ==========================================
-
-  # Check no active identity is here,
-  if _identity_active ; then
+  if identity.active ; then
       _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
   fi
 
-  # or that the one we want to create does not exists already
-  if identity.fail_unknown "$IDENTITY" ; then
-      _failure "Identity $IDENTITY already exists"
-  fi
+  identity.fail_exists
 
-  # We're good to go
-  _info "Creating identity $IDENTITY and infrastructure"
-
-  # Make a directory for this identity, and store the associated VM name
-  [[ -e ${IDENTITY_DIR} ]] || mkdir -p "$IDENTITY_DIR"
-
-  # If the user wants to use a different vm_name for the VMs
-  vm_name="${args['--prefix']-$IDENTITY}"
-  echo "$vm_name" > "${IDENTITY_DIR}/vm_name"
-  _info "Using vm_name ${fg_bold[green]}'$name'${reset_color} as VM base name"
-
-  label="${args['--label']}"
-  echo "$vm_name" > "${IDENTITY_DIR}/vm_label"
-  _info "Using label ${fg_bold[green]}'$label'${reset_color} as VM default label"
-
-  # Prepare the root NetVM for this identity
-  config_get DEFAULT_NETVM > "${IDENTITY_DIR}/net_vm"
-
-  # Create identity in vault =================================================
-
-  # Simply pass the arguments to the vault
+  # 1 - Create identity in vault
   _in_section "identity" 8 && _info "Creating identity in vault"
 
-  if [[ -n "$pendrive" ]]; then
-      other_args=(--backup "$pendrive")
-  fi
-  if [[ "${args['--burner']}" -eq 1 ]]; then
-      other_args+=( --burner )
-  fi
+  [[ -n "${args['expiry_date']}" ]] && other_args+=( "${args['expiry_date']}" )
+  [[ -n "$pendrive" ]] && other_args=(--backup "$pendrive")
+  [[ "${args['--burner']}" -eq 1 ]] && other_args+=( --burner )
 
-  # Create it
-  _run_qube_term "$VAULT_VM" risks identity create "$name" "$email" "$expiry" "${other_args[@]}"
+  _run_qube_term "$VAULT_VM" risks identity create "$name" "$email" "${other_args[@]}"
   _catch "Failed to create identity in vault"
 
-  # And open it, in case the last command backed up the identity, which closed it.
   _run_qube_term "$VAULT_VM" risks identity open "$name"
   _catch "Failed to open identity in vault"
 
   # If the user only wanted to create the identity in the vault, exit.
   if [[ ${args['--vault-only']} -eq 1 ]] ; then
+      _info "Skipping infrastructure setup"
       _success "Successfully created identity $IDENTITY"
-      _info "Skipping infrastructure setup" && exit
+      exit
   fi
 
-  # Network VMs ==============================================================
-  _in_section "network" && echo && _warning "Creating network VMs"
-  gw_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
-
-  # 1 - Tor gateway, if not explicitly disabled
-  if [[ ${args['--no-gw']} -eq 0 ]]; then
-      if [[ -n ${args['--clone-gw-from']} ]]; then
-          clone="${args['--clone-gw-from']}"
-          proxy.tor_clone "$vm_name" "$clone" "$gw_netvm" "$label"
-      else
-          proxy.tor_create "$vm_name" "$gw_netvm" "$label"
-      fi
-  else
-      _info "Skipping TOR gateway"
-  fi
-
-  # Browser VMs ==============================================================
-  _in_section "web" && echo && _warning "Creating browsing VMs"
-  web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
-
-  # Browser VMs are disposable, but we make a template for this identity,
-  # since we might  either modify stuff in there, and we need them at least
-  # to have a different network route.
-  if [[ -n ${args['--clone-web-from']} ]]; then
-      clone="${args['--clone-web-from']}"
-      web.browser_clone "$vm_name" "$clone" "$web_netvm" "$label"
-  else
-      web.browser_create "$vm_name" "$web_netvm" "$label"
-  fi
-
-  # Per-identity bookmarks file in vault management tomb.
-  web.bookmark_create_file
-
-  echo && _success "Successfully initialized infrastructure for identity $IDENTITY"
+  # 2 - Otherwise, the identity is ready to be equipped, so use the appropriate command function.
+  risk_identity_equip_command
 
 }
 
@@ -4665,7 +4615,7 @@ risk_qube_add_command() {
   # If already belongs to an identity, ask for confirmation to update the settings.
   if [[ -n "$owner" ]] && [[ "$owner" != "$IDENTITY" ]]; then
       _warning "VM $vm already belongs to $owner"
-      chown=$(prompt_question "Do you really want to assign a new identity ($IDENTITY) to this VM ? (YES/n)")
+      chown=$(prompt_question "Do you really want to assign a new identity ($IDENTITY) to this qube ? (YES/n)")
       if [[ "$chown" != 'YES' ]]; then
           _info "Aborting qube owner change. Exiting"
           exit 0
@@ -4674,7 +4624,7 @@ risk_qube_add_command() {
 
   # Tag the VM with its owner
   _run qvm-tags "$vm" set "$IDENTITY"
-  _catch "Failed to tag VM with identity"
+  _catch "Failed to tag qube with identity"
 
   # If the target qube is networked, change its network VM, either with
   # the default for the identity, or with the netvm flag, which has precedence.
@@ -4690,7 +4640,7 @@ risk_qube_add_command() {
 
           if [[ -n "${netvm_owner}" ]] && [[ "$netvm_owner" != "$IDENTITY" ]]; then
               _warning "Network VM $netvm already belongs to $netvm_owner"
-              chnet=$(prompt_question "Do you really want to use this VM as netvm for $netvm? (YES/n)")
+              chnet=$(prompt_question "Do you really want to use this qube as netvm for $netvm? (YES/n)")
               if [[ "$chnet" != 'YES' ]]; then
                   netvm="$(identity.netvm)"
               fi
@@ -4705,7 +4655,7 @@ risk_qube_add_command() {
   # Check if the VM provides network. If yes we naturally consider
   # it to be a gateway, and we add it to the list of proxy_vms.
   if [[ "$(qvm-prefs "$vm" provides_network)" == 'True' ]]; then
-      _info "VM provides network. Treating it as a gateway VM"
+      _info "VM provides network. Treating it as a gateway qube"
 
       # Add as a proxy VM
       echo "$vm" > "${IDENTITY_DIR}/proxy_vms"
@@ -4715,12 +4665,14 @@ risk_qube_add_command() {
           echo "$vm" > "${IDENTITY_DIR}/net_vm"
           _info "Setting '$vm' as default NetVM for all client machines"
       fi
+  else
+      echo "$vm" > "${IDENTITY_DIR}/client_vms"
   fi
 
   # Enable autostart if asked to
   [[ "${args['--enable']}" -eq 1 ]] && qube.enable "$vm"
 
-  _success "Successfully set VM $vm as belonging to identity $IDENTITY"
+  _success "Successfully set qube $vm as belonging to identity $IDENTITY"
 
 }
 
@@ -5769,6 +5721,38 @@ risk_identity_create_parse_requirements() {
     key="$1"
     case "$key" in
       # :flag.case
+      --backup | -b)
+
+        # :flag.case_no_arg
+        args['--backup']=1
+        shift
+        ;;
+
+      # :flag.case
+      --burner | -B)
+
+        # :flag.case_no_arg
+        args['--burner']=1
+        shift
+        ;;
+
+      # :flag.case
+      --vault-only)
+
+        # :flag.case_no_arg
+        args['--vault-only']=1
+        shift
+        ;;
+
+      # :flag.case
+      --mail | -m)
+
+        # :flag.case_no_arg
+        args['--mail']=1
+        shift
+        ;;
+
+      # :flag.case
       --prefix | -P)
 
         # :flag.case_arg
@@ -5796,22 +5780,6 @@ risk_identity_create_parse_requirements() {
           printf "%s\n" "--label requires an argument: --label, -L COLOR" >&2
           exit 1
         fi
-        ;;
-
-      # :flag.case
-      --backup | -b)
-
-        # :flag.case_no_arg
-        args['--backup']=1
-        shift
-        ;;
-
-      # :flag.case
-      --vault-only)
-
-        # :flag.case_no_arg
-        args['--vault-only']=1
-        shift
         ;;
 
       # :flag.case
@@ -5885,9 +5853,9 @@ risk_identity_create_parse_requirements() {
       *)
         # :command.parse_requirements_case
         # :command.parse_requirements_case_simple
-        if [[ -z ${args['name']+x} ]]; then
+        if [[ -z ${args['identity']+x} ]]; then
 
-          args['name']=$1
+          args['identity']=$1
           shift
         elif [[ -z ${args['email']+x} ]]; then
 
@@ -5906,20 +5874,6 @@ risk_identity_create_parse_requirements() {
 
     esac
   done
-
-  # :command.required_args_filter
-  if [[ -z ${args['name']+x} ]]; then
-    printf "missing required argument: NAME\nusage: risk identity create NAME EMAIL EXPIRY_DATE [OPTIONS]\n" >&2
-    exit 1
-  fi
-  if [[ -z ${args['email']+x} ]]; then
-    printf "missing required argument: EMAIL\nusage: risk identity create NAME EMAIL EXPIRY_DATE [OPTIONS]\n" >&2
-    exit 1
-  fi
-  if [[ -z ${args['expiry_date']+x} ]]; then
-    printf "missing required argument: EXPIRY_DATE\nusage: risk identity create NAME EMAIL EXPIRY_DATE [OPTIONS]\n" >&2
-    exit 1
-  fi
 
 }
 

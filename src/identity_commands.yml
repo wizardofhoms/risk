@@ -5,16 +5,30 @@ commands:
   - name: create 
     help: "Creates associated VMs for an identity (joe-gw, joe-vpn, joe-msg, joe-web)"
     args:
-      - name: name 
+      - name: identity 
         help: "Name of the identity for which to initialize infrastructure"
-        required: true
+        required: false 
       - name: email 
-        required: true
+        required: false 
         help: "Email address to use for the GPG identity"
       - name: expiry_date
-        required: true
+        required: false 
         help: Human readable, or GPG-compliant expiry duration to use for the GPG subkeys (eg. '1 year', '1 week', etc)
     flags:
+        # Vault (identity creation) options
+      - long : --backup
+        short: -b
+        help: "Device file of the backup drive (must be a whole drive without a partition number, eg. /dev/sdb)"
+        validate: device
+      - long: --burner
+        short: -B
+        help: "Generate a random username, and only generate GPG/Pass stores"
+      - long: --vault-only
+        help: "Only create the identity in the vault: do not create any machines"
+      - long: --mail
+        short: -m
+        help: "Mail provider to use for the GPG key (appended to the name when no full mail is given as arg)"
+        # Global qubes options
       - &prefix
         long: --prefix
         short: -P
@@ -25,13 +39,6 @@ commands:
         short: -L
         help: "Specify a label color to be used for all VMs belonging to this identity"
         arg: color 
-        # Vault (identity creation) options
-      - long : --backup
-        short: -b
-        help: "Device file of the backup drive (must be a whole drive without a partition number, eg. /dev/sdb)"
-        validate: device
-      - long: --vault-only
-        help: "Only create the identity in the vault: do not create any machines"
         # Tor gateway options
       - &no_gw
         long: --no-gw

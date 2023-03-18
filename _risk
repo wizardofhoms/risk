@@ -51,7 +51,7 @@ _risk_commands ()
         'slam:Close identity and/or associated stores in the vault only, and detach hush/backup'
         'config:Manage the global risk configuration settings from the CLI'
         'use:Execute a command in a VM belong to an identity'
-        'qube:Manage generic VMs (identity qubes, update/enable/disable, etc)'
+        'qube:Manage generic qubes (identity qubes, update/enable/disable, etc)'
         'url:Browse, bookmark, verify and manage URLS/links'
     )
 
@@ -189,13 +189,13 @@ _identity_commands ()
     local -a subcmds 
     subcmds=(
         'open:Open an identity and its associated builtin stores in the vault'
-        'create:Create associated VMs for an identity (joe-gw, joe-vpn, joe-msg, joe-web, etc)'
+        'create:Create associated qubes for an identity (joe-gw, joe-vpn, joe-msg, joe-web, etc)'
         'delete:Destroys an identity and all its associated machines and data'
         'close:Simply close the identity stores in the vault'
-        'start:Start the identity in the vault and all of its enabled VMs'
+        'start:Start the identity in the vault and all of its enabled qubes'
         'stop:Stops all machines belonging to an identity, and close its vault if active'
         'equip:Creates the default infrastructure for an already exiting identity'
-        'nake:Delete the VMs belonging to an identity, but not the identity in the vault'
+        'nake:Delete the qubes belonging to an identity, but not the identity in the vault'
     )
     _describe -t commands 'identity commands' subcmds && ret=0
 }
@@ -475,8 +475,8 @@ _flags_base=(
 
 ## Base flags needed when creating/cloning a VM
 _flags_vm_base=(
-    '(-P --prefix)'{-P,--prefix}'[Use a different name for naming identity VMs]:VM base name:' 
-    '(-L --label)'{-L,--label}'[Specify a label color to be used for ALL subsequently created VMs]:VM label:' 
+    '(-P --prefix)'{-P,--prefix}'[Use a different name for naming identity qubes]:VM base name:' 
+    '(-L --label)'{-L,--label}'[Specify a label color to be used for ALL subsequently created qubes]:VM label:' 
     )
 
 _flags_create_base=(
@@ -500,7 +500,7 @@ _flags_vpn=(
 
 # The following flags groups are used only in the 'identity create' command,
 # since the command normally creates a bunch of different vms: most of these
-# flags are made to slightly change these default VMs' settings.
+# flags are made to slightly change these default qubes' settings.
 _flags_init_tor=(
     '(--clone-gw-from -G --no-gw)'{-G,--no-gw}'[Do not create a Whonix TOR gateway]' 
     '(-G --no-gw --clone-gw-from)'--clone-gw-from"[Instead of creating the TOR gateway from a template, clone an existing TOR AppVM]:VM:_known_vms"
@@ -561,7 +561,7 @@ _vault_devices ()
     echo "${devices[@]}"
 }
 
-# returns all VMs detected on the Qubes system.
+# returns all qubes detected on the Qubes system.
 _known_vms ()
 {
     local ret=
@@ -572,10 +572,10 @@ _known_vms ()
         VM_COMPLETIONS+=("${VM_NAME}")
     done < <(qvm-ls --raw-list | sort)
 
-    _alternative "VMs:VMs:($VM_COMPLETIONS)"
+    _alternative "qubes:qubes:($VM_COMPLETIONS)"
 }
 
-# returns all VMs that can be updated. Quite slow to return results.
+# returns all qubes that can be updated. Quite slow to return results.
 _updateable_vms ()
 {
     local ret=
@@ -593,10 +593,10 @@ _updateable_vms ()
         fi
     done
 
-    _alternative "updateable VMs:updateable VMs:($updateable_vms)"
+    _alternative "updateable qubes:updateable qubes:($updateable_vms)"
 }
 
-# Returns all the VMs belonging to the active identity
+# Returns all the qubes belonging to the active identity
 _identity_vms ()
 {
     local proxies=() vms=()
@@ -612,13 +612,13 @@ _identity_vms ()
     [[ -n ${browser_vm} ]] && vms+=( ${browser_vm} )
 
     [[ -z "${proxies}" ]] && [[ -z "${vms}" ]] \
-        && _message "No VMs belong to this identity" && return
+        && _message "No qubes belong to this identity" && return
 
     _alternative "proxies:proxies:($proxies)"
-    _alternative "other VMs:other VMs:($vms)"
+    _alternative "other qubes:other qubes:($vms)"
 }
 
-# Returns all identity enabled VMs
+# Returns all identity enabled qubes
 _enabled_identity_vms ()
 {
     vms=($(_identity_enabled_vms))
@@ -629,27 +629,27 @@ _enabled_identity_vms ()
 
     client_vms=($(_identity_clients))
     enabled_vms=($(echo "${client_vms[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -u))
-    [[ -n $enabled_vms ]] && _alternative "enabled VMs:enabled VMs:($enabled_vms)"
+    [[ -n $enabled_vms ]] && _alternative "enabled qubes:enabled qubes:($enabled_vms)"
 
     [[ -z "${enabled_vpns}" ]] && [[ -z "${enabled_vms}" ]] \
-        && _message "No enabled VMs for this identity" && return
+        && _message "No enabled qubes for this identity" && return
 }
 
-# Returns all identity disabled VMs
+# Returns all identity disabled qubes
 _disabled_identity_vms ()
 {
     vms=($(_identity_enabled_vms))
     proxies=($(_identity_proxies))
 
     [[ -z "${proxies}" ]] && [[ -z "${vms}" ]] \
-        && _message "No VMs belong to this identity" && return
+        && _message "No qubes belong to this identity" && return
 
     disabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
     [[ -n $disabled_vpns ]] && _alternative "disabled VPNs:disabled VPNs:($disabled_vpns)"
     
     client_vms=($(_identity_clients))
     disabled_vms=($(echo "${client_vms[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
-    [[ -n $disabled_vms ]] && _alternative "disabled VMs:disabled VMs:($disabled_vms)"
+    [[ -n $disabled_vms ]] && _alternative "disabled qubes:disabled qubes:($disabled_vms)"
 }
 
 # Returns the list of running VPN gateways for the active identity.
@@ -658,7 +658,7 @@ _running_identity_vpns ()
     # Get the list of gateways, either for active identity or all
     proxies=($(_identity_proxies))
     
-    # Diff it with the list of running VMs
+    # Diff it with the list of running qubes
     read -d '' -r -A running_all < <(qvm-ls --raw-list --running)
     running_proxies=($(echo "${proxies[@]}" "${running_all[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
     
@@ -666,7 +666,7 @@ _running_identity_vpns ()
     if [[ "${#running_proxies[@]}" -eq 0 ]]; then
         _message "no running VPN gateways for identity"
     else
-        _arguments -C "1:running proxy VMs:($running_proxies)"
+        _arguments -C "1:running proxy qubes:($running_proxies)"
     fi
 }
 
@@ -676,7 +676,7 @@ _halted_identity_vpns ()
     # Get the list of gateways, either for active identity or all
     proxies=($(_identity_proxies))
     
-    # Diff it with the list of running VMs
+    # Diff it with the list of running qubes
     read -d '' -r -A halted_all < <(qvm-ls --raw-list --halted)
     halted_proxies=($(echo "${proxies[@]}" "${halted_all[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
     
@@ -684,11 +684,11 @@ _halted_identity_vpns ()
     if [[ "${#halted_proxies[@]}" -eq 0 ]]; then
         _message "no halted VPN gateways for identity"
     else
-        _arguments -C "1:halted proxy VMs:($halted_proxies)"
+        _arguments -C "1:halted proxy qubes:($halted_proxies)"
     fi
 }
 
-# Returns all proxy VMs for the active identity, running or not.
+# Returns all proxy qubes for the active identity, running or not.
 _identity_vpns ()
 {
     proxies=($(_identity_proxies))
@@ -696,11 +696,11 @@ _identity_vpns ()
     if [[ "${#proxies[@]}" -eq 0 ]]; then
         _message "no VPN gateways for identity"
     else
-        _arguments -C "1:proxy VMs:($proxies)"
+        _arguments -C "1:proxy qubes:($proxies)"
     fi
 }
 
-# Returns all VMs that are marked autostart for the identity.
+# Returns all qubes that are marked autostart for the identity.
 _enabled_vpns ()
 {
     vms=($(_identity_enabled_vms))
@@ -712,11 +712,11 @@ _enabled_vpns ()
     if [[ "${#vms[@]}" -eq 0 ]]; then
         _message "no enabled VPN gateways"
     else
-        _arguments -C "1:autostart enabled VMs:($vms)"
+        _arguments -C "1:autostart enabled qubes:($vms)"
     fi
 }
 
-# Returns all VMs that are marked autostart for the identity.
+# Returns all qubes that are marked autostart for the identity.
 _disabled_vpns ()
 {
     vms=($(_identity_enabled_vms))
@@ -729,11 +729,11 @@ _disabled_vpns ()
     if [[ "${#disabled_vpns[@]}" -eq 0 ]]; then
         _message "no disabled VPN gateways"
     else
-        _arguments -C "1:disabled VMs:($disabled_vpns)"
+        _arguments -C "1:disabled qubes:($disabled_vpns)"
     fi
 }
 
-# returns all running VMs for the active identity only
+# returns all running qubes for the active identity only
 _running_identity_vms ()
 {
     local identity_dir="$(_identity_dir)"
@@ -741,22 +741,22 @@ _running_identity_vms ()
     # Clients
 }
 
-# returns all VMs, but in different categories for identity and not
+# returns all qubes, but in different categories for identity and not
 _structured_vms ()
 {
     local -a proxies client_vms other_vms 
 
-    # First return the VMs belonging to the identity
+    # First return the qubes belonging to the identity
     [[ -e "${identity_dir}/proxy_vms" ]] && read -d '' -r -A proxies <"${identity_dir}/proxy_vms"
     [[ -e "${identity_dir}/client_vms" ]] && read -d '' -r -A client_vms <"${identity_dir}/client_vms"
     local identity_vms=( "${proxies[@]}" "${client_vms[@]}" )
-    _alternative "identity VMs:identity VMs:($identity_vms)"
+    _alternative "identity qubes:identity qubes:($identity_vms)"
 
     # Then diff it with the complete VM list
     read -d '' -r -A all_vms < <(qvm-ls --raw-list)
     other_vms=($(echo "${proxies[@]}" "${all_vms[@]}" | tr ' ' '\n' | sort | uniq -u))
     other_vms=($(echo "${client_vms[@]}" "${other_vms[@]}" | tr ' ' '\n' | sort | uniq -u))
-    _alternative "other VMs:other VMs:($other_vms)"
+    _alternative "other qubes:other qubes:($other_vms)"
 }
 
 # completes a list of VM distribution names, domains or other keywords
@@ -808,7 +808,7 @@ _identity_proxies ()
     print "${proxies[@]}"
 }
 
-# Returns a list of all identity client VMs (excluding proxies)
+# Returns a list of all identity client qubes (excluding proxies)
 _identity_clients ()
 {
     local identity_dir="$(_identity_dir)"

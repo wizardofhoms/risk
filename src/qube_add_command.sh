@@ -27,7 +27,7 @@ _catch "Failed to tag VM with identity"
 
 # If the target qube is networked, change its network VM, either with
 # the default for the identity, or with the netvm flag, which has precedence.
-if [[ "$(qvm-tags "$vm" netvm)" != 'None' ]]; then
+if [[ "$(qvm-prefs "$vm" netvm)" != 'None' ]]; then
     _info "Qube is networked. Updating its network VM"
     netvm="$(identity.netvm)"
 
@@ -47,14 +47,14 @@ if [[ "$(qvm-tags "$vm" netvm)" != 'None' ]]; then
     fi
 
     _info "Setting network VM to $netvm"
-    _run qvm-tags "$vm" netvm "$netvm"
+    _run qvm-prefs "$vm" netvm "$netvm"
     _catch "Failed to set netvm"
 fi
 
 
 # Check if the VM provides network. If yes we naturally consider
 # it to be a gateway, and we add it to the list of proxy_vms.
-if [[ "$(qvm-tags "$vm" provides_network)" == 'True' ]]; then
+if [[ "$(qvm-prefs "$vm" provides_network)" == 'True' ]]; then
     _info "VM provides network. Treating it as a gateway VM"
 
     # Add as a proxy VM

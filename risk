@@ -4325,7 +4325,7 @@ risk_identity_close_command() {
   fi
 
   # If the identity browser VM is used with the split-browser backend.
-  _in_section "web"
+  _in_section "web" 4
   web.browser_unset_split_dispvm
 
   _in_section "risk" && _info "Closing identity $active_identity"
@@ -4384,7 +4384,6 @@ risk_identity_stop_command() {
   _info "Stopping machines of identity $active_identity"
   identity.shutdown_qubes
 
-  _info "Closing identity in vault"
   risk_identity_close_command
 
 }
@@ -4679,7 +4678,7 @@ risk_qube_add_command() {
 
   # If the target qube is networked, change its network VM, either with
   # the default for the identity, or with the netvm flag, which has precedence.
-  if [[ "$(qvm-tags "$vm" netvm)" != 'None' ]]; then
+  if [[ "$(qvm-prefs "$vm" netvm)" != 'None' ]]; then
       _info "Qube is networked. Updating its network VM"
       netvm="$(identity.netvm)"
 
@@ -4699,13 +4698,13 @@ risk_qube_add_command() {
       fi
 
       _info "Setting network VM to $netvm"
-      _run qvm-tags "$vm" netvm "$netvm"
+      _run qvm-prefs "$vm" netvm "$netvm"
       _catch "Failed to set netvm"
   fi
 
   # Check if the VM provides network. If yes we naturally consider
   # it to be a gateway, and we add it to the list of proxy_vms.
-  if [[ "$(qvm-tags "$vm" provides_network)" == 'True' ]]; then
+  if [[ "$(qvm-prefs "$vm" provides_network)" == 'True' ]]; then
       _info "VM provides network. Treating it as a gateway VM"
 
       # Add as a proxy VM

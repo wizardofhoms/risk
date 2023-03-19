@@ -234,6 +234,13 @@ function qube.assert_running ()
     return 0
 }
 
+# qube.is_running returns 0 if the target qube is running (or paused), or 1 if not.
+# $1 - VM name.
+function qube.is_running ()
+{
+    qvm-check --running "$1" &>/dev/null
+}
+
 # qube.delete deletes a VM belonging to the identity, and removes its from the
 # specified file. If this file is empty after this, it is deleted here.
 # $1 - VM name.

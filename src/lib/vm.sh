@@ -12,7 +12,7 @@
 # $1 - Qube name
 function qube.owner ()
 {
-    print "$(qvm-tags "$1" "$RISK_VM_OWNER_TAG" 2>/dev/null)"
+    qvm-tags "$1" | grep "^$IDENTITY\$" 2>/dev/null
 }
 
 # qube.is_identity_proxy verifies that the identity's proxy VMs arrays contains a given VM.

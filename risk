@@ -2374,7 +2374,7 @@ function identity.browser_qube ()
 # (VPNs and TOR gateways for the current identity)
 function identity.proxy_qubes ()
 {
-    [[ -f "${IDENTITY_DIR}/proxy_vms" ]] || return
+    [[ -e "${IDENTITY_DIR}/proxy_vms" ]] || return
     read -d '' -r -A proxies <"${IDENTITY_DIR}/proxy_vms"
     echo "${proxies[@]}"
 }
@@ -2789,7 +2789,7 @@ function network.fail_networked_qube ()
     [[ $(qvm-prefs "$vm" provides_network) == "True" ]] || return 0
 
     # Check if it provides network to any VM, and if yes, fail.
-    vms=( $(qubes.list_all) )
+    read -rA vms <(qubes.list_all)
     for svm in "${vms[@]}" ; do
         local netvm
         if [[ "$(qvm-prefs "$svm" netvm)" == "$vm" ]]; then
@@ -3127,7 +3127,7 @@ validate_valid_vaultvm () {
 # $1 - Qube name
 function qube.owner ()
 {
-    print "$(qvm-tags "$1" "$RISK_VM_OWNER_TAG" 2>/dev/null)"
+    qvm-tags "$1" | grep "^$IDENTITY\$" 2>/dev/null
 }
 
 # qube.is_identity_proxy verifies that the identity's proxy VMs arrays contains a given VM.
@@ -4705,13 +4705,16 @@ risk_qube_delete_command() {
   fi
 
   # Remove from autostart enabled commands
-  sed -i /"$vm"/d "${IDENTITY_DIR}/autostart_vms"
-  sed -i /"$vm"/d "${IDENTITY_DIR}/proxy_vms"
-  sed -i /"$vm"/d "${IDENTITY_DIR}/client_vms"
+  _info "Deleting qube ${vm}"
+  sed -i /^"$vm"\$/d "${IDENTITY_DIR}/autostart_vms" 2>/dev/null
+  sed -i /^"$vm"\$/d "${IDENTITY_DIR}/proxy_vms" 2>/dev/null
+  sed -i /^"$vm"\$/d "${IDENTITY_DIR}/client_vms" 2>/dev/null
 
   # Finally, delete the VM,
-  _run qvm-remove "$vm"
+  qvm-remove "$vm"
   _catch "Failed to delete VM $vm:"
+
+  _info "Deleted qube ${vm}"
 
 }
 

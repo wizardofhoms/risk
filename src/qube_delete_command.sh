@@ -21,10 +21,13 @@ if qube.is_identity_proxy "$vm" ; then
 fi
 
 # Remove from autostart enabled commands
-sed -i /"$vm"/d "${IDENTITY_DIR}/autostart_vms"
-sed -i /"$vm"/d "${IDENTITY_DIR}/proxy_vms"
-sed -i /"$vm"/d "${IDENTITY_DIR}/client_vms"
+_info "Deleting qube ${vm}"
+sed -i /^"$vm"\$/d "${IDENTITY_DIR}/autostart_vms" 2>/dev/null
+sed -i /^"$vm"\$/d "${IDENTITY_DIR}/proxy_vms" 2>/dev/null
+sed -i /^"$vm"\$/d "${IDENTITY_DIR}/client_vms" 2>/dev/null
 
 # Finally, delete the VM,
-_run qvm-remove "$vm"
+qvm-remove "$vm"
 _catch "Failed to delete VM $vm:"
+
+_info "Deleted qube ${vm}"

@@ -237,7 +237,7 @@ function identity.browser_qube ()
 # (VPNs and TOR gateways for the current identity)
 function identity.proxy_qubes ()
 {
-    [[ -f "${IDENTITY_DIR}/proxy_vms" ]] || return
+    [[ -e "${IDENTITY_DIR}/proxy_vms" ]] || return
     read -d '' -r -A proxies <"${IDENTITY_DIR}/proxy_vms"
     echo "${proxies[@]}"
 }

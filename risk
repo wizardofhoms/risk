@@ -2303,10 +2303,13 @@ function identity.get_args_mail ()
 
     email="${args['--mail']}"
 
-    # Return either the mail flag with the name
-    [[ -n "${email}" ]] && print "${name}@${email}"
-    # Or the lowercase name without spaces
-    print "${name// /_}"
+    if [[ -n "${email}" ]]; then
+        # Return either the mail provider flag with the name
+        print "${name}@${email}"
+    else
+        # Or the lowercase name without spaces
+        print "${name// /_}"
+    fi
 }
 
 # identity.get_args_expiry returns a correctly formatted expiry date for a GPG key.
@@ -3268,7 +3271,7 @@ function qube.disable ()
 {
     local name="$1"
     _info "Disabling VM $name"
-    sed -i /"$name"/d "${IDENTITY_DIR}/autostart_vms"
+    sed -i /^"$name"\$/d "${IDENTITY_DIR}/autostart_vms"
 }
 
 # qube.start [vm 1] ... [vm n]
@@ -4091,7 +4094,7 @@ risk_identity_create_command() {
       exit
   fi
 
-  # 2 - Otherwise, the identity is ready to be equipped, so use the appropriate command function.
+  # 2 - Create all default qubes and related settings for identity.
   risk_identity_equip_command
 
 }
@@ -4723,6 +4726,12 @@ risk_qube_enable_command() {
 
   # Check VM ownership
   [[ "$(qube.owner "$vm")" != "$IDENTITY" ]] || _failure "VM $vm does not belong to $IDENTITY"
+
+  # If already enabled, skip
+  if grep "^${vm}\$" < <(cat "${IDENTITY_DIR}"/autostart_vms) &>/dev/null; then
+      _info "Qube ${vm} is already enabled for autostart"
+      return
+  fi
 
   qube.enable "$vm"
 

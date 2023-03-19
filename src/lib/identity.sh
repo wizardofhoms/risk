@@ -165,10 +165,13 @@ function identity.get_args_mail ()
 
     email="${args['--mail']}"
 
-    # Return either the mail flag with the name
-    [[ -n "${email}" ]] && print "${name}@${email}"
-    # Or the lowercase name without spaces
-    print "${name// /_}"
+    if [[ -n "${email}" ]]; then
+        # Return either the mail provider flag with the name
+        print "${name}@${email}"
+    else
+        # Or the lowercase name without spaces
+        print "${name// /_}"
+    fi
 }
 
 # identity.get_args_expiry returns a correctly formatted expiry date for a GPG key.

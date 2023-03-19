@@ -155,7 +155,7 @@ function qube.disable ()
 {
     local name="$1"
     _info "Disabling VM $name"
-    sed -i /"$name"/d "${IDENTITY_DIR}/autostart_vms"
+    sed -i /^"$name"\$/d "${IDENTITY_DIR}/autostart_vms"
 }
 
 # qube.start [vm 1] ... [vm n]

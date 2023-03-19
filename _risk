@@ -622,13 +622,12 @@ _identity_vms ()
 _enabled_identity_vms ()
 {
     vms=($(_identity_enabled_vms))
-
     proxies=($(_identity_proxies))
-    enabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -u))
+
+    enabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -d))
     [[ -n $enabled_vpns ]] &&  _alternative "enabled VPNs:enabled VPNs:($enabled_vpns)"
 
-    client_vms=($(_identity_clients))
-    enabled_vms=($(echo "${client_vms[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -u))
+    enabled_vms=($(echo "${vms[@]}" "${enabled_vpns[@]}" | tr ' ' '\n' | sort | uniq -u))
     [[ -n $enabled_vms ]] && _alternative "enabled qubes:enabled qubes:($enabled_vms)"
 
     [[ -z "${enabled_vpns}" ]] && [[ -z "${enabled_vms}" ]] \
@@ -638,17 +637,24 @@ _enabled_identity_vms ()
 # Returns all identity disabled qubes
 _disabled_identity_vms ()
 {
+    local identity_dir="$(_identity_dir)"
+
+    client_vms=($(_identity_clients))
     vms=($(_identity_enabled_vms))
     proxies=($(_identity_proxies))
+
+    tor_gateway="$(cat ${identity_dir}/tor_gw)"
+    [[ -n ${tor_gateway} ]] && proxies+=( ${tor_gateway} )
+    browser_vm="$(cat ${identity_dir}/browser_vm)"
+    [[ -n ${browser_vm} ]] && client_vms+=( ${browser_vm} )
 
     [[ -z "${proxies}" ]] && [[ -z "${vms}" ]] \
         && _message "No qubes belong to this identity" && return
 
-    disabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
+    disabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -u))
     [[ -n $disabled_vpns ]] && _alternative "disabled VPNs:disabled VPNs:($disabled_vpns)"
     
-    client_vms=($(_identity_clients))
-    disabled_vms=($(echo "${client_vms[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
+    disabled_vms=($(echo "${client_vms[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -u))
     [[ -n $disabled_vms ]] && _alternative "disabled qubes:disabled qubes:($disabled_vms)"
 }
 
@@ -812,8 +818,8 @@ _identity_proxies ()
 _identity_clients ()
 {
     local identity_dir="$(_identity_dir)"
-    clients=$("${identity_dir}/client_vms" 2>/dev/null)
-    read -d '' -r -A client_vms <<< "$clients"
+    clients=$(cat "${identity_dir}/client_vms" 2>/dev/null)
+    read -rA client_vms <<< "$clients"
     print "${client_vms[@]}"
 }
 

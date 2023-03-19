@@ -36,5 +36,5 @@ if [[ ${args['--vault-only']} -eq 1 ]] ; then
     exit
 fi
 
-# 2 - Otherwise, the identity is ready to be equipped, so use the appropriate command function.
+# 2 - Create all default qubes and related settings for identity.
 risk_identity_equip_command

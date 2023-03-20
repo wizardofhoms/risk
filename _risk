@@ -482,7 +482,7 @@ _flags_vm_base=(
 _flags_create_base=(
     '(-c --clone)'{-c,--clone}'[Instead of creating the VPN gateway from a template, clone an existing VPN AppVM]'
     '(-f --from)'{-f,--from}'[VM to clone instead of the default VPN_VM configuration setting]:AppVM:_known_vms'
-    '(-T --template)'{-T,--template}'[TemplateVM to use for creating the VM]:TemplateVM:_known_vms'
+    '(-T --template)'{-T,--template}'[TemplateVM to use for creating the VM]:TemplateVM:_template_vms'
     '(-E --enable)'{-E,--enable}'[Autostart this VM when the identity is started]'
 )
 
@@ -568,11 +568,24 @@ _known_vms ()
     # VMS
     local VM_COMPLETIONS=()
     while IFS= read -r VM_NAME ; do
-
         VM_COMPLETIONS+=("${VM_NAME}")
     done < <(qvm-ls --raw-list | sort)
 
     _alternative "qubes:qubes:($VM_COMPLETIONS)"
+}
+
+# returns all qubes templates.
+_template_vms ()
+{
+    local ret=
+    # VMS
+    local VM_COMPLETIONS=()
+    while IFS='|' read VM_NAME VM_CLASS; do
+        [[ $VM_CLASS != TemplateVM ]] && continue
+        VM_COMPLETIONS+=("${VM_NAME}")
+    done < <(qvm-ls --raw-data --fields name,class | sort)
+
+    _alternative "templates:templates:($VM_COMPLETIONS)"
 }
 
 # returns all qubes that can be updated. Quite slow to return results.

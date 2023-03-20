@@ -72,6 +72,39 @@ function web.browser_clone ()
     echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
+# web.fail_config_browser exits the program if risk lacks some information
+# (which templates/clones to use) when attempting to create a browser qube.
+function web.fail_config_browser ()
+{
+    local template clone netvm
+
+    # Check qubes specified in config or flags.
+    template="$(config_get WHONIX_WS_TEMPLATE)"
+    [[ -n "${args['--clone-web-from']}" ]] && clone="${args['--clone-web-from']}"
+
+    # Check those qubes exist
+    if [[ -n ${clone} ]]; then
+        ! qube.exists "${clone}" && _failure "Qube to clone ${clone} does not exist"
+    else
+        ! qube.exists "${template}" && _failure "Qube template ${template} does not exist"
+    fi
+}
+
+# proxy.skip_browser_create returns 0 when there not enough information in the configuration
+# file or in command flags for creating a new browser qube (no templates/clones indicated, etc).
+# Needs access to command-line flags
+function web.skip_browser_create ()
+{
+    local template clone netvm
+
+    # Check qubes specified in config or flags.
+    template="$(config_get WHONIX_WS_TEMPLATE)"
+    [[ -n "${args['--clone-web-from']}" ]] && clone="${args['--clone-web-from']}"
+
+    [[ -z ${template} && -z ${clone} ]] && \
+        _info "Skipping browser qube: no TemplateVM/AppVM specified in config or flags" && return 0
+}
+
 # Create a split-browser VM from a template
 function web.split_backend_create ()
 {
@@ -100,6 +133,14 @@ function web.split_backend_clone ()
     qvm-prefs "$web" netvm None
 
     qvm-tags "$web" set "$IDENTITY"
+}
+
+# web.fail_config_split_backend exits the program if risk lacks some information
+# (which templates/clones to use) when attempting to create a split-browser qube.
+function web.fail_config_split_backend ()
+{
+    local template clone
+
 }
 
 # web.browser_set_split_dispvm updates the default disposable VM
@@ -149,6 +190,13 @@ function web.browser_unset_split_dispvm ()
     _info "Bookmarks: removed"
     _run_qube "${split_backend}" "qvm-copy-to-vm ${VAULT_VM} ${bookmarks_backend_path}"
     _run_qube "${split_backend}" "shred -u ${bookmarks_backend_path}"
+}
+
+# web.no_split_backend returns 0 if there is no split-browser backend 
+# qube specified in the configuration/flags, or 1 if one is found.
+function web.no_split_backend ()
+{
+    echo -n
 }
 
 # ========================================================================================

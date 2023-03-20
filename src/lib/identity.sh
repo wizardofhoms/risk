@@ -108,6 +108,12 @@ function identity.fail_none_active ()
     fi
 }
 
+# identity.fail_other_active exits the program if another identity is already active (opened in vault).
+function identity.fail_other_active ()
+{
+    identity.active && _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
+}
+
 # identity.fail_unknown exits the program if an identity does not exist in the vault VM. 
 # $1 - Identity name
 function identity.fail_unknown ()
@@ -131,6 +137,31 @@ function identity.fail_exists ()
     # And check the directory exists
     qvm-run --pass-io "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
     [[ $? -eq 0 ]] && _failure "Identity ${IDENTITY} already exists in ${VAULT_VM}"
+}
+
+# identity.set_global_props analyzes the command-line flags and uses some of them
+# to configure stuff about the identity's qubes, such as their colors/prefixes/netvms, etc.
+# Requires access to command-line flags, and needs $IDENTITY to be set.
+function identity.set_global_props ()
+{
+    [[ -z "${IDENTITY}" ]] && return
+
+    local vm_name label
+
+    _warning "Global identity qubes settings"
+
+    # Qube name prefix
+    vm_name="${args['--prefix']-$IDENTITY}"
+    _info "VM prefix:    $name"
+    echo "$vm_name" > "${IDENTITY_DIR}/vm_name"
+
+    # Qube labels (colors)
+    label="${args['--label']-orange}"
+    _info "Label:        $label"
+    echo "$label" > "${IDENTITY_DIR}/vm_label"
+
+    # Default network VM
+    config_get DEFAULT_NETVM > "${IDENTITY_DIR}/net_vm"
 }
 
 # identity.get_args_name either returns the name given as parameter, or

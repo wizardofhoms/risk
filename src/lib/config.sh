@@ -30,7 +30,7 @@ WHONIX_WS_TEMPLATE=whonix-ws-16
 WHONIX_GW_TEMPLATE=whonix-gw-16
 
 ; Default TemplateVM to use for VPN VMs
-VPN_TEMPLATE=sys-vpn
+VPN_TEMPLATE=
 
 ; Default AppVMs ================================================== #
 ;

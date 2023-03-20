@@ -56,6 +56,44 @@ function proxy.vpn_clone ()
     echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
 }
 
+# proxy.fail_config_vpn exits the program if risk lacks some information
+# (which templates/clones to use) when attempting to create a VPN qube.
+function proxy.fail_config_vpn ()
+{
+    local template clone netvm
+
+    # Check qubes specified in config or flags.
+    template="$(config_get VPN_TEMPLATE)"
+    if [[ ${args['--clone']} -eq 1 ]]; then
+        [[ -n ${args['--from']} ]] && clone=${args['--from']} || clone=$(config_get VPN_VM)
+    fi
+
+    # Check those qubes exist
+    if [[ -n ${clone} ]]; then
+        ! qube.exists "${clone}" && _failure "Qube to clone ${clone} does not exist"
+    else
+        ! qube.exists "${template}" && _failure "Qube template ${template} does not exist"
+    fi
+}
+
+# proxy.skip_vpn_create returns 0 when there not enough information in the configuration
+# file or in command flags for creating a new VPN qube (no templates/clones indicated, etc).
+# Needs access to command-line flags
+function proxy.skip_vpn_create ()
+{
+    local template clone netvm
+
+    # Check qubes specified in config or flags.
+    template="$(config_get VPN_TEMPLATE)"
+    if [[ ${args['--clone']} -eq 1 ]]; then
+        [[ -n ${args['--from']} ]] && clone=${args['--from']} || clone=$(config_get VPN_VM)
+    fi
+
+    [[ -z ${template} && -z ${clone} ]] && return 0
+
+    return 1
+}
+
 # proxy.vpn_import_configs browses for one or more (as zip) VPN client configurations
 # in another VM, import them in our VPN VM, and run the setup wizard if there is more 
 # than one configuration to choose from.

@@ -8,6 +8,24 @@
 # give information and values related to VMs,
 #
 
+# qube.exists returns 0 if the qube is found, or 1 if not.
+# $1 - Qube name
+function qube.exists ()
+{
+    vm=""
+    for item in $(qvm-ls --raw-list | grep -v dom0)
+    do
+        if [ "${item}" == "${1}" ]; then
+            vm=${1}
+        fi
+    done
+    if [ ${#vm} -eq 0 ]; then
+        return 1
+    fi
+
+    return 0
+}
+
 # Returns the name of the identity to which a VM belongs.
 # $1 - Qube name
 function qube.owner ()

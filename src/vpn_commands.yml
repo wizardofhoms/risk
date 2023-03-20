@@ -46,6 +46,7 @@ commands:
         short: -n
         help: "NetVM to use for the gateway"
         arg: vm
+        validate: netvm
 
   - name: setup
     help: Manage, import network configurations and run associated setup wizards

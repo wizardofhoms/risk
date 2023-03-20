@@ -502,8 +502,8 @@ _flags_vpn=(
 # since the command normally creates a bunch of different vms: most of these
 # flags are made to slightly change these default qubes' settings.
 _flags_init_tor=(
-    '(--clone-gw-from -G --no-gw)'{-G,--no-gw}'[Do not create a Whonix TOR gateway]' 
-    '(-G --no-gw --clone-gw-from)'--clone-gw-from"[Instead of creating the TOR gateway from a template, clone an existing TOR AppVM]:VM:_known_vms"
+    '(--clone-tor-from -t --no-tor)'{-t,--no-tor}'[Do not create a Whonix TOR gateway]' 
+    '(-t --no-tor --clone-tor-from)'--clone-tor-from"[Instead of creating the TOR gateway from a template, clone an existing TOR AppVM]:VM:_known_vms"
 )
 
 _flags_init_web=(

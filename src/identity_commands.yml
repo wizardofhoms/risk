@@ -41,12 +41,12 @@ commands:
         arg: color 
         # Tor gateway options
       - &no_gw
-        long: --no-gw
-        short: -G
+        long: --no-tor
+        short: -T
         help: "Don't create a Whonix TOR gateway"
-        conflicts: [ --clone-gw-from ]
-      - &clone_gw_from
-        long: --clone-gw-from
+        conflicts: [ --clone-tor-from ]
+      - &clone_tor_from
+        long: --clone-tor-from
         help: "Instead of creating the TOR gateway from a template, clone an existing TOR AppVM"
         arg: tor_gw 
         conflicts: [ --no-gw ]
@@ -70,7 +70,7 @@ commands:
       - *prefix
       - *label
       - *no_gw
-      - *clone_gw_from
+      - *clone_tor_from
       - *clone_web_from
       - *clone_split_from
 

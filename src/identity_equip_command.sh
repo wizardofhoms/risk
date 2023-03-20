@@ -8,59 +8,39 @@ local gw_netvm          # NetVM for the tor gateway
 local web_netvm         # NetVM for the Web browser VM
 local clone             # A variable that might be overritten several times, used to assign a VM to clone.
 
-# Propagate the identity and its settings (in the script only)
-identity.set "${args['identity']}"
-
-# Identity checks and basic setup ==========================================
-
+# 1 - Identity basic setup
+identity.set "${name}"
 identity.fail_unknown "$IDENTITY"
 
-_info "Creating qubes for identity $IDENTITY"
+_in_section "risk" 8 && _info "Creating qubes for identity $IDENTITY"
 
-# Make a directory for this identity, and store the associated VM name
-_in_section "network" 8 && echo && _warning "Global identity qubes settings"
 [[ -e ${IDENTITY_DIR} ]] || mkdir -p "$IDENTITY_DIR"
+identity.set_global_props
 
-# If the user wants to use a different vm_name for the VMs
-vm_name="${args['--prefix']-$IDENTITY}"
-_info "VM prefix:    $name"
-echo "$vm_name" > "${IDENTITY_DIR}/vm_name"
-
-label="${args['--label']-orange}"
-_info "Label:        $label"
-echo "$vm_name" > "${IDENTITY_DIR}/vm_label"
-
-# Prepare the root NetVM for this identity
-config_get DEFAULT_NETVM > "${IDENTITY_DIR}/net_vm"
-
-# Network VMs ==============================================================
+# 2 - Network VMs
 _in_section "network" && echo && _warning "Creating network VMs"
 gw_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
-# 1 - Tor gateway, if not explicitly disabled
-if [[ ${args['--no-gw']} -eq 0 ]]; then
-    if [[ -n ${args['--clone-gw-from']} ]]; then
-        clone="${args['--clone-gw-from']}"
+if ! proxy.skip_tor_create; then
+    if [[ -n ${args['--clone-tor-from']} ]]; then
+        clone="${args['--clone-tor-from']}"
         proxy.tor_clone "$vm_name" "$clone" "$gw_netvm" "$label"
     else
         proxy.tor_create "$vm_name" "$gw_netvm" "$label"
     fi
-else
-    _info "Skipping TOR gateway"
 fi
 
-# Browser VMs ==============================================================
+# 3 - Browser VMs
 _in_section "web" && echo && _warning "Creating browsing VMs"
 web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
-# Browser VMs are disposable, but we make a template for this identity,
-# since we might  either modify stuff in there, and we need them at least
-# to have a different network route.
-if [[ -n ${args['--clone-web-from']} ]]; then
-    clone="${args['--clone-web-from']}"
-    web.browser_clone "$vm_name" "$clone" "$web_netvm" "$label"
-else
-    web.browser_create "$vm_name" "$web_netvm" "$label"
+if ! web.skip_browser_create; then
+    if [[ -n ${args['--clone-web-from']} ]]; then
+        clone="${args['--clone-web-from']}"
+        web.browser_clone "$vm_name" "$clone" "$web_netvm" "$label"
+    else
+        web.browser_create "$vm_name" "$web_netvm" "$label"
+    fi
 fi
 
 # Per-identity bookmarks file in vault management tomb.

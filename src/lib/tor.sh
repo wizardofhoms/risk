@@ -5,7 +5,7 @@
 # $3 - Label
 function proxy.tor_create ()
 {
-    local gw="${1}-gw"
+    local gw="${1}-tor"
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
     local gw_label="${3-yellow}"
     local gw_template="$(config_get WHONIX_GW_TEMPLATE)"
@@ -28,7 +28,7 @@ function proxy.tor_create ()
 # an existing gateway AppVM instead of creating a new one from a Template.
 function proxy.tor_clone ()
 {
-    local gw="${1}-gw"
+    local gw="${1}-tor"
     local gw_clone="$2"
     local netvm="${3-$(config_get DEFAULT_NETVM)}"
     local gw_label="${4-yellow}"
@@ -61,3 +61,42 @@ function proxy.tor_clone ()
     echo "$gw" > "${IDENTITY_DIR}/tor_gw"
     echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
+
+# proxy.fail_config_tor exits the program if risk lacks some information
+# (which templates/clones to use) when attempting to create a Tor qube.
+function proxy.fail_config_tor ()
+{
+    [[ ${args['--no-tor']} -eq 1 ]] && return
+
+    local template clone netvm
+
+    # Check qubes specified in config or flags.
+    template="$(config_get WHONIX_GW_TEMPLATE)"
+    [[ -n "${args['--clone-tor-from']}" ]] && clone="${args['--clone-tor-from']}"
+
+    # Check those qubes exist
+    if [[ -n ${clone} ]]; then
+        ! qube.exists "${clone}" && _failure "Qube to clone ${clone} does not exist"
+    else
+        ! qube.exists "${template}" && _failure "Qube template ${template} does not exist"
+    fi
+}
+
+# proxy.skip_tor_create returns 0 when there not enough information in the configuration
+# file or in command flags for creating a new TOR qube (no templates/clones indicated, etc).
+# Needs access to command-line flags
+function proxy.skip_tor_create ()
+{
+    [[ ${args['--no-tor']} -eq 1 ]] && return 0
+
+    local template clone netvm
+
+    template="$(config_get WHONIX_GW_TEMPLATE)"
+    [[ -n "${args['--clone-tor-from']}" ]] && clone="${args['--clone-tor-from']}"
+
+    [[ -z ${template} && -z ${clone} ]] && \
+        _info "Skipping TOR gateway: no TemplateVM/AppVM specified in config or flags" && return 0
+
+    return 1
+}
+

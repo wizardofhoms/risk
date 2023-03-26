@@ -163,7 +163,6 @@ function qube.enable ()
     if [[ ! $already_enabled ]]; then
         _info "Enabling VM ${name} to autostart"
         identity.config_append AUTOSTART_QUBES "${name}"
-        # echo "$name" >> "${IDENTITY_DIR}/autostart_vms"
     else
         _info "VM ${name} is already enabled"
     fi
@@ -179,7 +178,6 @@ function qube.disable ()
 
     autostart_qubes=$(sed /^"$name"\$/d <<<"${autostart_qubes}")
     identity.config_set AUTOSTART_QUBES "${autostart_qubes}"
-    # sed -i /^"$name"\$/d "${IDENTITY_DIR}/autostart_vms"
 }
 
 # qube.start [vm 1] ... [vm n]
@@ -268,7 +266,7 @@ function qube.is_running ()
 # qube.delete deletes a VM belonging to the identity, and removes its from the
 # specified file. If this file is empty after this, it is deleted here.
 # $1 - VM name.
-# $2 - The file to search under ${IDENTITY_DIR}/ for deletion.
+# $2 - The name of key to search in the vault key-value store for deletion.
 function qube.delete ()
 {
     local vm="${1}"
@@ -289,10 +287,13 @@ function qube.delete ()
         return
     fi
 
-    # Delete the VM from the file
-    sed -i "/${vm}/d" "${IDENTITY_DIR}/${file}"
-    if [[ -z "$(cat "${IDENTITY_DIR}/${file}")" ]]; then
-        rm "${IDENTITY_DIR}/${file}"
+    # Delete the VM from the corresponding key-value pair in vault.
+    updated=$(identity.config_get "${file}")
+    updated=$(sed /^"$vm"\$/d <<<"${updated}")
+    identity.config_set "${file}" "${updated}"
+
+    if [[ -z "${updated}" ]]; then
+        identity.config_unset "${file}"
     fi
 }
 

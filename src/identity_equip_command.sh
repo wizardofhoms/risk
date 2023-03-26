@@ -23,7 +23,6 @@ vm_name=$(identity.config_get QUBE_PREFIX)
 # 2 - Network VMs
 _in_section "network" && echo && _warning "Creating network VMs"
 gw_netvm="$(identity.config_get NETVM_QUBE)"
-# gw_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
 if ! proxy.skip_tor_create; then
     if [[ -n ${args['--clone-tor-from']} ]]; then
@@ -37,7 +36,6 @@ fi
 # 3 - Browser VMs
 _in_section "web" && echo && _warning "Creating browsing VMs"
 web_netvm="$(identity.config_get NETVM_QUBE)"
-# web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
 if ! web.skip_browser_create; then
     if [[ -n ${args['--clone-web-from']} ]]; then

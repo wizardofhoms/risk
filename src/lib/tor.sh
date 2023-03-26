@@ -21,9 +21,7 @@ function proxy.tor_create ()
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
     identity.config_set TOR_QUBE "${gw}"
-    # echo "$gw" > "${IDENTITY_DIR}/tor_gw"
     identity.config_set NETVM_QUBE "${gw}"
-    # echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
 
 # proxy.tor_clone is similar to proxy.tor_create, except that we clone 
@@ -61,9 +59,7 @@ function proxy.tor_clone ()
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
     identity.config_set TOR_QUBE "${gw}"
-    # echo "$gw" > "${IDENTITY_DIR}/tor_gw"
     identity.config_set NETVM_QUBE "${gw}"
-    # echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
 
 # proxy.fail_config_tor exits the program if risk lacks some information

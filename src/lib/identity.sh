@@ -450,6 +450,7 @@ function identity.delete_qubes ()
     browser_vm="$(identity.browser_qube)"
     if [[ -n "${browser_vm}" ]]; then
         qube.delete "${browser_vm}" "browser_vm"
+        identity.config_unset BROWSER_QUBE
     fi
 
     # Proxy VMs
@@ -462,6 +463,7 @@ function identity.delete_qubes ()
     tor_gateway="$(identity.tor_gateway)"
     if [[ -n "${tor_gateway}" ]]; then
         qube.delete "${tor_gateway}" "tor_gw"
+        identity.config_unset TOR_QUBE
     fi
 
     # Other VMs that are tagged with the identity.

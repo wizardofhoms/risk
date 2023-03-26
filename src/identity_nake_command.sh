@@ -13,4 +13,10 @@ web.browser_unset_split_dispvm
 echo && _warning "Deleting identity VMs"
 identity.delete_qubes
 
+echo && _warning "Deleting identity settings"
+identity.config_unset QUBE_LABEL
+identity.config_unset QUBE_PREFIX
+identity.config_unset NETVM_QUBE
+
+
 echo && _success "Successfully deleted VMs of identity $IDENTITY"

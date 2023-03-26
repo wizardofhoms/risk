@@ -7,7 +7,7 @@
 function web.browser_create ()
 {
     local web="${1}-web"
-    local netvm="${2-$(config_get DEFAULT_NETVM)}"
+    local netvm="${2-$(identity.config_get NETVM_QUBE)}"
     local label="${3-orange}"
     local template="$(config_get WHONIX_WS_TEMPLATE)"
     local template_disp="$(qvm-prefs "${template}" template_for_dispvms 2>/dev/null)"
@@ -39,7 +39,6 @@ function web.browser_create ()
 
     _run qvm-tags "$web" set "$IDENTITY"
     identity.config_set BROWSER_QUBE "${web}"
-    # echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
 # Clone a web browsing VM from an existing one
@@ -47,7 +46,7 @@ function web.browser_clone ()
 {
     local web="${1}-web"
     local web_clone="$2"
-    local netvm="${3-$(config_get DEFAULT_NETVM)}"
+    local netvm="${3-$(identity.config_get NETVM_QUBE)}"
     local label="${4-orange}"
 
     _info "New browser VM"
@@ -71,7 +70,6 @@ function web.browser_clone ()
 
     _run qvm-tags "$web" set "$IDENTITY"
     identity.config_set BROWSER_QUBE "${web}"
-    # echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
 # web.fail_config_browser exits the program if risk lacks some information

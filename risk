@@ -2137,6 +2137,11 @@ function device.backup_mounted_on ()
 
 # src/lib/identity.sh
 
+# ========================================================================================
+# Identity setup / script values
+
+# ========================================================================================
+
 # identity.set is used to propagate our various IDENTITY related variables
 # so that all functions that will be subsequently called can access them.
 # This function also takes care of checking if there is already an active
@@ -2230,53 +2235,6 @@ function identity.active_or_specified ()
     print "$active_identity"
 }
 
-# identity.fail_none_active exits the program if there is no identity active or specified with args.
-function identity.fail_none_active ()
-{
-    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
-    if [[ -n $active_identity ]]; then
-        # It might be the same
-        if [[ $active_identity == "$1" ]]; then
-            _info "Identity $1 is already active"
-            exit 0
-        fi
-
-        _failure "Identity $active_identity is active. Close/slam/fold it and rerun this command"
-    fi
-}
-
-# identity.fail_other_active exits the program if another identity is already active (opened in vault).
-function identity.fail_other_active ()
-{
-    identity.active && _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
-}
-
-# identity.fail_unknown exits the program if an identity does not exist in the vault VM.
-
-# $1 - Identity name
-function identity.fail_unknown ()
-{
-    # Get the resulting encrypted name
-    local encrypted_identity
-    encrypted_identity="$(crypt.filename "${IDENTITY}")"
-
-    # And check the directory exists
-    _run_exec "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
-    _catch "Invalid identity: $1 does not exists in ${VAULT_VM}"
-}
-
-# identity.fail_exists exits the program if the given identity name already exists in the vault.
-function identity.fail_exists ()
-{
-    # Get the resulting encrypted name
-    local encrypted_identity
-    encrypted_identity="$(crypt.filename "${IDENTITY}")"
-
-    # And check the directory exists
-    qvm-run --pass-io "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
-    [[ $? -eq 0 ]] && _failure "Identity ${IDENTITY} already exists in ${VAULT_VM}"
-}
-
 # identity.get_args_name either returns the name given as parameter, or
 # generates a random (burner) one and prints it to the screen.
 function identity.get_args_name ()
@@ -2346,6 +2304,57 @@ function identity.delete_home_directory ()
 
     _info "Deleting identiy ${IDENTITY} home directory"
     _run -rf "${IDENTITY_DIR}"
+}
+
+# ========================================================================================
+# Identity failsafes / checks
+# ========================================================================================
+
+# identity.fail_none_active exits the program if there is no identity active or specified with args.
+function identity.fail_none_active ()
+{
+    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
+    if [[ -n $active_identity ]]; then
+        # It might be the same
+        if [[ $active_identity == "$1" ]]; then
+            _info "Identity $1 is already active"
+            exit 0
+        fi
+
+        _failure "Identity $active_identity is active. Close/slam/fold it and rerun this command"
+    fi
+}
+
+# identity.fail_other_active exits the program if another identity is already active (opened in vault).
+function identity.fail_other_active ()
+{
+    identity.active && _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
+}
+
+# identity.fail_unknown exits the program if an identity does not exist in the vault VM.
+
+# $1 - Identity name
+function identity.fail_unknown ()
+{
+    # Get the resulting encrypted name
+    local encrypted_identity
+    encrypted_identity="$(crypt.filename "${IDENTITY}")"
+
+    # And check the directory exists
+    _run_exec "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
+    _catch "Invalid identity: $1 does not exists in ${VAULT_VM}"
+}
+
+# identity.fail_exists exits the program if the given identity name already exists in the vault.
+function identity.fail_exists ()
+{
+    # Get the resulting encrypted name
+    local encrypted_identity
+    encrypted_identity="$(crypt.filename "${IDENTITY}")"
+
+    # And check the directory exists
+    qvm-run --pass-io "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
+    [[ $? -eq 0 ]] && _failure "Identity ${IDENTITY} already exists in ${VAULT_VM}"
 }
 
 # ========================================================================================
@@ -2447,28 +2456,24 @@ function identity.config_clear ()
 function identity.netvm ()
 {
     identity.config_get NETVM_QUBE 2>/dev/null
-    # cat "${IDENTITY_DIR}/net_vm" 2>/dev/null
 }
 
 # identity.vm_label returns the default VM label/color for an identity
 function identity.vm_label ()
 {
     identity.config_get QUBE_LABEL 2>/dev/null
-    # cat "${IDENTITY_DIR}/vm_label" 2>/dev/null
 }
 
 # identity.tor_gateway returns the TOR gateway for the identity
 function identity.tor_gateway ()
 {
     identity.config_get TOR_QUBE 2>/dev/null
-    # cat "${IDENTITY_DIR}/tor_gw" 2>/dev/null
 }
 
 # identity.browser_qube returns the browser VM for the identity
 function identity.browser_qube ()
 {
     identity.config_get BROWSER_QUBE 2>/dev/null
-    # cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null
 }
 
 # identity.proxy_qubes returns an array of proxy VMs
@@ -2478,7 +2483,6 @@ function identity.proxy_qubes ()
     local proxy_qubes
     proxy_qubes=$(identity.config_get PROXY_QUBES)
     [[ -n "${proxy_qubes}" ]] || return
-    # [[ -e "${IDENTITY_DIR}/proxy_vms" ]] || return
 
     read -d '' -rA proxies <"${proxy_qubes}"
     echo "${proxies[@]}"
@@ -2493,7 +2497,6 @@ function identity.client_qubes ()
     local client_qubes
     client_qubes=$(identity.config_get CLIENT_QUBES)
     [[ -n "${client_qubes}" ]] || return
-    # [[ -f "${IDENTITY_DIR}/client_vms" ]] || return
 
     read -d '' -rA clients <"${client_qubes}"
     echo "${clients[@]}"
@@ -2509,7 +2512,6 @@ function identity.enabled_qubes ()
     local autostart_qubes
     autostart_qubes=$(identity.config_get AUTOSTART_QUBES)
     [[ -n "${autostart_qubes}" ]] || return
-    # [[ -f "${IDENTITY_DIR}/autostart_vms" ]] || return
 
     read -d '' -rA clients <"${autostart_qubes}"
     echo "${clients[@]}"
@@ -2588,6 +2590,7 @@ function identity.delete_qubes ()
     browser_vm="$(identity.browser_qube)"
     if [[ -n "${browser_vm}" ]]; then
         qube.delete "${browser_vm}" "browser_vm"
+        identity.config_unset BROWSER_QUBE
     fi
 
     # Proxy VMs
@@ -2600,6 +2603,7 @@ function identity.delete_qubes ()
     tor_gateway="$(identity.tor_gateway)"
     if [[ -n "${tor_gateway}" ]]; then
         qube.delete "${tor_gateway}" "tor_gw"
+        identity.config_unset TOR_QUBE
     fi
 
     # Other VMs that are tagged with the identity.
@@ -3054,9 +3058,7 @@ function proxy.tor_create ()
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
     identity.config_set TOR_QUBE "${gw}"
-    # echo "$gw" > "${IDENTITY_DIR}/tor_gw"
     identity.config_set NETVM_QUBE "${gw}"
-    # echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
 
 # proxy.tor_clone is similar to proxy.tor_create, except that we clone
@@ -3095,9 +3097,7 @@ function proxy.tor_clone ()
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
     identity.config_set TOR_QUBE "${gw}"
-    # echo "$gw" > "${IDENTITY_DIR}/tor_gw"
     identity.config_set NETVM_QUBE "${gw}"
-    # echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
 
 # proxy.fail_config_tor exits the program if risk lacks some information
@@ -3449,7 +3449,6 @@ function qube.enable ()
     if [[ ! $already_enabled ]]; then
         _info "Enabling VM ${name} to autostart"
         identity.config_append AUTOSTART_QUBES "${name}"
-        # echo "$name" >> "${IDENTITY_DIR}/autostart_vms"
     else
         _info "VM ${name} is already enabled"
     fi
@@ -3465,7 +3464,6 @@ function qube.disable ()
 
     autostart_qubes=$(sed /^"$name"\$/d <<<"${autostart_qubes}")
     identity.config_set AUTOSTART_QUBES "${autostart_qubes}"
-    # sed -i /^"$name"\$/d "${IDENTITY_DIR}/autostart_vms"
 }
 
 # qube.start [vm 1] ... [vm n]
@@ -3554,7 +3552,7 @@ function qube.is_running ()
 # qube.delete deletes a VM belonging to the identity, and removes its from the
 # specified file. If this file is empty after this, it is deleted here.
 # $1 - VM name.
-# $2 - The file to search under ${IDENTITY_DIR}/ for deletion.
+# $2 - The name of key to search in the vault key-value store for deletion.
 function qube.delete ()
 {
     local vm="${1}"
@@ -3575,10 +3573,13 @@ function qube.delete ()
         return
     fi
 
-    # Delete the VM from the file
-    sed -i "/${vm}/d" "${IDENTITY_DIR}/${file}"
-    if [[ -z "$(cat "${IDENTITY_DIR}/${file}")" ]]; then
-        rm "${IDENTITY_DIR}/${file}"
+    # Delete the VM from the corresponding key-value pair in vault.
+    updated=$(identity.config_get "${file}")
+    updated=$(sed /^"$vm"\$/d <<<"${updated}")
+    identity.config_set "${file}" "${updated}"
+
+    if [[ -z "${updated}" ]]; then
+        identity.config_unset "${file}"
     fi
 }
 
@@ -3834,7 +3835,7 @@ function proxy.fail_not_identity_proxy ()
 function web.browser_create ()
 {
     local web="${1}-web"
-    local netvm="${2-$(config_get DEFAULT_NETVM)}"
+    local netvm="${2-$(identity.config_get NETVM_QUBE)}"
     local label="${3-orange}"
     local template="$(config_get WHONIX_WS_TEMPLATE)"
     local template_disp="$(qvm-prefs "${template}" template_for_dispvms 2>/dev/null)"
@@ -3866,7 +3867,6 @@ function web.browser_create ()
 
     _run qvm-tags "$web" set "$IDENTITY"
     identity.config_set BROWSER_QUBE "${web}"
-    # echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
 # Clone a web browsing VM from an existing one
@@ -3874,7 +3874,7 @@ function web.browser_clone ()
 {
     local web="${1}-web"
     local web_clone="$2"
-    local netvm="${3-$(config_get DEFAULT_NETVM)}"
+    local netvm="${3-$(identity.config_get NETVM_QUBE)}"
     local label="${4-orange}"
 
     _info "New browser VM"
@@ -3898,7 +3898,6 @@ function web.browser_clone ()
 
     _run qvm-tags "$web" set "$IDENTITY"
     identity.config_set BROWSER_QUBE "${web}"
-    # echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
 # web.fail_config_browser exits the program if risk lacks some information
@@ -4419,7 +4418,6 @@ risk_identity_equip_command() {
   # 2 - Network VMs
   _in_section "network" && echo && _warning "Creating network VMs"
   gw_netvm="$(identity.config_get NETVM_QUBE)"
-  # gw_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
   if ! proxy.skip_tor_create; then
       if [[ -n ${args['--clone-tor-from']} ]]; then
@@ -4433,7 +4431,6 @@ risk_identity_equip_command() {
   # 3 - Browser VMs
   _in_section "web" && echo && _warning "Creating browsing VMs"
   web_netvm="$(identity.config_get NETVM_QUBE)"
-  # web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
   if ! web.skip_browser_create; then
       if [[ -n ${args['--clone-web-from']} ]]; then
@@ -4508,6 +4505,11 @@ risk_identity_nake_command() {
 
   echo && _warning "Deleting identity VMs"
   identity.delete_qubes
+
+  echo && _warning "Deleting identity settings"
+  identity.config_unset QUBE_LABEL
+  identity.config_unset QUBE_PREFIX
+  identity.config_unset NETVM_QUBE
 
   echo && _success "Successfully deleted VMs of identity $IDENTITY"
 

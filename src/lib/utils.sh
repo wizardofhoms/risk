@@ -50,3 +50,9 @@ prompt_question ()
     read -r ans
     echo "${ans}"
 }
+
+# print_key_value formats a key-value pair with coloring and prints it.
+print_key_value ()
+{
+    echo
+}

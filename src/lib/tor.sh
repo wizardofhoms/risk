@@ -6,7 +6,7 @@
 function proxy.tor_create ()
 {
     local gw="${1}-tor"
-    local netvm="${2-$(config_get DEFAULT_NETVM)}"
+    local netvm="${2-$(identity.config_get NETVM_QUBE)}"
     local gw_label="${3-yellow}"
     local gw_template="$(config_get WHONIX_GW_TEMPLATE)"
 
@@ -20,8 +20,10 @@ function proxy.tor_create ()
 
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
-    echo "$gw" > "${IDENTITY_DIR}/tor_gw"
-    echo "$gw" > "${IDENTITY_DIR}/net_vm"
+    identity.config_set TOR_QUBE "${gw}"
+    # echo "$gw" > "${IDENTITY_DIR}/tor_gw"
+    identity.config_set NETVM_QUBE "${gw}"
+    # echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
 
 # proxy.tor_clone is similar to proxy.tor_create, except that we clone 
@@ -30,7 +32,7 @@ function proxy.tor_clone ()
 {
     local gw="${1}-tor"
     local gw_clone="$2"
-    local netvm="${3-$(config_get DEFAULT_NETVM)}"
+    local netvm="${3-$(identity.config_get NETVM_QUBE)}"
     local gw_label="${4-yellow}"
 
     _info "New TOR gateway qube"
@@ -58,8 +60,10 @@ function proxy.tor_clone ()
 
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
-    echo "$gw" > "${IDENTITY_DIR}/tor_gw"
-    echo "$gw" > "${IDENTITY_DIR}/net_vm"
+    identity.config_set TOR_QUBE "${gw}"
+    # echo "$gw" > "${IDENTITY_DIR}/tor_gw"
+    identity.config_set NETVM_QUBE "${gw}"
+    # echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
 
 # proxy.fail_config_tor exits the program if risk lacks some information

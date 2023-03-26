@@ -1,4 +1,8 @@
 
+# ========================================================================================
+# Identity setup / script values 
+# ========================================================================================
+
 # identity.set is used to propagate our various IDENTITY related variables
 # so that all functions that will be subsequently called can access them.
 # This function also takes care of checking if there is already an active
@@ -93,77 +97,6 @@ function identity.active_or_specified ()
     print "$active_identity"
 }
 
-# identity.fail_none_active exits the program if there is no identity active or specified with args.
-function identity.fail_none_active ()
-{
-    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
-    if [[ -n $active_identity ]]; then
-        # It might be the same
-        if [[ $active_identity == "$1" ]]; then
-            _info "Identity $1 is already active"
-            exit 0
-        fi
-
-        _failure "Identity $active_identity is active. Close/slam/fold it and rerun this command"
-    fi
-}
-
-# identity.fail_other_active exits the program if another identity is already active (opened in vault).
-function identity.fail_other_active ()
-{
-    identity.active && _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
-}
-
-# identity.fail_unknown exits the program if an identity does not exist in the vault VM. 
-# $1 - Identity name
-function identity.fail_unknown ()
-{
-    # Get the resulting encrypted name
-    local encrypted_identity
-    encrypted_identity="$(crypt.filename "${IDENTITY}")"
-
-    # And check the directory exists
-    _run_exec "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
-    _catch "Invalid identity: $1 does not exists in ${VAULT_VM}"
-}
-
-# identity.fail_exists exits the program if the given identity name already exists in the vault.
-function identity.fail_exists ()
-{
-    # Get the resulting encrypted name
-    local encrypted_identity
-    encrypted_identity="$(crypt.filename "${IDENTITY}")"
-
-    # And check the directory exists
-    qvm-run --pass-io "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
-    [[ $? -eq 0 ]] && _failure "Identity ${IDENTITY} already exists in ${VAULT_VM}"
-}
-
-# identity.set_global_props analyzes the command-line flags and uses some of them
-# to configure stuff about the identity's qubes, such as their colors/prefixes/netvms, etc.
-# Requires access to command-line flags, and needs $IDENTITY to be set.
-function identity.set_global_props ()
-{
-    [[ -z "${IDENTITY}" ]] && return
-
-    local vm_name label
-
-    _warning "Global identity qubes settings"
-
-    # Qube name prefix
-    vm_name="${args['--prefix']-$IDENTITY}"
-    _info "VM prefix:    $name"
-    echo "$vm_name" > "${IDENTITY_DIR}/vm_name"
-
-    # Qube labels (colors)
-    label="${args['--label']-orange}"
-    _info "Label:        $label"
-    echo "$label" > "${IDENTITY_DIR}/vm_label"
-
-    # Default network VM
-    config_get DEFAULT_NETVM > "${IDENTITY_DIR}/net_vm"
-}
-
 # identity.get_args_name either returns the name given as parameter, or
 # generates a random (burner) one and prints it to the screen.
 function identity.get_args_name ()
@@ -237,39 +170,184 @@ function identity.delete_home_directory ()
 
 
 # ========================================================================================
+# Identity failsafes / checks
+# ========================================================================================
+
+# identity.fail_none_active exits the program if there is no identity active or specified with args.
+function identity.fail_none_active ()
+{
+    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
+    if [[ -n $active_identity ]]; then
+        # It might be the same
+        if [[ $active_identity == "$1" ]]; then
+            _info "Identity $1 is already active"
+            exit 0
+        fi
+
+        _failure "Identity $active_identity is active. Close/slam/fold it and rerun this command"
+    fi
+}
+
+# identity.fail_other_active exits the program if another identity is already active (opened in vault).
+function identity.fail_other_active ()
+{
+    identity.active && _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
+}
+
+# identity.fail_unknown exits the program if an identity does not exist in the vault VM. 
+# $1 - Identity name
+function identity.fail_unknown ()
+{
+    # Get the resulting encrypted name
+    local encrypted_identity
+    encrypted_identity="$(crypt.filename "${IDENTITY}")"
+
+    # And check the directory exists
+    _run_exec "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
+    _catch "Invalid identity: $1 does not exists in ${VAULT_VM}"
+}
+
+# identity.fail_exists exits the program if the given identity name already exists in the vault.
+function identity.fail_exists ()
+{
+    # Get the resulting encrypted name
+    local encrypted_identity
+    encrypted_identity="$(crypt.filename "${IDENTITY}")"
+
+    # And check the directory exists
+    qvm-run --pass-io "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
+    [[ $? -eq 0 ]] && _failure "Identity ${IDENTITY} already exists in ${VAULT_VM}"
+}
+
+
+# ========================================================================================
+# Identity configuration values 
+# ========================================================================================
+
+# identity.set_global_props analyzes the command-line flags and uses some of them
+# to configure stuff about the identity's qubes, such as their colors/prefixes/netvms, etc.
+# Requires access to command-line flags, and needs $IDENTITY to be set.
+function identity.set_global_props ()
+{
+    [[ -z "${IDENTITY}" ]] && return
+
+    local prefix label
+
+    _warning "Global identity qubes settings"
+
+    # Qube name prefix
+    prefix="${args['--prefix']-$IDENTITY}"
+    _info "VM prefix:    $prefix"
+    identity.config_set QUBE_PREFIX "${prefix}"
+
+    # Qube labels (colors)
+    label="${args['--label']-orange}"
+    _info "Label:        $label"
+    identity.config_set QUBE_LABEL "${label}"
+
+    # Default network VM
+    identity.config_set NETVM_QUBE "$(config_get DEFAULT_NETVM)"
+}
+
+# identity.config_set uses 'risks kv set' in vault to store a key-value pair.
+function identity.config_set ()
+{
+    identity.is_active || return
+
+    local key="${1}"
+    shift
+    local value="$*"
+
+    [[ -z "${key}" || -z "${value}" ]] && return
+
+    _run_qube "$VAULT_VM" risks kv set "${key}" "${value}"
+}
+
+# identity.config_append uses 'risks kv set' and 'risks kv get' to append a value
+# to an existing key-value pair (as an array), or creates it if does not exist yet.
+function identity.config_append ()
+{
+    identity.is_active || return
+
+    local key="${1}"
+    shift
+    local value="$*"
+
+    [[ -z "${key}" || -z "${value}" ]] && return
+
+    local existing_value
+    existing_value="$(identity.config_get "${key}")"
+    _run_qube "$VAULT_VM" risks kv set "${key}" "${existing_value}" "${value}" &>/dev/null
+}
+
+# identity.config_get uses 'risks kv get' in vault to retrieve a key-value pair.
+function identity.config_get ()
+{
+    identity.is_active || return
+
+    local key="${1}"
+    [[ -z "${key}" ]] && return
+
+    _run_exec "$VAULT_VM" risks kv get "${key}"
+}
+
+# identity.config_unset uses 'risks kv unset' in vault to delete a key-value pair.
+function identity.config_unset ()
+{
+    identity.is_active || return
+
+    local key="${1}"
+    [[ -z "${key}" ]] && return
+
+    _run_qube "$VAULT_VM" risks kv unset "${key}"
+}
+
+# identity.config_clear uses 'risks kv clean' in vault to clear all key-value pairs.
+function identity.config_clear ()
+{
+    identity.is_active || return
+
+    _run_qube "$VAULT_VM" risks kv clean
+}
+
+
+# ========================================================================================
 # Virtual machines / equipment functions
 # ========================================================================================
 
 # identity.netvm returns the default network VM for the active identity
 function identity.netvm ()
 {
-    cat "${IDENTITY_DIR}/net_vm" 2>/dev/null
+    identity.config_get NETVM_QUBE 2>/dev/null
 }
 
 # identity.vm_label returns the default VM label/color for an identity
 function identity.vm_label ()
 {
-    cat "${IDENTITY_DIR}/vm_label" 2>/dev/null
+    identity.config_get QUBE_LABEL 2>/dev/null
 }
 
 # identity.tor_gateway returns the TOR gateway for the identity
 function identity.tor_gateway ()
 {
-    cat "${IDENTITY_DIR}/tor_gw" 2>/dev/null
+    identity.config_get TOR_QUBE 2>/dev/null
 }
 
 # identity.browser_qube returns the browser VM for the identity
 function identity.browser_qube ()
 {
-    cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null
+    identity.config_get BROWSER_QUBE 2>/dev/null
 }
 
 # identity.proxy_qubes returns an array of proxy VMs
 # (VPNs and TOR gateways for the current identity)
 function identity.proxy_qubes ()
 {
-    [[ -e "${IDENTITY_DIR}/proxy_vms" ]] || return
-    read -d '' -r -A proxies <"${IDENTITY_DIR}/proxy_vms"
+    local proxy_qubes
+    proxy_qubes=$(identity.config_get PROXY_QUBES)
+    [[ -n "${proxy_qubes}" ]] || return
+
+    read -d '' -rA proxies <"${proxy_qubes}"
     echo "${proxies[@]}"
 }
 
@@ -278,8 +356,11 @@ function identity.proxy_qubes ()
 # these gateways.
 function identity.client_qubes ()
 {
-    [[ -f "${IDENTITY_DIR}/client_vms" ]] || return
-    read -d '' -r -A clients <"${IDENTITY_DIR}/client_vms"
+    local client_qubes
+    client_qubes=$(identity.config_get CLIENT_QUBES)
+    [[ -n "${client_qubes}" ]] || return
+    
+    read -d '' -rA clients <"${client_qubes}"
     echo "${clients[@]}"
 }
 
@@ -288,15 +369,18 @@ function identity.client_qubes ()
 # accessing network from one or more of these gateways.
 function identity.enabled_qubes ()
 {
-    [[ -f "${IDENTITY_DIR}/autostart_vms" ]] || return
-    read -d '' -r -A clients <"${IDENTITY_DIR}/autostart_vms"
+    local autostart_qubes
+    autostart_qubes=$(identity.config_get AUTOSTART_QUBES)
+    [[ -n "${autostart_qubes}" ]] || return
+
+    read -d '' -rA clients <"${autostart_qubes}"
     echo "${clients[@]}"
 }
 
 # identity.shutdown_qubes powers off all running VMs belonging to the identity.
 function identity.shutdown_qubes ()
 {
-    local clients proxies tor_gateway browser_vm net_vm other_vms
+    local clients proxies tor_gateway browser_vm other_vms
 
     # Client VMs
     read -rA clients < <(identity.client_qubes)
@@ -354,7 +438,7 @@ function identity.shutdown_qubes ()
 # identity.delete_qubes deletes all VMs belonging to an identity.
 function identity.delete_qubes ()
 {
-    local clients proxies tor_gateway browser_vm net_vm other_vms
+    local clients proxies tor_gateway browser_vm other_vms
 
     # Client VMs
     read -rA clients < <(identity.client_qubes)
@@ -379,8 +463,6 @@ function identity.delete_qubes ()
     if [[ -n "${tor_gateway}" ]]; then
         qube.delete "${tor_gateway}" "tor_gw"
     fi
-
-    # Net VM
 
     # Other VMs that are tagged with the identity.
     read -rA other_vms < <(qubes.list_all)

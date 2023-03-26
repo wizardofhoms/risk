@@ -89,7 +89,8 @@ function proxy.skip_vpn_create ()
         [[ -n ${args['--from']} ]] && clone=${args['--from']} || clone=$(config_get VPN_VM)
     fi
 
-    [[ -z ${template} && -z ${clone} ]] && return 0
+    [[ -z ${template} && -z ${clone} ]] && \
+        _info "Skipping VPN qube: no TemplateVM/AppVM specified in config or flags" && return 0
 
     return 1
 }

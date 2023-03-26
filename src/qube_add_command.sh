@@ -62,7 +62,7 @@ if [[ "$(qvm-prefs "$vm" provides_network)" == 'True' ]]; then
 
     # If the user specified to use it as the default netvm
     if [[ ${args['--default-netvm']} -eq 1 ]]; then
-        echo "$vm" > "${IDENTITY_DIR}/net_vm"
+        identity.config_set NETVM_QUBE "${vm}"
         _info "Setting '$vm' as default NetVM for all client machines"
     fi
 else

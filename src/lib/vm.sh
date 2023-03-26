@@ -162,7 +162,8 @@ function qube.enable ()
 
     if [[ ! $already_enabled ]]; then
         _info "Enabling VM ${name} to autostart"
-        echo "$name" >> "${IDENTITY_DIR}/autostart_vms"
+        identity.config_append AUTOSTART_QUBES "${name}"
+        # echo "$name" >> "${IDENTITY_DIR}/autostart_vms"
     else
         _info "VM ${name} is already enabled"
     fi
@@ -173,7 +174,12 @@ function qube.disable ()
 {
     local name="$1"
     _info "Disabling VM $name"
-    sed -i /^"$name"\$/d "${IDENTITY_DIR}/autostart_vms"
+    local autostart_qubes
+    autostart_qubes=$(identity.config_get AUTOSTART_QUBES)
+
+    autostart_qubes=$(sed /^"$name"\$/d <<<"${autostart_qubes}")
+    identity.config_set AUTOSTART_QUBES "${autostart_qubes}"
+    # sed -i /^"$name"\$/d "${IDENTITY_DIR}/autostart_vms"
 }
 
 # qube.start [vm 1] ... [vm n]

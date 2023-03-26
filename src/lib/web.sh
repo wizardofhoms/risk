@@ -38,7 +38,8 @@ function web.browser_create ()
     fi
 
     _run qvm-tags "$web" set "$IDENTITY"
-    echo "${web}" > "${IDENTITY_DIR}/browser_vm"
+    identity.config_set BROWSER_QUBE "${web}"
+    # echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
 # Clone a web browsing VM from an existing one
@@ -69,7 +70,8 @@ function web.browser_clone ()
     fi
 
     _run qvm-tags "$web" set "$IDENTITY"
-    echo "${web}" > "${IDENTITY_DIR}/browser_vm"
+    identity.config_set BROWSER_QUBE "${web}"
+    # echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
 # web.fail_config_browser exits the program if risk lacks some information
@@ -116,7 +118,8 @@ function web.split_backend_create ()
     qvm-create --property netvm=None --label "$web_label" --template "$split_template"
 
     qvm-tags "$web" set "$IDENTITY"
-    echo "${web}" > "${IDENTITY_DIR}/browser_vm"
+    identity.config_set BROWSER_QUBE "${web}"
+    # echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
 # Clone an existing split-browser VM, and change its dispvms
@@ -150,7 +153,8 @@ function web.browser_set_split_dispvm ()
     local browser_vm split_backend filename copy_command
 
     split_backend="$(config_get SPLIT_BROWSER)"
-    browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
+    browser_vm=$(identity.config_get BROWSER_QUBE)
+    # browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
 
     filename="$(crypt.filename "bookmarks.tsv")"
     local bookmarks_file="/home/user/.tomb/mgmt/${filename}"
@@ -175,7 +179,8 @@ function web.browser_unset_split_dispvm ()
 {
     local browser_vm split_backend filename
 
-    browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
+    browser_vm=$(identity.config_get BROWSER_QUBE)
+    # browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
     split_backend="$(config_get SPLIT_BROWSER)"
 
     filename="$(crypt.filename "bookmarks.tsv")"
@@ -308,7 +313,7 @@ function web.bookmark_pop ()
 }
 
 # web.bookmark_prompt opens a zenity prompt in the focused qube
-# for the user to enter a URL and an optional page itle.
+# for the user to enter a URL and an optional page title.
 function web.bookmark_prompt ()
 {
     local zenity_prompt result active_vm

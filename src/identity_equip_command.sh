@@ -14,12 +14,16 @@ identity.fail_unknown "$IDENTITY"
 
 _in_section "risk" 8 && _info "Creating qubes for identity $IDENTITY"
 
-[[ -e ${IDENTITY_DIR} ]] || mkdir -p "$IDENTITY_DIR"
+# [[ -e ${IDENTITY_DIR} ]] || mkdir -p "$IDENTITY_DIR"
+
 identity.set_global_props
+label=$(identity.config_get QUBE_LABEL)
+vm_name=$(identity.config_get QUBE_PREFIX)
 
 # 2 - Network VMs
 _in_section "network" && echo && _warning "Creating network VMs"
-gw_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
+gw_netvm="$(identity.config_get NETVM_QUBE)"
+# gw_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
 if ! proxy.skip_tor_create; then
     if [[ -n ${args['--clone-tor-from']} ]]; then
@@ -32,7 +36,8 @@ fi
 
 # 3 - Browser VMs
 _in_section "web" && echo && _warning "Creating browsing VMs"
-web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
+web_netvm="$(identity.config_get NETVM_QUBE)"
+# web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
 if ! web.skip_browser_create; then
     if [[ -n ${args['--clone-web-from']} ]]; then

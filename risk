@@ -2277,31 +2277,6 @@ function identity.fail_exists ()
     [[ $? -eq 0 ]] && _failure "Identity ${IDENTITY} already exists in ${VAULT_VM}"
 }
 
-# identity.set_global_props analyzes the command-line flags and uses some of them
-# to configure stuff about the identity's qubes, such as their colors/prefixes/netvms, etc.
-# Requires access to command-line flags, and needs $IDENTITY to be set.
-function identity.set_global_props ()
-{
-    [[ -z "${IDENTITY}" ]] && return
-
-    local vm_name label
-
-    _warning "Global identity qubes settings"
-
-    # Qube name prefix
-    vm_name="${args['--prefix']-$IDENTITY}"
-    _info "VM prefix:    $name"
-    echo "$vm_name" > "${IDENTITY_DIR}/vm_name"
-
-    # Qube labels (colors)
-    label="${args['--label']-orange}"
-    _info "Label:        $label"
-    echo "$label" > "${IDENTITY_DIR}/vm_label"
-
-    # Default network VM
-    config_get DEFAULT_NETVM > "${IDENTITY_DIR}/net_vm"
-}
-
 # identity.get_args_name either returns the name given as parameter, or
 # generates a random (burner) one and prints it to the screen.
 function identity.get_args_name ()
@@ -2374,39 +2349,138 @@ function identity.delete_home_directory ()
 }
 
 # ========================================================================================
+# Identity configuration values
+
+# ========================================================================================
+
+# identity.set_global_props analyzes the command-line flags and uses some of them
+# to configure stuff about the identity's qubes, such as their colors/prefixes/netvms, etc.
+# Requires access to command-line flags, and needs $IDENTITY to be set.
+function identity.set_global_props ()
+{
+    [[ -z "${IDENTITY}" ]] && return
+
+    local prefix label
+
+    _warning "Global identity qubes settings"
+
+    # Qube name prefix
+    prefix="${args['--prefix']-$IDENTITY}"
+    _info "VM prefix:    $prefix"
+    identity.config_set QUBE_PREFIX "${prefix}"
+
+    # Qube labels (colors)
+    label="${args['--label']-orange}"
+    _info "Label:        $label"
+    identity.config_set QUBE_LABEL "${label}"
+
+    # Default network VM
+    identity.config_set NETVM_QUBE "$(config_get DEFAULT_NETVM)"
+}
+
+# identity.config_set uses 'risks kv set' in vault to store a key-value pair.
+function identity.config_set ()
+{
+    identity.is_active || return
+
+    local key="${1}"
+    shift
+    local value="$*"
+
+    [[ -z "${key}" || -z "${value}" ]] && return
+
+    _run_qube "$VAULT_VM" risks kv set "${key}" "${value}"
+}
+
+# identity.config_append uses 'risks kv set' and 'risks kv get' to append a value
+# to an existing key-value pair (as an array), or creates it if does not exist yet.
+function identity.config_append ()
+{
+    identity.is_active || return
+
+    local key="${1}"
+    shift
+    local value="$*"
+
+    [[ -z "${key}" || -z "${value}" ]] && return
+
+    local existing_value
+    existing_value="$(identity.config_get "${key}")"
+    _run_qube "$VAULT_VM" risks kv set "${key}" "${existing_value}" "${value}" &>/dev/null
+}
+
+# identity.config_get uses 'risks kv get' in vault to retrieve a key-value pair.
+function identity.config_get ()
+{
+    identity.is_active || return
+
+    local key="${1}"
+    [[ -z "${key}" ]] && return
+
+    _run_exec "$VAULT_VM" risks kv get "${key}"
+}
+
+# identity.config_unset uses 'risks kv unset' in vault to delete a key-value pair.
+function identity.config_unset ()
+{
+    identity.is_active || return
+
+    local key="${1}"
+    [[ -z "${key}" ]] && return
+
+    _run_qube "$VAULT_VM" risks kv unset "${key}"
+}
+
+# identity.config_clear uses 'risks kv clean' in vault to clear all key-value pairs.
+function identity.config_clear ()
+{
+    identity.is_active || return
+
+    _run_qube "$VAULT_VM" risks kv clean
+}
+
+# ========================================================================================
 # Virtual machines / equipment functions
 # ========================================================================================
 
 # identity.netvm returns the default network VM for the active identity
 function identity.netvm ()
 {
-    cat "${IDENTITY_DIR}/net_vm" 2>/dev/null
+    identity.config_get NETVM_QUBE 2>/dev/null
+    # cat "${IDENTITY_DIR}/net_vm" 2>/dev/null
 }
 
 # identity.vm_label returns the default VM label/color for an identity
 function identity.vm_label ()
 {
-    cat "${IDENTITY_DIR}/vm_label" 2>/dev/null
+    identity.config_get QUBE_LABEL 2>/dev/null
+    # cat "${IDENTITY_DIR}/vm_label" 2>/dev/null
 }
 
 # identity.tor_gateway returns the TOR gateway for the identity
 function identity.tor_gateway ()
 {
-    cat "${IDENTITY_DIR}/tor_gw" 2>/dev/null
+    identity.config_get TOR_QUBE 2>/dev/null
+    # cat "${IDENTITY_DIR}/tor_gw" 2>/dev/null
 }
 
 # identity.browser_qube returns the browser VM for the identity
 function identity.browser_qube ()
 {
-    cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null
+    identity.config_get BROWSER_QUBE 2>/dev/null
+    # cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null
 }
 
 # identity.proxy_qubes returns an array of proxy VMs
 # (VPNs and TOR gateways for the current identity)
 function identity.proxy_qubes ()
 {
-    [[ -e "${IDENTITY_DIR}/proxy_vms" ]] || return
-    read -d '' -r -A proxies <"${IDENTITY_DIR}/proxy_vms"
+    local proxy_qubes
+    proxy_qubes=$(identity.config_get PROXY_QUBES)
+    [[ -n "${proxy_qubes}" ]] || return
+    # [[ -e "${IDENTITY_DIR}/proxy_vms" ]] || return
+
+    read -d '' -rA proxies <"${proxy_qubes}"
     echo "${proxies[@]}"
 }
 
@@ -2416,8 +2490,12 @@ function identity.proxy_qubes ()
 # these gateways.
 function identity.client_qubes ()
 {
-    [[ -f "${IDENTITY_DIR}/client_vms" ]] || return
-    read -d '' -r -A clients <"${IDENTITY_DIR}/client_vms"
+    local client_qubes
+    client_qubes=$(identity.config_get CLIENT_QUBES)
+    [[ -n "${client_qubes}" ]] || return
+    # [[ -f "${IDENTITY_DIR}/client_vms" ]] || return
+
+    read -d '' -rA clients <"${client_qubes}"
     echo "${clients[@]}"
 }
 
@@ -2428,15 +2506,19 @@ function identity.client_qubes ()
 # accessing network from one or more of these gateways.
 function identity.enabled_qubes ()
 {
-    [[ -f "${IDENTITY_DIR}/autostart_vms" ]] || return
-    read -d '' -r -A clients <"${IDENTITY_DIR}/autostart_vms"
+    local autostart_qubes
+    autostart_qubes=$(identity.config_get AUTOSTART_QUBES)
+    [[ -n "${autostart_qubes}" ]] || return
+    # [[ -f "${IDENTITY_DIR}/autostart_vms" ]] || return
+
+    read -d '' -rA clients <"${autostart_qubes}"
     echo "${clients[@]}"
 }
 
 # identity.shutdown_qubes powers off all running VMs belonging to the identity.
 function identity.shutdown_qubes ()
 {
-    local clients proxies tor_gateway browser_vm net_vm other_vms
+    local clients proxies tor_gateway browser_vm other_vms
 
     # Client VMs
     read -rA clients < <(identity.client_qubes)
@@ -2494,7 +2576,7 @@ function identity.shutdown_qubes ()
 # identity.delete_qubes deletes all VMs belonging to an identity.
 function identity.delete_qubes ()
 {
-    local clients proxies tor_gateway browser_vm net_vm other_vms
+    local clients proxies tor_gateway browser_vm other_vms
 
     # Client VMs
     read -rA clients < <(identity.client_qubes)
@@ -2519,8 +2601,6 @@ function identity.delete_qubes ()
     if [[ -n "${tor_gateway}" ]]; then
         qube.delete "${tor_gateway}" "tor_gw"
     fi
-
-    # Net VM
 
     # Other VMs that are tagged with the identity.
     read -rA other_vms < <(qubes.list_all)
@@ -2959,7 +3039,7 @@ function _catch ()
 function proxy.tor_create ()
 {
     local gw="${1}-tor"
-    local netvm="${2-$(config_get DEFAULT_NETVM)}"
+    local netvm="${2-$(identity.config_get NETVM_QUBE)}"
     local gw_label="${3-yellow}"
     local gw_template="$(config_get WHONIX_GW_TEMPLATE)"
 
@@ -2973,8 +3053,10 @@ function proxy.tor_create ()
 
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
-    echo "$gw" > "${IDENTITY_DIR}/tor_gw"
-    echo "$gw" > "${IDENTITY_DIR}/net_vm"
+    identity.config_set TOR_QUBE "${gw}"
+    # echo "$gw" > "${IDENTITY_DIR}/tor_gw"
+    identity.config_set NETVM_QUBE "${gw}"
+    # echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
 
 # proxy.tor_clone is similar to proxy.tor_create, except that we clone
@@ -2984,7 +3066,7 @@ function proxy.tor_clone ()
 {
     local gw="${1}-tor"
     local gw_clone="$2"
-    local netvm="${3-$(config_get DEFAULT_NETVM)}"
+    local netvm="${3-$(identity.config_get NETVM_QUBE)}"
     local gw_label="${4-yellow}"
 
     _info "New TOR gateway qube"
@@ -3012,8 +3094,10 @@ function proxy.tor_clone ()
 
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
-    echo "$gw" > "${IDENTITY_DIR}/tor_gw"
-    echo "$gw" > "${IDENTITY_DIR}/net_vm"
+    identity.config_set TOR_QUBE "${gw}"
+    # echo "$gw" > "${IDENTITY_DIR}/tor_gw"
+    identity.config_set NETVM_QUBE "${gw}"
+    # echo "$gw" > "${IDENTITY_DIR}/net_vm"
 }
 
 # proxy.fail_config_tor exits the program if risk lacks some information
@@ -3107,6 +3191,12 @@ prompt_question ()
 
     read -r ans
     echo "${ans}"
+}
+
+# print_key_value formats a key-value pair with coloring and prints it.
+print_key_value ()
+{
+    echo
 }
 
 # src/lib/validations/validate_devices.sh
@@ -3358,7 +3448,8 @@ function qube.enable ()
 
     if [[ ! $already_enabled ]]; then
         _info "Enabling VM ${name} to autostart"
-        echo "$name" >> "${IDENTITY_DIR}/autostart_vms"
+        identity.config_append AUTOSTART_QUBES "${name}"
+        # echo "$name" >> "${IDENTITY_DIR}/autostart_vms"
     else
         _info "VM ${name} is already enabled"
     fi
@@ -3369,7 +3460,12 @@ function qube.disable ()
 {
     local name="$1"
     _info "Disabling VM $name"
-    sed -i /^"$name"\$/d "${IDENTITY_DIR}/autostart_vms"
+    local autostart_qubes
+    autostart_qubes=$(identity.config_get AUTOSTART_QUBES)
+
+    autostart_qubes=$(sed /^"$name"\$/d <<<"${autostart_qubes}")
+    identity.config_set AUTOSTART_QUBES "${autostart_qubes}"
+    # sed -i /^"$name"\$/d "${IDENTITY_DIR}/autostart_vms"
 }
 
 # qube.start [vm 1] ... [vm n]
@@ -3634,7 +3730,8 @@ function proxy.skip_vpn_create ()
         [[ -n ${args['--from']} ]] && clone=${args['--from']} || clone=$(config_get VPN_VM)
     fi
 
-    [[ -z ${template} && -z ${clone} ]] && return 0
+    [[ -z ${template} && -z ${clone} ]] && \
+        _info "Skipping VPN qube: no TemplateVM/AppVM specified in config or flags" && return 0
 
     return 1
 }
@@ -3768,7 +3865,8 @@ function web.browser_create ()
     fi
 
     _run qvm-tags "$web" set "$IDENTITY"
-    echo "${web}" > "${IDENTITY_DIR}/browser_vm"
+    identity.config_set BROWSER_QUBE "${web}"
+    # echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
 # Clone a web browsing VM from an existing one
@@ -3799,7 +3897,8 @@ function web.browser_clone ()
     fi
 
     _run qvm-tags "$web" set "$IDENTITY"
-    echo "${web}" > "${IDENTITY_DIR}/browser_vm"
+    identity.config_set BROWSER_QUBE "${web}"
+    # echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
 # web.fail_config_browser exits the program if risk lacks some information
@@ -3846,7 +3945,8 @@ function web.split_backend_create ()
     qvm-create --property netvm=None --label "$web_label" --template "$split_template"
 
     qvm-tags "$web" set "$IDENTITY"
-    echo "${web}" > "${IDENTITY_DIR}/browser_vm"
+    identity.config_set BROWSER_QUBE "${web}"
+    # echo "${web}" > "${IDENTITY_DIR}/browser_vm"
 }
 
 # Clone an existing split-browser VM, and change its dispvms
@@ -3880,7 +3980,8 @@ function web.browser_set_split_dispvm ()
     local browser_vm split_backend filename copy_command
 
     split_backend="$(config_get SPLIT_BROWSER)"
-    browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
+    browser_vm=$(identity.config_get BROWSER_QUBE)
+    # browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
 
     filename="$(crypt.filename "bookmarks.tsv")"
     local bookmarks_file="/home/user/.tomb/mgmt/${filename}"
@@ -3906,7 +4007,8 @@ function web.browser_unset_split_dispvm ()
 {
     local browser_vm split_backend filename
 
-    browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
+    browser_vm=$(identity.config_get BROWSER_QUBE)
+    # browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
     split_backend="$(config_get SPLIT_BROWSER)"
 
     filename="$(crypt.filename "bookmarks.tsv")"
@@ -4040,7 +4142,7 @@ function web.bookmark_pop ()
 }
 
 # web.bookmark_prompt opens a zenity prompt in the focused qube
-# for the user to enter a URL and an optional page itle.
+# for the user to enter a URL and an optional page title.
 function web.bookmark_prompt ()
 {
     local zenity_prompt result active_vm
@@ -4308,12 +4410,16 @@ risk_identity_equip_command() {
 
   _in_section "risk" 8 && _info "Creating qubes for identity $IDENTITY"
 
-  [[ -e ${IDENTITY_DIR} ]] || mkdir -p "$IDENTITY_DIR"
+  # [[ -e ${IDENTITY_DIR} ]] || mkdir -p "$IDENTITY_DIR"
+
   identity.set_global_props
+  label=$(identity.config_get QUBE_LABEL)
+  vm_name=$(identity.config_get QUBE_PREFIX)
 
   # 2 - Network VMs
   _in_section "network" && echo && _warning "Creating network VMs"
-  gw_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
+  gw_netvm="$(identity.config_get NETVM_QUBE)"
+  # gw_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
   if ! proxy.skip_tor_create; then
       if [[ -n ${args['--clone-tor-from']} ]]; then
@@ -4326,7 +4432,8 @@ risk_identity_equip_command() {
 
   # 3 - Browser VMs
   _in_section "web" && echo && _warning "Creating browsing VMs"
-  web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
+  web_netvm="$(identity.config_get NETVM_QUBE)"
+  # web_netvm="$(cat "${IDENTITY_DIR}/net_vm")"
 
   if ! web.skip_browser_create; then
       if [[ -n ${args['--clone-web-from']} ]]; then
@@ -4835,7 +4942,7 @@ risk_qube_add_command() {
 
       # If the user specified to use it as the default netvm
       if [[ ${args['--default-netvm']} -eq 1 ]]; then
-          echo "$vm" > "${IDENTITY_DIR}/net_vm"
+          identity.config_set NETVM_QUBE "${vm}"
           _info "Setting '$vm' as default NetVM for all client machines"
       fi
   else

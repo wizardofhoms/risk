@@ -263,23 +263,6 @@ function identity.config_set ()
     _run_qube "$VAULT_VM" risks kv set "${key}" "${value}"
 }
 
-# identity.config_append uses 'risks kv set' and 'risks kv get' to append a value
-# to an existing key-value pair (as an array), or creates it if does not exist yet.
-function identity.config_append ()
-{
-    identity.is_active || return
-
-    local key="${1}"
-    shift
-    local value="$*"
-
-    [[ -z "${key}" || -z "${value}" ]] && return
-
-    local existing_value
-    existing_value="$(identity.config_get "${key}")"
-    _run_qube "$VAULT_VM" risks kv set "${key}" "${existing_value}" "${value}" &>/dev/null
-}
-
 # identity.config_get uses 'risks kv get' in vault to retrieve a key-value pair.
 function identity.config_get ()
 {
@@ -300,6 +283,50 @@ function identity.config_unset ()
     [[ -z "${key}" ]] && return
 
     _run_qube "$VAULT_VM" risks kv unset "${key}"
+}
+
+# identity.config_append uses 'risks kv set' and 'risks kv get' to append a value
+# to an existing key-value pair (as an array), or creates it if does not exist yet.
+function identity.config_append ()
+{
+    identity.is_active || return
+
+    local key="${1}"
+    shift
+    local value="$*"
+
+    [[ -z "${key}" || -z "${value}" ]] && return
+
+    local existing_value
+    existing_value="$(identity.config_get "${key}")"
+    _run_qube "$VAULT_VM" risks kv set "${key}" "${existing_value}" "${value}" &>/dev/null
+}
+
+# identity.config_reduce uses 'risks kv get', 'risks kv get' and 'sed' to remove a 
+# value from an existing key-value pair (as an array) in the vault key-value store.
+function identity.config_reduce ()
+{
+    identity.is_active || return
+
+    local key="${1}"
+    shift
+    local values=("$@")
+
+    [[ -z "${key}" || -z "${values[*]}" ]] && return
+
+    # Retrieve the existing key value, or skip.
+    local existing_value
+    existing_value="$(identity.config_get "${key}")"
+    [[ -z "${existing_value}" ]] && return
+
+    # And remove each key if found.
+    for val in "${values[@]}"; do
+        [[ -n "${val}" ]] || continue
+        existing_value=$(sed /^"$val"\$/d <<<"${existing_value}")
+    done
+
+    # And save the reduced value
+    identity.config_set "${key}" "${existing_value}"
 }
 
 # identity.config_clear uses 'risks kv clean' in vault to clear all key-value pairs.

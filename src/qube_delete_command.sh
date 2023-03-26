@@ -22,9 +22,9 @@ fi
 
 # Remove from autostart enabled commands
 _info "Deleting qube ${vm}"
-sed -i /^"$vm"\$/d "${IDENTITY_DIR}/autostart_vms" 2>/dev/null
-sed -i /^"$vm"\$/d "${IDENTITY_DIR}/proxy_vms" 2>/dev/null
-sed -i /^"$vm"\$/d "${IDENTITY_DIR}/client_vms" 2>/dev/null
+identity.config_reduce AUTOSTART_QUBES "${vm}"
+identity.config_reduce PROXY_QUBES "${vm}"
+identity.config_reduce CLIENT_QUBES "${vm}"
 
 # Finally, delete the VM,
 qvm-remove "$vm"

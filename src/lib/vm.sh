@@ -288,13 +288,7 @@ function qube.delete ()
     fi
 
     # Delete the VM from the corresponding key-value pair in vault.
-    updated=$(identity.config_get "${file}")
-    updated=$(sed /^"$vm"\$/d <<<"${updated}")
-    identity.config_set "${file}" "${updated}"
-
-    if [[ -z "${updated}" ]]; then
-        identity.config_unset "${file}"
-    fi
+    identity.config_reduce "${file}" "${vm}"
 }
 
 

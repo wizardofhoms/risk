@@ -23,7 +23,7 @@ if [[ $netvm == "$vm" ]]; then
     tor_gw=$(identity.tor_gateway)
     if [[ -n $tor_gw ]]; then
         _info -n "Updating the default identity NetVM to $tor_gw"
-        echo "$tor_gw" > "${IDENTITY_DIR}/net_vm"
+        identity.config_set TOR_QUBE "${tor_gw}"
     else
         _info -n "The identity has no default NetVM anymore, please set it."
     fi
@@ -34,7 +34,7 @@ echo "y" | _run qvm-remove "$vm"
 _catch "Failed to delete (fully or partially) VM $vm"
 
 # Remove this VM name from the relevant files.
-sed -i /"$vm"/d "${IDENTITY_DIR}/autostart_vms"
-sed -i /"$vm"/d "${IDENTITY_DIR}/proxy_vms"
+identity.config_reduce AUTOSTART_QUBES "${vm}"
+identity.config_reduce PROXY_QUBES "${vm}"
 
 _info "Deleted $vm"

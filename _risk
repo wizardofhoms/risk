@@ -86,14 +86,12 @@ _config ()
     case $state in
         args)
             case $line[1] in
-            set)
-                _arguments -C "1:key:_config_keys" \
-                "2:value:" \
-                && ret=0 
-            ;;
-            get|unset)
-                _arguments -C "1:key:_config_keys" && ret=0 # TODO complete existing keys ?"
-            ;;
+                set)
+                    _arguments -C "1:key:_config_keys" "2:value:" && ret=0
+                    ;;
+                get|unset)
+                    _arguments -C "1:key:_config_keys" && ret=0 # TODO complete existing keys ?"
+                    ;;
             esac
     esac
 }
@@ -126,17 +124,16 @@ _hush ()
     case $state in
         args)
             case $line[1] in
-            attach)
-                _arguments \
-                    '(--mount -m)'{-m,--mount}'[Mount the hush device in the vault (prompts for password)]' \
-                    '1:hush block device:_block_devices' \
-                    '2:vault VM:_known_vms'
-                ;;
-            detach)
-                _arguments \
-                    '1:hush block device:_block_devices_attached' \
-                    '2:vault VM:_known_vms'
-                ;;
+                attach)
+                    _arguments \
+                        '(--mount -m)'{-m,--mount}'[Mount the hush device in the vault (prompts for password)]' \
+                        '1:hush block device:_block_devices' \
+                        '2:vault VM:_known_vms'
+                    ;;
+                detach)
+                    _arguments \
+                        '1:hush block device:_block_devices_attached' '2:vault VM:_known_vms'
+                    ;;
             esac
     esac
 }
@@ -169,16 +166,12 @@ _backup ()
     case $state in
         args)
             case $line[1] in
-            attach)
-                _arguments \
-                    '1:backup block device:_block_devices' \
-                    '2:vault VM:_known_vms'
-                ;;
-            detach)
-                _arguments \
-                    '1:backup block device:_block_devices_attached' \
-                    '2:vault VM:_known_vms'
-                ;;
+                attach)
+                    _arguments '1:backup block device:_block_devices' '2:vault VM:_known_vms'
+                    ;;
+                detach)
+                    _arguments '1:backup block device:_block_devices_attached' '2:vault VM:_known_vms'
+                    ;;
             esac
     esac
 }
@@ -213,22 +206,19 @@ _identity ()
     case $state in
         args)
             case $line[1] in
-            create)
-                _identity_create
-                ;;
-            equip)
-                _arguments -C \
-                    "${_flags_vm_base[@]}" \
-                    "${_flags_init_tor[@]}" \
-                    "${_flags_init_web[@]}" \
-                    '1:identity name:' \
-                    && ret=0
-                ;;
-            start|open|delete|nake)
-                _arguments \
-                    '1:identity name:' \
-                    && ret=0
-                ;;
+                create)
+                    _identity_create
+                    ;;
+                equip)
+                    _arguments -C \
+                        "${_flags_vm_base[@]}" \
+                        "${_flags_init_tor[@]}" \
+                        "${_flags_init_web[@]}" \
+                        '1:identity name:' && ret=0
+                    ;;
+                start|open|delete|nake)
+                    _arguments '1:identity name:' && ret=0
+                    ;;
             esac
     esac
 }
@@ -296,45 +286,28 @@ _vpn ()
     case $state in
         args)
             case $line[1] in
-            create)
-                _arguments -C \
-                    "${_flags_vm_base[@]}" \
-                    "${_flags_create_base[@]}" \
-                    "${_flags_network[@]}" \
-                    "${_flags_vpn[@]}" \
-                    '1::VPN gateway name (optional):' \
-                    && ret=0
-                ;;
-            delete)
-                _arguments \
-                    '1:VPN gateway name:_identity_vpns' \
-                    && ret=0
-                ;;
-            setup)
-                _arguments \
-                    "${_flags_vpn[@]}" \
-                    "${_flags_network[@]}" \
-                    '1:VPN gateway name:_identity_vpns' \
-                    && ret=0
-                ;;
-            enable)
-                _arguments \
-                    '1:VPN gateway name:_disabled_vpns' \
-                    && ret=0
-                ;;
-            disable)
-                _arguments \
-                    '1:VPN gateway name:_enabled_vpns' \
-                    && ret=0
-                ;;
-            start) _arguments \
-                    '1:VPN gateway name:_halted_identity_vpns' \
-                    && ret=0
-                ;;
-            stop) _arguments \
-                    '1:VPN gateway name:_running_identity_vpns' \
-                    && ret=0
-                ;;
+                create)
+                    _arguments -C \
+                        "${_flags_vm_base[@]}" \
+                        "${_flags_create_base[@]}" \
+                        "${_flags_network[@]}" \
+                        "${_flags_vpn[@]}" \
+                        '1::VPN gateway name (optional):' && ret=0
+                    ;;
+                setup)
+                    _arguments "${_flags_vpn[@]}" "${_flags_network[@]}" \
+                        '1:VPN gateway name:_identity_vpns' && ret=0
+                    ;;
+                enable)     _arguments '1:VPN gateway name:_disabled_vpns' && ret=0
+                    ;;
+                disable)    _arguments '1:VPN gateway name:_enabled_vpns' && ret=0
+                    ;;
+                start)      _arguments '1:VPN gateway name:_halted_identity_vpns' && ret=0
+                    ;;
+                stop)       _arguments '1:VPN gateway name:_running_identity_vpns' && ret=0
+                    ;;
+                delete)     _arguments '1:VPN gateway name:_identity_vpns' && ret=0
+                    ;;
             esac
     esac
 }
@@ -349,7 +322,7 @@ _use ()
         "1:VM to use:_structured_vms" \
         "*::command arguments:" \
         && ret=0
-}
+    }
 
 # Subcommands for the qube command
 _qube_commands ()
@@ -381,33 +354,27 @@ _qube ()
     case $state in
         args)
             case $line[1] in
-            add)
-                _arguments -C \
-                    "${_flags_network[@]}" \
-                    '(-E --enable)'{-E,--enable}'[Autostart this VM when the identity is started]' \
-                    '--default-netvm[Set this VM as the default NetVM for all client machines for identity (browser, messaging, etc)]' \
-                    '1::VM to tag with identity settings:_known_vms' \
-                    && ret=0
-                ;;
-            delete)
-                _arguments \
-                    '1:VM to delete:_identity_vms' \
-                    && ret=0
-                ;;
-            enable)
-                _arguments \
-                    '1:VM to enable for autostart:_disabled_identity_vms' \
-                    && ret=0
-                ;;
-            disable)
-                _arguments \
-                    '1:Disable an identity VM to autostart:_enabled_identity_vms' \
-                    && ret=0
-                ;;
-            update)
-                _domain_vm_keywords
-                _known_vms
-                ;;
+                add)
+                    _arguments -C \
+                        "${_flags_network[@]}" \
+                        '(-E --enable)'{-E,--enable}'[Autostart this VM when the identity is started]' \
+                        '--default-netvm[Set this VM as the default NetVM for all client machines for identity (browser, messaging, etc)]' \
+                        '1::VM to tag with identity settings:_known_vms' \
+                        && ret=0
+                    ;;
+                delete)
+                        _arguments '1:VM to delete:_identity_vms' && ret=0
+                    ;;
+                enable)
+                    _arguments '1:VM to enable for autostart:_disabled_identity_vms' && ret=0
+                    ;;
+                disable)
+                _arguments '1:Disable an identity VM to autostart:_enabled_identity_vms' && ret=0
+                    ;;
+                update)
+                    _domain_vm_keywords
+                    _known_vms
+                    ;;
             esac
     esac
 }
@@ -457,7 +424,7 @@ _url ()
                 open|blacklist|news)
                     _identity_bookmarks
                     _system_bookmarks
-                ;;
+                    ;;
             esac
     esac
 }
@@ -468,16 +435,16 @@ _url ()
 # Flags that are present on all commands
 _flags_base=(
     '(- : *)'--version'[Print risks version and exit]' \
-    '(- : *)'{-h,--help}'[Print help for the command]'
-    '(-v --verbose)'{-v,--verbose}'[Enable verbose logging]'
-    '(-l --log-file)'{-l,--log-file}'[Path to log file]:log file:_files'
-)
+        '(- : *)'{-h,--help}'[Print help for the command]'
+            '(-v --verbose)'{-v,--verbose}'[Enable verbose logging]'
+            '(-l --log-file)'{-l,--log-file}'[Path to log file]:log file:_files'
+        )
 
 ## Base flags needed when creating/cloning a VM
 _flags_vm_base=(
     '(-P --prefix)'{-P,--prefix}'[Use a different name for naming identity qubes]:VM base name:' 
     '(-L --label)'{-L,--label}'[Specify a label color to be used for ALL subsequently created qubes]:VM label:' 
-    )
+)
 
 _flags_create_base=(
     '(-c --clone)'{-c,--clone}'[Instead of creating the VPN gateway from a template, clone an existing VPN AppVM]'
@@ -489,7 +456,7 @@ _flags_create_base=(
 # flags used for setting a VM connectivity
 _flags_network=(
     '(-n --netvm)'{-n,--netvm}'[NetVM to use for the gateway]:NetVM:_known_vms'
-    )
+)
 
 # flags used to manipulate VPN settings
 _flags_vpn=(
@@ -645,7 +612,7 @@ _enabled_identity_vms ()
 
     [[ -z "${enabled_vpns}" ]] && [[ -z "${enabled_vms}" ]] \
         && _message "No enabled qubes for this identity" && return
-}
+    }
 
 # Returns all identity disabled qubes
 _disabled_identity_vms ()
@@ -664,7 +631,7 @@ _disabled_identity_vms ()
 
     disabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -u))
     [[ -n $disabled_vpns ]] && _alternative "disabled VPNs:disabled VPNs:($disabled_vpns)"
-    
+
     disabled_vms=($(echo "${client_vms[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -u))
     [[ -n $disabled_vms ]] && _alternative "disabled qubes:disabled qubes:($disabled_vms)"
 }
@@ -674,11 +641,11 @@ _running_identity_vpns ()
 {
     # Get the list of gateways, either for active identity or all
     proxies=($(_identity_proxies))
-    
+
     # Diff it with the list of running qubes
     read -d '' -r -A running_all < <(qvm-ls --raw-list --running)
     running_proxies=($(echo "${proxies[@]}" "${running_all[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
-    
+
     # Return it
     if [[ "${#running_proxies[@]}" -eq 0 ]]; then
         _message "no running VPN gateways for identity"
@@ -692,11 +659,11 @@ _halted_identity_vpns ()
 {
     # Get the list of gateways, either for active identity or all
     proxies=($(_identity_proxies))
-    
+
     # Diff it with the list of running qubes
     read -d '' -r -A halted_all < <(qvm-ls --raw-list --halted)
     halted_proxies=($(echo "${proxies[@]}" "${halted_all[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
-    
+
     # Return it
     if [[ "${#halted_proxies[@]}" -eq 0 ]]; then
         _message "no halted VPN gateways for identity"
@@ -738,10 +705,10 @@ _disabled_vpns ()
 {
     vms=($(_identity_enabled_vms))
     proxies=($(_identity_proxies))
-    
+
     # Diff both
     disabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
-    
+
     # Return
     if [[ "${#disabled_vpns[@]}" -eq 0 ]]; then
         _message "no disabled VPN gateways"
@@ -861,5 +828,5 @@ _identity_enabled_vms ()
 
 # don't run the completion function when being source-ed or eval-ed
 if [ "$funcstack[1]" = "_risk" ]; then
-        _risk
+    _risk
 fi

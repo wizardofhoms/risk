@@ -2182,7 +2182,7 @@ function identity.set_active ()
     # identity name, populate it.
     if [[ ! -e ${RISK_IDENTITY_FILE} ]]; then
         print "$1" > "${RISK_IDENTITY_FILE}"
-	fi
+    fi
 
     _verbose "Identity '${1}' is now active (name file written)"
     _info "Identity '${1}' is now ACTIVE"
@@ -2202,7 +2202,7 @@ function identity.is_active ()
     active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
     if [[ -z "${active_identity}" ]]; then
         return 1
-	fi
+    fi
 
     return 0
 }
@@ -3564,11 +3564,11 @@ function qube.assert_running ()
         else
             #we don't attempt to start
             return 2
+            fi
         fi
-    fi
 
-    return 0
-}
+        return 0
+    }
 
 # qube.is_running returns 0 if the target qube is running (or paused), or 1 if not.
 # $1 - VM name.
@@ -3801,7 +3801,7 @@ function proxy.vpn_import_configs ()
         fi
 
         _info "Done transfering VPN client configuration to VM"
-    fi
+        fi
 
     # Add the gateway to the list of existing proxies for this identity
     echo "$gw" > "${IDENTITY_DIR}/proxy_vms"
@@ -3954,7 +3954,7 @@ function web.skip_browser_create ()
 
     [[ -z ${template} && -z ${clone} ]] && \
         _info "Skipping browser qube: no TemplateVM/AppVM specified in config or flags" && return 0
-}
+    }
 
 # Create a split-browser VM from a template
 function web.split_backend_create ()
@@ -4158,7 +4158,7 @@ function web.bookmark_pop ()
 
     # Remove the line from the file.
     remove_command="sed -i '\#${result}#d' .local/share/split-browser/bookmarks.tsv"
-    qvm-run --pass-io "${vm}" "${remove_command}"
+        qvm-run --pass-io "${vm}" "${remove_command}"
 
     print "${line}"
 }
@@ -4431,8 +4431,6 @@ risk_identity_equip_command() {
   identity.fail_unknown "$IDENTITY"
 
   _in_section "risk" 8 && _info "Creating qubes for identity $IDENTITY"
-
-  # [[ -e ${IDENTITY_DIR} ]] || mkdir -p "$IDENTITY_DIR"
 
   identity.set_global_props
   label=$(identity.config_get QUBE_LABEL)

@@ -136,7 +136,7 @@ function proxy.vpn_import_configs ()
         fi
 
         _info "Done transfering VPN client configuration to VM"
-    fi
+        fi
 
     # Add the gateway to the list of existing proxies for this identity
     echo "$gw" > "${IDENTITY_DIR}/proxy_vms"

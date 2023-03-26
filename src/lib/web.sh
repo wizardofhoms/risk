@@ -103,7 +103,7 @@ function web.skip_browser_create ()
 
     [[ -z ${template} && -z ${clone} ]] && \
         _info "Skipping browser qube: no TemplateVM/AppVM specified in config or flags" && return 0
-}
+    }
 
 # Create a split-browser VM from a template
 function web.split_backend_create ()
@@ -305,7 +305,7 @@ function web.bookmark_pop ()
 
     # Remove the line from the file.
     remove_command="sed -i '\#${result}#d' .local/share/split-browser/bookmarks.tsv"
-    qvm-run --pass-io "${vm}" "${remove_command}"
+        qvm-run --pass-io "${vm}" "${remove_command}"
 
     print "${line}"
 }

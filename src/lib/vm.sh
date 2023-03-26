@@ -250,11 +250,11 @@ function qube.assert_running ()
         else
             #we don't attempt to start
             return 2
+            fi
         fi
-    fi
 
-    return 0
-}
+        return 0
+    }
 
 # qube.is_running returns 0 if the target qube is running (or paused), or 1 if not.
 # $1 - VM name.

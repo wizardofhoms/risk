@@ -44,7 +44,7 @@ function identity.set_active ()
     # identity name, populate it.
     if [[ ! -e ${RISK_IDENTITY_FILE} ]]; then
         print "$1" > "${RISK_IDENTITY_FILE}"
-	fi
+    fi
 
     _verbose "Identity '${1}' is now active (name file written)"
     _info "Identity '${1}' is now ACTIVE"
@@ -64,7 +64,7 @@ function identity.is_active ()
     active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
     if [[ -z "${active_identity}" ]]; then
         return 1
-	fi
+    fi
 
     return 0
 }
@@ -386,7 +386,7 @@ function identity.client_qubes ()
     local client_qubes
     client_qubes=$(identity.config_get CLIENT_QUBES)
     [[ -n "${client_qubes}" ]] || return
-    
+
     read -d '' -rA clients <"${client_qubes}"
     echo "${clients[@]}"
 }

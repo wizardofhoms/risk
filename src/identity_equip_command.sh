@@ -14,8 +14,6 @@ identity.fail_unknown "$IDENTITY"
 
 _in_section "risk" 8 && _info "Creating qubes for identity $IDENTITY"
 
-# [[ -e ${IDENTITY_DIR} ]] || mkdir -p "$IDENTITY_DIR"
-
 identity.set_global_props
 label=$(identity.config_get QUBE_LABEL)
 vm_name=$(identity.config_get QUBE_PREFIX)

@@ -2401,23 +2401,6 @@ function identity.config_set ()
     _run_qube "$VAULT_VM" risks kv set "${key}" "${value}"
 }
 
-# identity.config_append uses 'risks kv set' and 'risks kv get' to append a value
-# to an existing key-value pair (as an array), or creates it if does not exist yet.
-function identity.config_append ()
-{
-    identity.is_active || return
-
-    local key="${1}"
-    shift
-    local value="$*"
-
-    [[ -z "${key}" || -z "${value}" ]] && return
-
-    local existing_value
-    existing_value="$(identity.config_get "${key}")"
-    _run_qube "$VAULT_VM" risks kv set "${key}" "${existing_value}" "${value}" &>/dev/null
-}
-
 # identity.config_get uses 'risks kv get' in vault to retrieve a key-value pair.
 function identity.config_get ()
 {
@@ -2438,6 +2421,51 @@ function identity.config_unset ()
     [[ -z "${key}" ]] && return
 
     _run_qube "$VAULT_VM" risks kv unset "${key}"
+}
+
+# identity.config_append uses 'risks kv set' and 'risks kv get' to append a value
+# to an existing key-value pair (as an array), or creates it if does not exist yet.
+function identity.config_append ()
+{
+    identity.is_active || return
+
+    local key="${1}"
+    shift
+    local value="$*"
+
+    [[ -z "${key}" || -z "${value}" ]] && return
+
+    local existing_value
+    existing_value="$(identity.config_get "${key}")"
+    _run_qube "$VAULT_VM" risks kv set "${key}" "${existing_value}" "${value}" &>/dev/null
+}
+
+# identity.config_reduce uses 'risks kv get', 'risks kv get' and 'sed' to remove a
+
+# value from an existing key-value pair (as an array) in the vault key-value store.
+function identity.config_reduce ()
+{
+    identity.is_active || return
+
+    local key="${1}"
+    shift
+    local values=("$@")
+
+    [[ -z "${key}" || -z "${values[*]}" ]] && return
+
+    # Retrieve the existing key value, or skip.
+    local existing_value
+    existing_value="$(identity.config_get "${key}")"
+    [[ -z "${existing_value}" ]] && return
+
+    # And remove each key if found.
+    for val in "${values[@]}"; do
+        [[ -n "${val}" ]] || continue
+        existing_value=$(sed /^"$val"\$/d <<<"${existing_value}")
+    done
+
+    # And save the reduced value
+    identity.config_set "${key}" "${existing_value}"
 }
 
 # identity.config_clear uses 'risks kv clean' in vault to clear all key-value pairs.
@@ -3574,13 +3602,7 @@ function qube.delete ()
     fi
 
     # Delete the VM from the corresponding key-value pair in vault.
-    updated=$(identity.config_get "${file}")
-    updated=$(sed /^"$vm"\$/d <<<"${updated}")
-    identity.config_set "${file}" "${updated}"
-
-    if [[ -z "${updated}" ]]; then
-        identity.config_unset "${file}"
-    fi
+    identity.config_reduce "${file}" "${vm}"
 }
 
 # ========================================================================================
@@ -3661,6 +3683,7 @@ function proxy.vpn_create ()
     # Tag the VM with its owner, and add the gateway to the list of proxies
     _run qvm-tags "$gw" set "$IDENTITY"
     echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
+    identity.config_append PROXY_QUBES "${gw}"
 }
 
 # proxy.vpn_clone creates a new VPN gateway from an existing VPN AppVM
@@ -3695,7 +3718,7 @@ function proxy.vpn_clone ()
 
     # Tag the VM with its owner, and add the gateway to the list of proxies
     _run qvm-tags "$gw" set "$IDENTITY"
-    echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
+    identity.config_append PROXY_QUBES "${gw}"
 }
 
 # proxy.fail_config_vpn exits the program if risk lacks some information
@@ -4752,7 +4775,7 @@ risk_vpn_setup_command() {
   # If the user wants this VM to be the default NetVM for all clients
   # like browsers, messaging VMs, etc.
   if [[ ${args['--set-default']} -eq 1 ]]; then
-      echo "$name" > "${IDENTITY_DIR}/net_vm"
+      identity.config_set NETVM_QUBE "${name}"
       _info "Setting '$name' as default NetVM for all client machines"
 
       # Here, find all existing client VMs (not gateways)
@@ -4814,9 +4837,8 @@ risk_vpn_stop_command() {
 risk_vpn_enable_command() {
   # src/vpn_enable_command.sh
 
-  identity_set
-
-  qube.enable "${args['vm']}"
+  # Same parameters for this command, just use it and its checks.
+  risk_qube_enable_command
 
 }
 
@@ -4860,7 +4882,7 @@ risk_vpn_delete_command() {
       tor_gw=$(identity.tor_gateway)
       if [[ -n $tor_gw ]]; then
           _info -n "Updating the default identity NetVM to $tor_gw"
-          echo "$tor_gw" > "${IDENTITY_DIR}/net_vm"
+          identity.config_set TOR_QUBE "${tor_gw}"
       else
           _info -n "The identity has no default NetVM anymore, please set it."
       fi
@@ -4871,8 +4893,8 @@ risk_vpn_delete_command() {
   _catch "Failed to delete (fully or partially) VM $vm"
 
   # Remove this VM name from the relevant files.
-  sed -i /"$vm"/d "${IDENTITY_DIR}/autostart_vms"
-  sed -i /"$vm"/d "${IDENTITY_DIR}/proxy_vms"
+  identity.config_reduce AUTOSTART_QUBES "${vm}"
+  identity.config_reduce PROXY_QUBES "${vm}"
 
   _info "Deleted $vm"
 
@@ -4940,7 +4962,7 @@ risk_qube_add_command() {
       _info "VM provides network. Treating it as a gateway qube"
 
       # Add as a proxy VM
-      echo "$vm" > "${IDENTITY_DIR}/proxy_vms"
+      identity.config_set PROXY_QUBES "${vm}"
 
       # If the user specified to use it as the default netvm
       if [[ ${args['--default-netvm']} -eq 1 ]]; then
@@ -4948,7 +4970,7 @@ risk_qube_add_command() {
           _info "Setting '$vm' as default NetVM for all client machines"
       fi
   else
-      echo "$vm" > "${IDENTITY_DIR}/client_vms"
+      identity.config_append CLIENT_QUBES "${vm}"
   fi
 
   # Enable autostart if asked to
@@ -4985,9 +5007,9 @@ risk_qube_delete_command() {
 
   # Remove from autostart enabled commands
   _info "Deleting qube ${vm}"
-  sed -i /^"$vm"\$/d "${IDENTITY_DIR}/autostart_vms" 2>/dev/null
-  sed -i /^"$vm"\$/d "${IDENTITY_DIR}/proxy_vms" 2>/dev/null
-  sed -i /^"$vm"\$/d "${IDENTITY_DIR}/client_vms" 2>/dev/null
+  identity.config_reduce AUTOSTART_QUBES "${vm}"
+  identity.config_reduce PROXY_QUBES "${vm}"
+  identity.config_reduce CLIENT_QUBES "${vm}"
 
   # Finally, delete the VM,
   qvm-remove "$vm"
@@ -5010,7 +5032,7 @@ risk_qube_enable_command() {
   [[ "$(qube.owner "$vm")" != "$IDENTITY\n" ]] || _failure "VM $vm does not belong to $IDENTITY"
 
   # If already enabled, skip
-  if grep "^${vm}\$" < <(cat "${IDENTITY_DIR}"/autostart_vms) &>/dev/null; then
+  if grep "^${vm}\$" < <(identity.config_get AUTOSTART_QUBES) &>/dev/null; then
       _info "Qube ${vm} is already enabled for autostart"
       return
   fi

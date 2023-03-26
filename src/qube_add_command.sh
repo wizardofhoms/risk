@@ -58,7 +58,7 @@ if [[ "$(qvm-prefs "$vm" provides_network)" == 'True' ]]; then
     _info "VM provides network. Treating it as a gateway qube"
 
     # Add as a proxy VM
-    echo "$vm" > "${IDENTITY_DIR}/proxy_vms"
+    identity.config_set PROXY_QUBES "${vm}"
 
     # If the user specified to use it as the default netvm
     if [[ ${args['--default-netvm']} -eq 1 ]]; then

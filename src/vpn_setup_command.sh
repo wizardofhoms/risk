@@ -20,7 +20,7 @@ fi
 # If the user wants this VM to be the default NetVM for all clients
 # like browsers, messaging VMs, etc.
 if [[ ${args['--set-default']} -eq 1 ]]; then
-    echo "$name" > "${IDENTITY_DIR}/net_vm"
+    identity.config_set NETVM_QUBE "${name}"
     _info "Setting '$name' as default NetVM for all client machines"
 
     # Here, find all existing client VMs (not gateways)

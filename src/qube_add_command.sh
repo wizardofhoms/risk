@@ -66,7 +66,7 @@ if [[ "$(qvm-prefs "$vm" provides_network)" == 'True' ]]; then
         _info "Setting '$vm' as default NetVM for all client machines"
     fi
 else
-    echo "$vm" > "${IDENTITY_DIR}/client_vms"
+    identity.config_append CLIENT_QUBES "${vm}"
 fi
 
 # Enable autostart if asked to

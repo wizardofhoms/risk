@@ -19,6 +19,7 @@ function proxy.vpn_create ()
     # Tag the VM with its owner, and add the gateway to the list of proxies
     _run qvm-tags "$gw" set "$IDENTITY"
     echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
+    identity.config_append PROXY_QUBES "${gw}"
 }
 
 # proxy.vpn_clone creates a new VPN gateway from an existing VPN AppVM
@@ -53,7 +54,7 @@ function proxy.vpn_clone ()
 
     # Tag the VM with its owner, and add the gateway to the list of proxies
     _run qvm-tags "$gw" set "$IDENTITY"
-    echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
+    identity.config_append PROXY_QUBES "${gw}"
 }
 
 # proxy.fail_config_vpn exits the program if risk lacks some information

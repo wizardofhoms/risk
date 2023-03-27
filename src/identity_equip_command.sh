@@ -35,6 +35,7 @@ fi
 _in_section "web" && echo && _warning "Creating browsing VMs"
 web_netvm="$(identity.config_get NETVM_QUBE)"
 
+# Browser client
 if ! web.skip_browser_create; then
     if [[ -n ${args['--clone-web-from']} ]]; then
         clone="${args['--clone-web-from']}"
@@ -42,6 +43,11 @@ if ! web.skip_browser_create; then
     else
         web.browser_create "$vm_name" "$web_netvm" "$label"
     fi
+fi
+
+# Split-browser backend
+if ! web.skip_split_create; then
+    web.split_backend_create "${vm_name}" "${label}"
 fi
 
 # Per-identity bookmarks file in vault management tomb.

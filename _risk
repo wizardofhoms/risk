@@ -617,6 +617,8 @@ _enabled_identity_vms ()
 # Returns all identity disabled qubes
 _disabled_identity_vms ()
 {
+    local vault_vm=$(risk config get VAULT_VM)
+
     client_vms=($(_identity_clients))
     vms=($(_identity_enabled_vms))
     proxies=($(_identity_proxies))

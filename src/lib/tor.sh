@@ -10,13 +10,10 @@ function proxy.tor_create ()
     local gw_label="${3-yellow}"
     local gw_template="$(config_get WHONIX_GW_TEMPLATE)"
 
-    _info "New TOR gateway qube"
-    _info "Name:      $gw"
-    _info "Netvm:     $netvm"
-    _info "Template:  $gw_template"
-
     _run qvm-create "${gw}" --property netvm="$netvm" --label "$gw_label" --template "$gw_template"
     _run qvm-prefs "$gw" provides_network true
+
+    print_new_qube "${gw}" "New TOR gateway qube"
 
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
@@ -33,13 +30,10 @@ function proxy.tor_clone ()
     local netvm="${3-$(identity.config_get NETVM_QUBE)}"
     local gw_label="${4-yellow}"
 
-    _info "New TOR gateway qube"
-    _info "Name:          $gw"
-    _info "Netvm:         $netvm"
-    _info "Cloned from:   $gw_clone"
-
     _run qvm-clone "${gw_clone}" "${gw}"
     _catch "Failed to clone VM ${gw_clone}"
+
+    print_cloned_qube "${gw}" "${gw_clone}" "New TOR gateway qube"
 
     # For now disposables are not allowed, since it would create too many VMs,
     # and complicate a bit the setup steps for VPNs. If the clone is a template

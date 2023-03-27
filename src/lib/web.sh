@@ -9,8 +9,10 @@ function web.browser_create ()
     local web="${1}-web"
     local netvm="${2-$(identity.config_get NETVM_QUBE)}"
     local label="${3-orange}"
-    local template="$(config_get WHONIX_WS_TEMPLATE)"
-    local template_disp="$(qvm-prefs "${template}" template_for_dispvms 2>/dev/null)"
+
+    local template template_disp
+    template="$(config_get WHONIX_WS_TEMPLATE)"
+    template_disp="$(qvm-prefs "${template}" template_for_dispvms 2>/dev/null)"
 
     # If the template used is a disposable_template,
     # this means we must create a named disposable VM.
@@ -21,12 +23,8 @@ function web.browser_create ()
     fi
 
     # Generate the VM
-    _info "New browser VM"
-    _info "Name:       $web"
-    _info "Netvm:      $netvm"
-    _info "Template:   $template"
-
     _run qvm-create "${web}" --property netvm="$netvm" --label="$label" --template="$template"
+    print_new_qube "${web}" "New client browser VM"
 
     if [[ $? -gt 0 ]]; then
         _warning "Failed to create browser VM $web" && return
@@ -49,22 +47,17 @@ function web.browser_clone ()
     local netvm="${3-$(identity.config_get NETVM_QUBE)}"
     local label="${4-orange}"
 
-    _info "New browser VM"
-    _info "Name:          $web"
-    _info "Netvm:         $netvm"
-    _info "Cloned from:   $web_clone"
-
-    _info "Cloning web browsing VM (name: $web / netvm: $netvm / template: $web_clone)"
     _run qvm-clone "${web_clone}" "${web}"
     if [[ $? -gt 0 ]] ; then
         _warning "Failed to clone browser VM $web" && return
     fi
+    print_cloned_qube "${web}" "${web_clone}" "New client browser VM"
 
     _run qvm-prefs "$web" label "$label"
     _run qvm-prefs "$web" netvm "$netvm"
 
     # Only mark this VM as disposable template when it's not one already.
-    if [[ "$(qvm-prefs "${ws_template}" template_for_dispvms 2>/dev/null)" == False ]]; then
+    if [[ "$(qvm-prefs "${web}" template_for_dispvms 2>/dev/null)" == False ]]; then
         _run qvm-prefs "${web}" template_for_dispvms True
     fi
 
@@ -112,12 +105,11 @@ function web.split_backend_create ()
     local web_label="${2-gray}"
     local split_template="$(config_get SPLIT_BROWSER_TEMPLATE)"
 
-    _info "Creating split-browser (name: $web / netvm: $netvm / template: $split_template)"
     qvm-create --property netvm=None --label "$web_label" --template "$split_template"
+    print_new_qube "${web}" "New split-browser backend"
 
-    qvm-tags "$web" set "$IDENTITY"
-    identity.config_set BROWSER_QUBE "${web}"
-    # echo "${web}" > "${IDENTITY_DIR}/browser_vm"
+    # Once created, set the configuration with this qube.
+    config_set SPLIT_BROWSER "${web}"
 }
 
 # Clone an existing split-browser VM, and change its dispvms
@@ -127,13 +119,35 @@ function web.split_backend_clone ()
     local web_clone="$2"
     local web_label="${3-gray}"
 
-    _info "Cloning split-browser VM (name: $web / netvm: $netvm / template: $web_clone)"
     qvm-clone "${web_clone}" "${web}"
-
     qvm-prefs "$web" label "$web_label"
     qvm-prefs "$web" netvm None
 
-    qvm-tags "$web" set "$IDENTITY"
+    print_cloned_qube "${web}" "${web_clone}" "New split-browser backend"
+
+    # Once created, set the configuration with this qube.
+    config_set SPLIT_BROWSER "${web}"
+}
+
+# web.skip_split_create returns 0 when there not enough information in the configuration
+# file or in command flags for creating a new split-browser backend qube (no templates/clones 
+# indicated, etc).
+# Needs access to command-line flags
+function web.skip_split_create ()
+{
+    [[ ${args['--no-split-browser']} -eq 1 ]] && return 0
+
+    local template clone
+
+    template="$(config_get SPLIT_BROWSER_TEMPLATE)"
+    clone="$(config_get SPLIT_BROWSER)"
+
+    [[ -z ${template} && -z ${clone} ]] && \
+        _info "Skipping split-browser backend: no TemplateVM/AppVM specified in config" && return 0
+
+    [[ -n ${clone} ]] && return 0
+
+    return 1
 }
 
 # web.fail_config_split_backend exits the program if risk lacks some information

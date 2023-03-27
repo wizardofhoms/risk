@@ -44,7 +44,16 @@ WHONIX_WS=
 VPN_VM=
 
 ; Default AppVM to clone for split-browser backend
+; If this value is set by you to a given VM, make sure its split-browser
+; features function correctly, as this qube will be used for all identities'
+; browsing needs. If not set, it will populated by risk when creating the
+; dedicated split-browser backend AppVM qube.
 SPLIT_BROWSER=
+
+; Template to use when creating a split-browser backend.
+; The template should have the corresponding qubes-split-browser package
+; installed, see risk documentation for installation instructions.
+; SPLIT_BROWSER_TEMPLATE=
 
 ; Vault settings ================================================== #
 

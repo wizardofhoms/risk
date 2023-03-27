@@ -51,8 +51,42 @@ prompt_question ()
     echo "${ans}"
 }
 
-# print_key_value formats a key-value pair with coloring and prints it.
-print_key_value ()
+# print_new_qube is used to display the properties of a newly created qube.
+# $1 - Name
+# $2 - Message to display above properties
+print_new_qube ()
 {
-    echo
+    local name="$1"
+    local template netvm
+
+    qvm-ls "${name}" &>/dev/null || return
+
+    template=$(qvm-prefs "${name}" template)
+    netvm=$(qvm-prefs "${name}" netvm)
+
+    [[ -n "${2}" ]] && _info "${2}"
+    _info "Name:       ${fg_bold[white]} $web ${reset_color}"
+    _info "Netvm:      ${fg_bold[white]} $netvm ${reset_color}"
+    _info "Template:   ${fg_bold[white]} $template ${reset_color}"
+}
+
+# print_new_qube is used to display the properties of a newly cloned qube.
+# $1 - Name
+# $2 - Clone name
+# $2 - Message to display above properties
+print_cloned_qube ()
+{
+    local name="$1"
+    local clone="$2"
+    local netvm
+
+    qvm-ls "${name}" &>/dev/null || return
+
+    netvm=$(qvm-prefs "${name}" netvm)
+
+    [[ -n "${3}" ]] && _info "${3}"
+    _info "Name:          ${fg_bold[white]} $name ${reset_color}"
+    _info "Netvm:         ${fg_bold[white]} $netvm ${reset_color}"
+    _info "Cloned from:   ${fg_bold[white]} $clone ${reset_color}"
+
 }

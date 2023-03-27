@@ -7,18 +7,11 @@ function proxy.vpn_create ()
     local gw_label="${3:=blue}"
     local template="${4:=$(config_get VPN_TEMPLATE)}"
 
-    _info "New VPN qube"
-    _info "Name:      $gw"
-    _info "Netvm:     $netvm"
-    _info "Template:  $template"
-
     _run qvm-create --property netvm="$netvm" --label "$gw_label" --template "$template"
-
-    _info "Getting network from $netvm"
+    print_new_qube "${gw}" "New VPN qube"
 
     # Tag the VM with its owner, and add the gateway to the list of proxies
     _run qvm-tags "$gw" set "$IDENTITY"
-    echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
     identity.config_append PROXY_QUBES "${gw}"
 }
 
@@ -30,12 +23,6 @@ function proxy.vpn_clone ()
     local gw_label="${3:=blue}"
     local gw_clone="$4"
 
-    # Create the VPN
-    _info "New VPN qube"
-    _info "Name:          $gw"
-    _info "Netvm:         $netvm"
-    _info "Cloned from:   $gw_clone"
-
     _run qvm-clone "${gw_clone}" "${gw}"
     _catch "Failed to clone VM ${gw_clone}"
 
@@ -46,11 +33,7 @@ function proxy.vpn_clone ()
     disp_template=$(qvm-prefs "${gw}" template_for_dispvms)
     [[ "$disp_template" = "True" ]] && qvm-prefs "${gw}" template_for_dispvms False
 
-    _info "Getting network from $netvm"
-    _run qvm-prefs "$gw" netvm "$netvm"
-
-    _verbose "Setting label to $gw_label"
-    _run qvm-prefs "$gw" label "$gw_label"
+    print_cloned_qube "${gw}" "${gw_clone}" "New VPN qube"
 
     # Tag the VM with its owner, and add the gateway to the list of proxies
     _run qvm-tags "$gw" set "$IDENTITY"

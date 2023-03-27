@@ -166,7 +166,6 @@ function web.browser_set_split_dispvm ()
 
     split_backend="$(config_get SPLIT_BROWSER)"
     browser_vm=$(identity.config_get BROWSER_QUBE)
-    # browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
 
     filename="$(crypt.filename "bookmarks.tsv")"
     local bookmarks_file="/home/user/.tomb/mgmt/${filename}"

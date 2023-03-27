@@ -65,7 +65,7 @@ print_new_qube ()
     netvm=$(qvm-prefs "${name}" netvm)
 
     [[ -n "${2}" ]] && _info "${2}"
-    _info "Name:       ${fg_bold[white]} $web ${reset_color}"
+    _info "Name:       ${fg_bold[white]} $name ${reset_color}"
     _info "Netvm:      ${fg_bold[white]} $netvm ${reset_color}"
     _info "Template:   ${fg_bold[white]} $template ${reset_color}"
 }

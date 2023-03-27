@@ -1939,7 +1939,16 @@ WHONIX_WS=
 VPN_VM=
 
 ; Default AppVM to clone for split-browser backend
+; If this value is set by you to a given VM, make sure its split-browser
+; features function correctly, as this qube will be used for all identities'
+; browsing needs. If not set, it will populated by risk when creating the
+; dedicated split-browser backend AppVM qube.
 SPLIT_BROWSER=
+
+; Template to use when creating a split-browser backend.
+; The template should have the corresponding qubes-split-browser package
+; installed, see risk documentation for installation instructions.
+; SPLIT_BROWSER_TEMPLATE=
 
 ; Vault settings ================================================== #
 
@@ -3075,13 +3084,10 @@ function proxy.tor_create ()
     local gw_label="${3-yellow}"
     local gw_template="$(config_get WHONIX_GW_TEMPLATE)"
 
-    _info "New TOR gateway qube"
-    _info "Name:      $gw"
-    _info "Netvm:     $netvm"
-    _info "Template:  $gw_template"
-
     _run qvm-create "${gw}" --property netvm="$netvm" --label "$gw_label" --template "$gw_template"
     _run qvm-prefs "$gw" provides_network true
+
+    print_new_qube "${gw}" "New TOR gateway qube"
 
     # Tag the VM with its owner, and save as identity tor gateway
     _run qvm-tags "$gw" set "$IDENTITY"
@@ -3099,13 +3105,10 @@ function proxy.tor_clone ()
     local netvm="${3-$(identity.config_get NETVM_QUBE)}"
     local gw_label="${4-yellow}"
 
-    _info "New TOR gateway qube"
-    _info "Name:          $gw"
-    _info "Netvm:         $netvm"
-    _info "Cloned from:   $gw_clone"
-
     _run qvm-clone "${gw_clone}" "${gw}"
     _catch "Failed to clone VM ${gw_clone}"
+
+    print_cloned_qube "${gw}" "${gw_clone}" "New TOR gateway qube"
 
     # For now disposables are not allowed, since it would create too many VMs,
     # and complicate a bit the setup steps for VPNs. If the clone is a template
@@ -3221,10 +3224,44 @@ prompt_question ()
     echo "${ans}"
 }
 
-# print_key_value formats a key-value pair with coloring and prints it.
-print_key_value ()
+# print_new_qube is used to display the properties of a newly created qube.
+# $1 - Name
+# $2 - Message to display above properties
+print_new_qube ()
 {
-    echo
+    local name="$1"
+    local template netvm
+
+    qvm-ls "${name}" &>/dev/null || return
+
+    template=$(qvm-prefs "${name}" template)
+    netvm=$(qvm-prefs "${name}" netvm)
+
+    [[ -n "${2}" ]] && _info "${2}"
+    _info "Name:       ${fg_bold[white]} $name ${reset_color}"
+    _info "Netvm:      ${fg_bold[white]} $netvm ${reset_color}"
+    _info "Template:   ${fg_bold[white]} $template ${reset_color}"
+}
+
+# print_new_qube is used to display the properties of a newly cloned qube.
+# $1 - Name
+# $2 - Clone name
+# $2 - Message to display above properties
+print_cloned_qube ()
+{
+    local name="$1"
+    local clone="$2"
+    local netvm
+
+    qvm-ls "${name}" &>/dev/null || return
+
+    netvm=$(qvm-prefs "${name}" netvm)
+
+    [[ -n "${3}" ]] && _info "${3}"
+    _info "Name:          ${fg_bold[white]} $name ${reset_color}"
+    _info "Netvm:         ${fg_bold[white]} $netvm ${reset_color}"
+    _info "Cloned from:   ${fg_bold[white]} $clone ${reset_color}"
+
 }
 
 # src/lib/validations/validate_devices.sh
@@ -3671,18 +3708,11 @@ function proxy.vpn_create ()
     local gw_label="${3:=blue}"
     local template="${4:=$(config_get VPN_TEMPLATE)}"
 
-    _info "New VPN qube"
-    _info "Name:      $gw"
-    _info "Netvm:     $netvm"
-    _info "Template:  $template"
-
     _run qvm-create --property netvm="$netvm" --label "$gw_label" --template "$template"
-
-    _info "Getting network from $netvm"
+    print_new_qube "${gw}" "New VPN qube"
 
     # Tag the VM with its owner, and add the gateway to the list of proxies
     _run qvm-tags "$gw" set "$IDENTITY"
-    echo "$gw" >> "${IDENTITY_DIR}/proxy_vms"
     identity.config_append PROXY_QUBES "${gw}"
 }
 
@@ -3694,12 +3724,6 @@ function proxy.vpn_clone ()
     local gw_label="${3:=blue}"
     local gw_clone="$4"
 
-    # Create the VPN
-    _info "New VPN qube"
-    _info "Name:          $gw"
-    _info "Netvm:         $netvm"
-    _info "Cloned from:   $gw_clone"
-
     _run qvm-clone "${gw_clone}" "${gw}"
     _catch "Failed to clone VM ${gw_clone}"
 
@@ -3710,11 +3734,7 @@ function proxy.vpn_clone ()
     disp_template=$(qvm-prefs "${gw}" template_for_dispvms)
     [[ "$disp_template" = "True" ]] && qvm-prefs "${gw}" template_for_dispvms False
 
-    _info "Getting network from $netvm"
-    _run qvm-prefs "$gw" netvm "$netvm"
-
-    _verbose "Setting label to $gw_label"
-    _run qvm-prefs "$gw" label "$gw_label"
+    print_cloned_qube "${gw}" "${gw_clone}" "New VPN qube"
 
     # Tag the VM with its owner, and add the gateway to the list of proxies
     _run qvm-tags "$gw" set "$IDENTITY"
@@ -3860,8 +3880,10 @@ function web.browser_create ()
     local web="${1}-web"
     local netvm="${2-$(identity.config_get NETVM_QUBE)}"
     local label="${3-orange}"
-    local template="$(config_get WHONIX_WS_TEMPLATE)"
-    local template_disp="$(qvm-prefs "${template}" template_for_dispvms 2>/dev/null)"
+
+    local template template_disp
+    template="$(config_get WHONIX_WS_TEMPLATE)"
+    template_disp="$(qvm-prefs "${template}" template_for_dispvms 2>/dev/null)"
 
     # If the template used is a disposable_template,
     # this means we must create a named disposable VM.
@@ -3872,12 +3894,8 @@ function web.browser_create ()
     fi
 
     # Generate the VM
-    _info "New browser VM"
-    _info "Name:       $web"
-    _info "Netvm:      $netvm"
-    _info "Template:   $template"
-
     _run qvm-create "${web}" --property netvm="$netvm" --label="$label" --template="$template"
+    print_new_qube "${web}" "New client browser VM"
 
     if [[ $? -gt 0 ]]; then
         _warning "Failed to create browser VM $web" && return
@@ -3900,22 +3918,17 @@ function web.browser_clone ()
     local netvm="${3-$(identity.config_get NETVM_QUBE)}"
     local label="${4-orange}"
 
-    _info "New browser VM"
-    _info "Name:          $web"
-    _info "Netvm:         $netvm"
-    _info "Cloned from:   $web_clone"
-
-    _info "Cloning web browsing VM (name: $web / netvm: $netvm / template: $web_clone)"
     _run qvm-clone "${web_clone}" "${web}"
     if [[ $? -gt 0 ]] ; then
         _warning "Failed to clone browser VM $web" && return
     fi
+    print_cloned_qube "${web}" "${web_clone}" "New client browser VM"
 
     _run qvm-prefs "$web" label "$label"
     _run qvm-prefs "$web" netvm "$netvm"
 
     # Only mark this VM as disposable template when it's not one already.
-    if [[ "$(qvm-prefs "${ws_template}" template_for_dispvms 2>/dev/null)" == False ]]; then
+    if [[ "$(qvm-prefs "${web}" template_for_dispvms 2>/dev/null)" == False ]]; then
         _run qvm-prefs "${web}" template_for_dispvms True
     fi
 
@@ -3963,12 +3976,11 @@ function web.split_backend_create ()
     local web_label="${2-gray}"
     local split_template="$(config_get SPLIT_BROWSER_TEMPLATE)"
 
-    _info "Creating split-browser (name: $web / netvm: $netvm / template: $split_template)"
     qvm-create --property netvm=None --label "$web_label" --template "$split_template"
+    print_new_qube "${web}" "New split-browser backend"
 
-    qvm-tags "$web" set "$IDENTITY"
-    identity.config_set BROWSER_QUBE "${web}"
-    # echo "${web}" > "${IDENTITY_DIR}/browser_vm"
+    # Once created, set the configuration with this qube.
+    config_set SPLIT_BROWSER "${web}"
 }
 
 # Clone an existing split-browser VM, and change its dispvms
@@ -3978,13 +3990,36 @@ function web.split_backend_clone ()
     local web_clone="$2"
     local web_label="${3-gray}"
 
-    _info "Cloning split-browser VM (name: $web / netvm: $netvm / template: $web_clone)"
     qvm-clone "${web_clone}" "${web}"
-
     qvm-prefs "$web" label "$web_label"
     qvm-prefs "$web" netvm None
 
-    qvm-tags "$web" set "$IDENTITY"
+    print_cloned_qube "${web}" "${web_clone}" "New split-browser backend"
+
+    # Once created, set the configuration with this qube.
+    config_set SPLIT_BROWSER "${web}"
+}
+
+# web.skip_split_create returns 0 when there not enough information in the configuration
+# file or in command flags for creating a new split-browser backend qube (no templates/clones
+
+# indicated, etc).
+# Needs access to command-line flags
+function web.skip_split_create ()
+{
+    [[ ${args['--no-split-browser']} -eq 1 ]] && return 0
+
+    local template clone
+
+    template="$(config_get SPLIT_BROWSER_TEMPLATE)"
+    clone="$(config_get SPLIT_BROWSER)"
+
+    [[ -z ${template} && -z ${clone} ]] && \
+        _info "Skipping split-browser backend: no TemplateVM/AppVM specified in config" && return 0
+
+    [[ -n ${clone} ]] && return 0
+
+    return 1
 }
 
 # web.fail_config_split_backend exits the program if risk lacks some information
@@ -4003,7 +4038,6 @@ function web.browser_set_split_dispvm ()
 
     split_backend="$(config_get SPLIT_BROWSER)"
     browser_vm=$(identity.config_get BROWSER_QUBE)
-    # browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
 
     filename="$(crypt.filename "bookmarks.tsv")"
     local bookmarks_file="/home/user/.tomb/mgmt/${filename}"
@@ -4453,6 +4487,7 @@ risk_identity_equip_command() {
   _in_section "web" && echo && _warning "Creating browsing VMs"
   web_netvm="$(identity.config_get NETVM_QUBE)"
 
+  # Browser client
   if ! web.skip_browser_create; then
       if [[ -n ${args['--clone-web-from']} ]]; then
           clone="${args['--clone-web-from']}"
@@ -4460,6 +4495,11 @@ risk_identity_equip_command() {
       else
           web.browser_create "$vm_name" "$web_netvm" "$label"
       fi
+  fi
+
+  # Split-browser backend
+  if ! web.skip_split_create; then
+      web.split_backend_create "${vm_name}" "${label}"
   fi
 
   # Per-identity bookmarks file in vault management tomb.

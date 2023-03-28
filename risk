@@ -3413,8 +3413,13 @@ function qube.root_template ()
     local vm="${1}"
     local updateable
 
+    # If VM is a template itself, return it.
+    [[ "$(qvm-prefs "${vm}" klass)" == TemplateVM ]] && echo "${vm}" && return
+
+    # Or get the template, and check it can be updated.
+    # If not, recursively look for the first updateable template.
     template="$(qvm-prefs "${vm}" template 2>/dev/null)"
-    updateable="$(qvm-prefs "${vm}" updateable 2>/dev/null)"
+    updateable="$(qvm-prefs "${template}" updateable 2>/dev/null)"
 
     while [[ "${updateable}" == "False" ]]; do
         template="$(qvm-prefs "${template}" template 2>/dev/null)"
@@ -3449,16 +3454,25 @@ function qube.command_args ()
                 # Dom0 is handled in the risk_qube_update_command function.
                 ;;
             all)
+                # Update all the VMs that can be updated.
                 all+=( "${updatevm}" )
                 all+=( "${can_update[@]}" )
                 ;;
             *cacher)
+                # Update the template of the cacher (update) VM
                 all+=( "${updatevm}" )
                 ;;
             *)
-                # Else return the VM name itself
+                # Else find qubes matching the argument exactly.
                 for vm in "${can_update[@]}"; do
-                    [[ "${vm}" =~ ${word} ]] && all+=( "${vm}" )
+                    [[ "${vm}" == "${word}" ]] || continue
+
+                    # Matching, check not added twice to the list.
+                    local found=false
+                    for queued in "${all[@]}"; do
+                        [[ "$queued" == "$vm" ]] && found=true && break
+                    done
+                    [[ $found == false ]] && all+=( "${vm}" )
                 done
                 ;;
         esac
@@ -4087,6 +4101,31 @@ function web.browser_unset_split_dispvm ()
 function web.no_split_backend ()
 {
     echo -n
+}
+
+# web.update_torbrowser finds the active identity's browser qube template,
+# or if not existing, the globally configured whonix workstation, and updates
+# the Tor browser in it.
+# Requires an identity to be active.
+function web.update_torbrowser ()
+{
+    local browser_vm browser_template running
+
+    # Either the identity browser, of the global config one, or return.
+    browser_vm="$(identity.browser_qube)"
+    [[ -z "${browser_vm}" ]] && browser_vm="$(config_get WHONIX_WS)"
+    [[ -z "${browser_vm}" ]] && return
+
+    # Get the template
+    browser_template="$(qube.root_template "${browser_vm}")"
+
+    _warning "Updating Tor browser in ${browser_template}"
+    qube.is_running "${browser_template}"
+    running=$?
+
+    # Run the update and optionally shut it down if it was before.
+    _run_qube_term "${browser_template}" sudo update-torbrowser
+    [[ ${running} -eq 1 ]] && qube.shutdown "${browser_template}"
 }
 
 # ========================================================================================
@@ -5123,15 +5162,7 @@ risk_qube_update_command() {
   # We need to know for which identity to update, so we need one active.
   if [[ ${args['vms']} == torbrowser ]] || [[ ${other_args[(r)torbrowser]} == torbrowser ]]; then
       identity.set
-
-      local browser_vm browser_template
-      browser_vm="$(identity.browser_qube)"
-
-      if [[ -n "${browser_vm}" ]]; then
-          browser_template="$(qube.root_template "${browser_vm}")"
-          _info "Updating Tor browser in ${browser_template}"
-          _run_qube_term "${browser_template}" sudo update-torbrowser
-      fi
+      web.update_torbrowser
   fi
 
 }

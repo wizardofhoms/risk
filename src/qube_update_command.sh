@@ -23,13 +23,5 @@ fi
 # We need to know for which identity to update, so we need one active.
 if [[ ${args['vms']} == torbrowser ]] || [[ ${other_args[(r)torbrowser]} == torbrowser ]]; then
     identity.set
-
-    local browser_vm browser_template
-    browser_vm="$(identity.browser_qube)"
-
-    if [[ -n "${browser_vm}" ]]; then
-        browser_template="$(qube.root_template "${browser_vm}")"
-        _info "Updating Tor browser in ${browser_template}"
-        _run_qube_term "${browser_template}" sudo update-torbrowser
-    fi
+    web.update_torbrowser
 fi

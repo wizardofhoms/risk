@@ -216,8 +216,13 @@ _identity ()
                         "${_flags_init_web[@]}" \
                         '1:identity name:' && ret=0
                     ;;
-                start|open|delete|nake)
+                start|open|nake)
                     _arguments '1:identity name:' && ret=0
+                    ;;
+                delete)
+                    _arguments -C \
+                        '(-b --backup)'{-b,--backup}'[If a backup device is mounted, also delete all the associated backup data]' \
+                        '1:identity to delete:' && ret=0
                     ;;
             esac
     esac
@@ -626,7 +631,7 @@ _disabled_identity_vms ()
     tor_gateway="$(qvm-run --pass-io "${vault_vm}" 'risks kv get TOR_QUBE')"
     [[ -n ${tor_gateway} ]] && proxies+=( ${tor_gateway} )
     browser_vm="$(qvm-run --pass-io "${vault_vm}" 'risks kv get BROWSER_QUBE')"
-    [[ -n ${browser_vm} ]] && vms+=( ${browser_vm} )
+    [[ -n ${browser_vm} ]] && client_vms+=( ${browser_vm} )
 
     [[ -z "${proxies}" ]] && [[ -z "${vms}" ]] \
         && _message "No qubes belong to this identity" && return

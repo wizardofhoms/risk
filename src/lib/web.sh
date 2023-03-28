@@ -215,6 +215,31 @@ function web.no_split_backend ()
     echo -n
 }
 
+# web.update_torbrowser finds the active identity's browser qube template,
+# or if not existing, the globally configured whonix workstation, and updates
+# the Tor browser in it.
+# Requires an identity to be active.
+function web.update_torbrowser ()
+{
+    local browser_vm browser_template running
+
+    # Either the identity browser, of the global config one, or return.
+    browser_vm="$(identity.browser_qube)"
+    [[ -z "${browser_vm}" ]] && browser_vm="$(config_get WHONIX_WS)"
+    [[ -z "${browser_vm}" ]] && return
+
+    # Get the template
+    browser_template="$(qube.root_template "${browser_vm}")"
+
+    _warning "Updating Tor browser in ${browser_template}"
+    qube.is_running "${browser_template}"
+    running=$?
+
+    # Run the update and optionally shut it down if it was before.
+    _run_qube_term "${browser_template}" sudo update-torbrowser
+    [[ ${running} -eq 1 ]] && qube.shutdown "${browser_template}"
+}
+
 # ========================================================================================
 # Browsing activities and data
 # ========================================================================================

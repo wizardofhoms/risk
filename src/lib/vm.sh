@@ -63,8 +63,13 @@ function qube.root_template ()
     local vm="${1}"
     local updateable
 
+    # If VM is a template itself, return it.
+    [[ "$(qvm-prefs "${vm}" klass)" == TemplateVM ]] && echo "${vm}" && return
+
+    # Or get the template, and check it can be updated.
+    # If not, recursively look for the first updateable template.
     template="$(qvm-prefs "${vm}" template 2>/dev/null)"
-    updateable="$(qvm-prefs "${vm}" updateable 2>/dev/null)"
+    updateable="$(qvm-prefs "${template}" updateable 2>/dev/null)"
 
     while [[ "${updateable}" == "False" ]]; do
         template="$(qvm-prefs "${template}" template 2>/dev/null)"
@@ -99,16 +104,25 @@ function qube.command_args ()
                 # Dom0 is handled in the risk_qube_update_command function.
                 ;;
             all)
+                # Update all the VMs that can be updated.
                 all+=( "${updatevm}" )
                 all+=( "${can_update[@]}" )
                 ;;
             *cacher)
+                # Update the template of the cacher (update) VM
                 all+=( "${updatevm}" )
                 ;;
             *)
-                # Else return the VM name itself
+                # Else find qubes matching the argument exactly.
                 for vm in "${can_update[@]}"; do
-                    [[ "${vm}" =~ ${word} ]] && all+=( "${vm}" )
+                    [[ "${vm}" == "${word}" ]] || continue
+
+                    # Matching, check not added twice to the list.
+                    local found=false
+                    for queued in "${all[@]}"; do
+                        [[ "$queued" == "$vm" ]] && found=true && break
+                    done
+                    [[ $found == false ]] && all+=( "${vm}" )
                 done
                 ;;
         esac

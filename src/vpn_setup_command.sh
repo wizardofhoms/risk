@@ -37,9 +37,3 @@ elif [[ -n "${args['--config-in']}" ]]; then
     # Or if we are asked to browse one or more configuration files in another VM.
     proxy.vpn_import_configs "$name" "$config_vm" "$client_conf_path"
 fi
-
-# Immediately start the VPN service if the user wants to.
-if [[ "${args['--restart']}" -eq 1 ]]; then
-    _info "Restarting VPN systemd service (qubes-vpn-handler)"
-    _run_exec "$name" systemctl restart qubes-vpn-handler.service
-fi

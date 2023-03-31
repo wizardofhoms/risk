@@ -37,10 +37,6 @@ commands:
         help: "VM in which to browse for VPN configuration(s)"
         arg: config_vm
         conflicts: [ --choose ]
-      - &restart
-        long: --restart
-        short: -R
-        help: After setting the VPN configuration file, restart the VPN service.
       - &set_default
         long: --set-default
         help: "Set this VM as the default NetVM for all identity client VMs (browsers, messaging, etc)"
@@ -61,7 +57,6 @@ commands:
         validate: vm_exists
     flags:
       - *vpn_config
-      - *restart
       - *set_default
       - *netvm
       - long: --choose

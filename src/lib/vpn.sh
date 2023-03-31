@@ -95,32 +95,31 @@ function proxy.vpn_import_configs ()
     local config_path
     local new_path
 
+    # Select the file, return if empty
     config_path=$(_run_exec "$config_vm" "zenity --file-selection --title='VPN configuration selection' 2>/dev/null")
-    if [[ -z "$config_path" ]]; then
-        _info "Canceling setup: no file selected in VM $config_vm"
+    [[ -z "$config_path" ]] && _info "Canceling setup: no file selected in VM $config_vm" && return
+
+    _verbose "Copying file $config_path to VPN VM"
+    qvm-run "$config_vm" "qvm-copy-to-vm $name $config_path" &>/dev/null
+
+    # Now our configuration is the QubesIncoming directory of our VPN,
+    # so we move it where the VPN will look for when starting.
+    new_path="/home/user/QubesIncoming/${config_vm}/$(basename "$config_path")"
+
+    # If the file is a zip file, unzip it in the configs directory
+    # and immediately run the setup prompt to choose one.
+    if [[ $new_path:e == "zip" ]]; then
+        local configs_dir="/rw/config/vpn/configs"
+        _info "Unzipping VPN configuration files into $configs_dir"
+        qvm-run "$name" "sudo mkdir -p $configs_dir" &>/dev/null
+        qvm-run "$name" "sudo unzip -d $configs_dir ${new_path}" &>/dev/null
+        _run_exec "$name" /usr/local/bin/setup_VPN
     else
-        _verbose "Copying file $config_path to VPN VM"
-        qvm-run "$config_vm" "qvm-copy-to-vm $name $config_path"
+        _info "Copying file directly to the VPN client config path"
+        _run_exec "$name" sudo mv "$new_path" "$client_conf_path"
+    fi
 
-        # Now our configuration is the QubesIncoming directory of our VPN,
-        # so we move it where the VPN will look for when starting.
-        new_path="/home/user/QubesIncoming/${config_vm}/$(basename "$config_path")"
-
-        # If the file is a zip file, unzip it in the configs directory
-        # and immediately run the setup prompt to choose one.
-        if [[ $new_path:e == "zip" ]]; then
-            local configs_dir="/rw/config/vpn/configs"
-            _info "Unzipping VPN configuration files into $configs_dir"
-            _run_exec "$name" sudo mkdir -p "$configs_dir"
-            _run_exec "$name" sudo unzip -j -d "$configs_dir"
-            _run_exec "$name" /usr/local/bin/setup_VPN
-        else
-            _info "Copying file directly to the VPN client config path"
-            _run_exec "$name" sudo mv "$new_path" "$client_conf_path"
-        fi
-
-        _info "Done transfering VPN client configuration to VM"
-        fi
+    _info "Done transfering VPN client configuration to VM"
 }
 
 # proxy.vpn_next_name returns a name for a new VPN VM, such as vpn-1,

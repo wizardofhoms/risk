@@ -325,8 +325,12 @@ function identity.config_reduce ()
         existing_value=$(sed /^"$val"\$/d <<<"${existing_value}")
     done
 
-    # And save the reduced value
-    identity.config_set "${key}" "${existing_value}"
+    # Either save the reduced value, or unset the key if empty.
+    if [[ -z "${existing_value}" ]]; then
+        identity.config_unset "${key}"
+    else
+        identity.config_set "${key}" "${existing_value}"
+    fi
 }
 
 # identity.config_clear uses 'risks kv clean' in vault to clear all key-value pairs.

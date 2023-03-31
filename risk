@@ -879,11 +879,6 @@ risk_vpn_create_usage() {
     echo
 
     # :flag.usage
-    printf "  %s\n" "--restart, -R"
-    printf "    After setting the VPN configuration file, restart the VPN service.\n"
-    echo
-
-    # :flag.usage
     printf "  %s\n" "--set-default"
     printf "    Set this VM as the default NetVM for all identity client VMs (browsers,\n    messaging, etc)\n"
     echo
@@ -934,11 +929,6 @@ risk_vpn_setup_usage() {
     # :flag.usage
     printf "  %s\n" "--config-in CONFIG_VM"
     printf "    VM in which to browse for VPN configuration(s)\n"
-    echo
-
-    # :flag.usage
-    printf "  %s\n" "--restart, -R"
-    printf "    After setting the VPN configuration file, restart the VPN service.\n"
     echo
 
     # :flag.usage
@@ -2483,8 +2473,12 @@ function identity.config_reduce ()
         existing_value=$(sed /^"$val"\$/d <<<"${existing_value}")
     done
 
-    # And save the reduced value
-    identity.config_set "${key}" "${existing_value}"
+    # Either save the reduced value, or unset the key if empty.
+    if [[ -z "${existing_value}" ]]; then
+        identity.config_unset "${key}"
+    else
+        identity.config_set "${key}" "${existing_value}"
+    fi
 }
 
 # identity.config_clear uses 'risks kv clean' in vault to clear all key-value pairs.
@@ -3823,32 +3817,31 @@ function proxy.vpn_import_configs ()
     local config_path
     local new_path
 
+    # Select the file, return if empty
     config_path=$(_run_exec "$config_vm" "zenity --file-selection --title='VPN configuration selection' 2>/dev/null")
-    if [[ -z "$config_path" ]]; then
-        _info "Canceling setup: no file selected in VM $config_vm"
+    [[ -z "$config_path" ]] && _info "Canceling setup: no file selected in VM $config_vm" && return
+
+    _verbose "Copying file $config_path to VPN VM"
+    qvm-run "$config_vm" "qvm-copy-to-vm $name $config_path" &>/dev/null
+
+    # Now our configuration is the QubesIncoming directory of our VPN,
+    # so we move it where the VPN will look for when starting.
+    new_path="/home/user/QubesIncoming/${config_vm}/$(basename "$config_path")"
+
+    # If the file is a zip file, unzip it in the configs directory
+    # and immediately run the setup prompt to choose one.
+    if [[ $new_path:e == "zip" ]]; then
+        local configs_dir="/rw/config/vpn/configs"
+        _info "Unzipping VPN configuration files into $configs_dir"
+        qvm-run "$name" "sudo mkdir -p $configs_dir" &>/dev/null
+        qvm-run "$name" "sudo unzip -d $configs_dir ${new_path}" &>/dev/null
+        _run_exec "$name" /usr/local/bin/setup_VPN
     else
-        _verbose "Copying file $config_path to VPN VM"
-        _run_exec "$config_vm" qvm-copy-to-vm "$name" "$config_path"
+        _info "Copying file directly to the VPN client config path"
+        _run_exec "$name" sudo mv "$new_path" "$client_conf_path"
+    fi
 
-        # Now our configuration is the QubesIncoming directory of our VPN,
-        # so we move it where the VPN will look for when starting.
-        new_path="/home/user/QubesIncoming/${config_vm}/$(basename "$config_path")"
-
-        # If the file is a zip file, unzip it in the configs directory
-        # and immediately run the setup prompt to choose one.
-        if [[ $new_path:e == "zip" ]]; then
-            local configs_dir="/rw/config/vpn/configs"
-            _info "Unzipping VPN configuration files into $configs_dir"
-            _run_exec "$name" sudo mkdir -p "$configs_dir"
-            _run_exec "$name" sudo unzip -j -d "$configs_dir"
-            _run_exec "$name" /usr/local/bin/setup_VPN
-        else
-            _info "Copying file directly to the VPN client config path"
-            _run_exec "$name" sudo mv "$new_path" "$client_conf_path"
-        fi
-
-        _info "Done transfering VPN client configuration to VM"
-        fi
+    _info "Done transfering VPN client configuration to VM"
 }
 
 # proxy.vpn_next_name returns a name for a new VPN VM, such as vpn-1,
@@ -4814,6 +4807,7 @@ risk_vpn_create_command() {
   fi
 
   # Run the setup command, which will reuse all required flags.
+  echo
   args['vm']="$name"
   risk_vpn_setup_command
 
@@ -4868,12 +4862,6 @@ risk_vpn_setup_command() {
   elif [[ -n "${args['--config-in']}" ]]; then
       # Or if we are asked to browse one or more configuration files in another VM.
       proxy.vpn_import_configs "$name" "$config_vm" "$client_conf_path"
-  fi
-
-  # Immediately start the VPN service if the user wants to.
-  if [[ "${args['--restart']}" -eq 1 ]]; then
-      _info "Restarting VPN systemd service (qubes-vpn-handler)"
-      _run_exec "$name" systemctl restart qubes-vpn-handler.service
   fi
 
 }
@@ -7046,14 +7034,6 @@ risk_vpn_create_parse_requirements() {
         ;;
 
       # :flag.case
-      --restart | -R)
-
-        # :flag.case_no_arg
-        args['--restart']=1
-        shift
-        ;;
-
-      # :flag.case
       --set-default)
 
         # :flag.case_no_arg
@@ -7148,14 +7128,6 @@ risk_vpn_setup_parse_requirements() {
           printf "%s\n" "--config-in requires an argument: --config-in CONFIG_VM" >&2
           exit 1
         fi
-        ;;
-
-      # :flag.case
-      --restart | -R)
-
-        # :flag.case_no_arg
-        args['--restart']=1
-        shift
         ;;
 
       # :flag.case

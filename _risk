@@ -714,7 +714,7 @@ _disabled_vpns ()
     proxies=($(_identity_proxies))
 
     # Diff both
-    disabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq -D | uniq))
+    disabled_vpns=($(echo "${proxies[@]}" "${vms[@]}" | tr ' ' '\n' | sort | uniq))
 
     # Return
     if [[ "${#disabled_vpns[@]}" -eq 0 ]]; then

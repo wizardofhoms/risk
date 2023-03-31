@@ -166,6 +166,7 @@ function qube.enable ()
 {
     local name="$1"
     local enabled=( "$(identity.enabled_qubes)" )
+    local already_enabled=false
 
     # Check if the VM is already marked autostart
     for vm in "${enabled[@]}" ; do
@@ -174,7 +175,7 @@ function qube.enable ()
         fi
     done
 
-    if [[ ! $already_enabled ]]; then
+    if [[ $already_enabled != true ]]; then
         _info "Enabling VM ${name} to autostart"
         identity.config_append AUTOSTART_QUBES "${name}"
     else

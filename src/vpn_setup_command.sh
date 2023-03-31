@@ -19,7 +19,7 @@ if [[ ${args['--set-default']} -eq 1 ]]; then
     _info "Setting '$name' as default NetVM for all client machines"
     identity.config_set NETVM_QUBE "${name}"
 
-    # Find all existing client VMs (not gateways) and change their netVMs. 
+    # Find all existing client VMs (not gateways) and change their netVMs.
     read -rA clients < <(identity.client_qubes)
     for client in "${clients[@]}"; do
         if [[ -n "$client" ]]; then

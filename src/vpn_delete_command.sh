@@ -22,10 +22,10 @@ if [[ $netvm == "$vm" ]]; then
     # Check if we have a TOR gateway
     tor_gw=$(identity.tor_gateway)
     if [[ -n $tor_gw ]]; then
-        _info -n "Updating the default identity NetVM to $tor_gw"
+        _info "Updating the default identity NetVM to $tor_gw"
         identity.config_set TOR_QUBE "${tor_gw}"
     else
-        _info -n "The identity has no default NetVM anymore, please set it."
+        _info "The identity has no default NetVM anymore, please set it."
     fi
 fi
 

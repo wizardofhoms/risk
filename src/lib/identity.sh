@@ -374,7 +374,7 @@ function identity.proxy_qubes ()
     proxy_qubes=$(identity.config_get PROXY_QUBES)
     [[ -n "${proxy_qubes}" ]] || return
 
-    read -d '' -rA proxies <"${proxy_qubes}"
+    read -rA proxies <<< "${proxy_qubes}"
     echo "${proxies[@]}"
 }
 
@@ -387,7 +387,7 @@ function identity.client_qubes ()
     client_qubes=$(identity.config_get CLIENT_QUBES)
     [[ -n "${client_qubes}" ]] || return
 
-    read -d '' -rA clients <"${client_qubes}"
+    read -rA clients <<< "${client_qubes}"
     echo "${clients[@]}"
 }
 
@@ -400,7 +400,7 @@ function identity.enabled_qubes ()
     autostart_qubes=$(identity.config_get AUTOSTART_QUBES)
     [[ -n "${autostart_qubes}" ]] || return
 
-    read -d '' -rA clients <"${autostart_qubes}"
+    read -rA clients <<< "${autostart_qubes}"
     echo "${clients[@]}"
 }
 

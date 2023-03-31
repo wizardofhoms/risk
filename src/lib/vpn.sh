@@ -4,10 +4,11 @@ function proxy.vpn_create ()
 {
     local gw="${1}"
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
-    local gw_label="${3:=blue}"
-    local template="${4:=$(config_get VPN_TEMPLATE)}"
+    local gw_label="${3-blue}"
+    local template="${4-$(config_get VPN_TEMPLATE)}"
 
-    _run qvm-create --property netvm="$netvm" --label "$gw_label" --template "$template"
+    _run qvm-create "${gw}" --property netvm="$netvm" --label "$gw_label" --template "$template"
+    _catch "Failed to create VPN qube"
     print_new_qube "${gw}" "New VPN qube"
 
     # Tag the VM with its owner, and add the gateway to the list of proxies

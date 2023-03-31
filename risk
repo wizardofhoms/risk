@@ -2521,7 +2521,7 @@ function identity.proxy_qubes ()
     proxy_qubes=$(identity.config_get PROXY_QUBES)
     [[ -n "${proxy_qubes}" ]] || return
 
-    read -d '' -rA proxies <"${proxy_qubes}"
+    read -rA proxies <<< "${proxy_qubes}"
     echo "${proxies[@]}"
 }
 
@@ -2535,7 +2535,7 @@ function identity.client_qubes ()
     client_qubes=$(identity.config_get CLIENT_QUBES)
     [[ -n "${client_qubes}" ]] || return
 
-    read -d '' -rA clients <"${client_qubes}"
+    read -rA clients <<< "${client_qubes}"
     echo "${clients[@]}"
 }
 
@@ -2550,7 +2550,7 @@ function identity.enabled_qubes ()
     autostart_qubes=$(identity.config_get AUTOSTART_QUBES)
     [[ -n "${autostart_qubes}" ]] || return
 
-    read -d '' -rA clients <"${autostart_qubes}"
+    read -rA clients <<< "${autostart_qubes}"
     echo "${clients[@]}"
 }
 
@@ -3517,6 +3517,7 @@ function qube.enable ()
 {
     local name="$1"
     local enabled=( "$(identity.enabled_qubes)" )
+    local already_enabled=false
 
     # Check if the VM is already marked autostart
     for vm in "${enabled[@]}" ; do
@@ -3525,7 +3526,7 @@ function qube.enable ()
         fi
     done
 
-    if [[ ! $already_enabled ]]; then
+    if [[ $already_enabled != true ]]; then
         _info "Enabling VM ${name} to autostart"
         identity.config_append AUTOSTART_QUBES "${name}"
     else
@@ -3719,10 +3720,11 @@ function proxy.vpn_create ()
 {
     local gw="${1}"
     local netvm="${2-$(config_get DEFAULT_NETVM)}"
-    local gw_label="${3:=blue}"
-    local template="${4:=$(config_get VPN_TEMPLATE)}"
+    local gw_label="${3-blue}"
+    local template="${4-$(config_get VPN_TEMPLATE)}"
 
-    _run qvm-create --property netvm="$netvm" --label "$gw_label" --template "$template"
+    _run qvm-create "${gw}" --property netvm="$netvm" --label "$gw_label" --template "$template"
+    _catch "Failed to create VPN qube"
     print_new_qube "${gw}" "New VPN qube"
 
     # Tag the VM with its owner, and add the gateway to the list of proxies
@@ -3823,7 +3825,7 @@ function proxy.vpn_import_configs ()
 
         # If the file is a zip file, unzip it in the configs directory
         # and immediately run the setup prompt to choose one.
-        if [[ $new_path:t:e == "zip" ]]; then
+        if [[ $new_path:e == "zip" ]]; then
             local configs_dir="/rw/config/vpn/configs"
             _verbose "Unzipping files into $configs_dir"
             _run_exec "$name" mkdir -p "$configs_dir"
@@ -3836,9 +3838,6 @@ function proxy.vpn_import_configs ()
 
         _info "Done transfering VPN client configuration to VM"
         fi
-
-    # Add the gateway to the list of existing proxies for this identity
-    echo "$gw" > "${IDENTITY_DIR}/proxy_vms"
 }
 
 # proxy.vpn_next_name returns a name for a new VPN VM, such as vpn-1,
@@ -4779,25 +4778,21 @@ risk_vpn_create_command() {
   # Prepare some settings for this new VM
   local name netvm clone template label
 
-  name="${args['vm']:-$(cat "${IDENTITY_DIR}/vm_name" 2>/dev/null)}"
+  # Identity specific values.
+  name=$(identity.config_get QUBE_PREFIX)
   label="${args['--label']:=$(identity.vm_label)}"
-  netvm="$(config_or_flag "${args['--netvm']}" DEFAULT_NETVM)"
+  netvm="$(config_or_flag "${args['--netvm']}" "$(identity.config_get NETVM_QUBE)")"
+
+  # Global config
   clone="$(config_or_flag "${args['--from']}" VPN_VM)"
   template="$(config_or_flag "${args['--template']}" VPN_TEMPLATE)"
 
-  # 0 - Last-time setup
-
-  # If the --name flag is empty, this means we are using a default one,
-  # either the configured default one, or the name of the identity.
-  # In this case, we add 'vpn-1' to it (number varying).
+  # Get the name to use for this qube, from flags/args or defaults.
   if [[ -z "${args['vm']}" ]]; then
       name="$(proxy.vpn_next_name "$name")"
   fi
 
-  # 1 - Creation
-  #
-  # We either clone the gateway from an existing one,
-  # or we create it from a template.
+  # Create or clone the qube.
   if [[ "${args['--clone']}" -eq 1 ]]; then
       _info "Cloning VPN gateway (from VM $clone)"
       proxy.vpn_clone "$name" "$netvm" "$label" "$clone"
@@ -4806,14 +4801,7 @@ risk_vpn_create_command() {
       proxy.vpn_create "$name" "$netvm" "$label" "$template"
   fi
 
-  # Tag the VM with its owner
-  _run qvm-tags "$name" "$RISK_VM_OWNER_TAG" "$IDENTITY"
-  _catch "Failed to tag VM with identity"
-
-  # 2 - Setup
-  #
-  # Simply run the setup command, which has access to all the flags
-  # it needs to do its job. Tweak the args array for this to work.
+  # Run the setup command, which will reuse all required flags.
   args['vm']="$name"
   risk_vpn_setup_command
 
@@ -4838,25 +4826,20 @@ risk_vpn_setup_command() {
   name="${args['vm']}"
   config_vm="${args['--config-in']}"
   client_conf_path="$(config_or_flag "" DEFAULT_VPN_CLIENT_CONF)"
-  netvm="$(config_or_flag "${args['--netvm']}" DEFAULT_NETVM)"
+  netvm="$(config_or_flag "${args['--netvm']}" "$(identity.config_get NETVM_QUBE)")"
 
-  # There are different ways to setup a VPN VM, often mutually exclusive.
-
-  # We might be asked to change the netVM, but this can be combined
-  # with other settings to be handled below.
+  # Set the netVM of this VPN if required.
   if [[ -n "${netvm}" ]]; then
       _info "Getting network from $netvm"
       qvm-prefs "$name" netvm "$netvm"
   fi
 
-  # If the user wants this VM to be the default NetVM for all clients
-  # like browsers, messaging VMs, etc.
+  # Possibly set VPN to be the default NetVM for all client qubes (browsers, etc).
   if [[ ${args['--set-default']} -eq 1 ]]; then
-      identity.config_set NETVM_QUBE "${name}"
       _info "Setting '$name' as default NetVM for all client machines"
+      identity.config_set NETVM_QUBE "${name}"
 
-      # Here, find all existing client VMs (not gateways)
-      # and change their netVMs to this one.
+      # Find all existing client VMs (not gateways) and change their netVMs.
       read -rA clients < <(identity.client_qubes)
       for client in "${clients[@]}"; do
           if [[ -n "$client" ]]; then
@@ -4958,10 +4941,10 @@ risk_vpn_delete_command() {
       # Check if we have a TOR gateway
       tor_gw=$(identity.tor_gateway)
       if [[ -n $tor_gw ]]; then
-          _info -n "Updating the default identity NetVM to $tor_gw"
+          _info "Updating the default identity NetVM to $tor_gw"
           identity.config_set TOR_QUBE "${tor_gw}"
       else
-          _info -n "The identity has no default NetVM anymore, please set it."
+          _info "The identity has no default NetVM anymore, please set it."
       fi
   fi
 

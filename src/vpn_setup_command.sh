@@ -6,25 +6,20 @@ local name config_vm client_conf_path netvm
 name="${args['vm']}"
 config_vm="${args['--config-in']}"
 client_conf_path="$(config_or_flag "" DEFAULT_VPN_CLIENT_CONF)"
-netvm="$(config_or_flag "${args['--netvm']}" DEFAULT_NETVM)"
+netvm="$(config_or_flag "${args['--netvm']}" "$(identity.config_get NETVM_QUBE)")"
 
-# There are different ways to setup a VPN VM, often mutually exclusive.
-
-# We might be asked to change the netVM, but this can be combined
-# with other settings to be handled below.
+# Set the netVM of this VPN if required.
 if [[ -n "${netvm}" ]]; then
     _info "Getting network from $netvm"
     qvm-prefs "$name" netvm "$netvm"
 fi
 
-# If the user wants this VM to be the default NetVM for all clients
-# like browsers, messaging VMs, etc.
+# Possibly set VPN to be the default NetVM for all client qubes (browsers, etc).
 if [[ ${args['--set-default']} -eq 1 ]]; then
-    identity.config_set NETVM_QUBE "${name}"
     _info "Setting '$name' as default NetVM for all client machines"
+    identity.config_set NETVM_QUBE "${name}"
 
-    # Here, find all existing client VMs (not gateways)
-    # and change their netVMs to this one.
+    # Find all existing client VMs (not gateways) and change their netVMs. 
     read -rA clients < <(identity.client_qubes)
     for client in "${clients[@]}"; do
         if [[ -n "$client" ]]; then

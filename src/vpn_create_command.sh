@@ -4,26 +4,23 @@ identity.set
 # Prepare some settings for this new VM
 local name netvm clone template label
 
-name="${args['vm']:-$(cat "${IDENTITY_DIR}/vm_name" 2>/dev/null)}"
+# Identity specific values.
+name=$(identity.config_get QUBE_PREFIX)
 label="${args['--label']:=$(identity.vm_label)}"
-netvm="$(config_or_flag "${args['--netvm']}" DEFAULT_NETVM)"
+netvm="$(config_or_flag "${args['--netvm']}" "$(identity.config_get NETVM_QUBE)")"
+
+# Global config
 clone="$(config_or_flag "${args['--from']}" VPN_VM)"
 template="$(config_or_flag "${args['--template']}" VPN_TEMPLATE)"
 
 
-# 0 - Last-time setup
-
-# If the --name flag is empty, this means we are using a default one,
-# either the configured default one, or the name of the identity.
-# In this case, we add 'vpn-1' to it (number varying).
+# Get the name to use for this qube, from flags/args or defaults.
 if [[ -z "${args['vm']}" ]]; then
     name="$(proxy.vpn_next_name "$name")"
 fi
 
-# 1 - Creation
-#
-# We either clone the gateway from an existing one,
-# or we create it from a template.
+
+# Create or clone the qube.
 if [[ "${args['--clone']}" -eq 1 ]]; then
     _info "Cloning VPN gateway (from VM $clone)"
     proxy.vpn_clone "$name" "$netvm" "$label" "$clone"
@@ -32,14 +29,8 @@ else
     proxy.vpn_create "$name" "$netvm" "$label" "$template"
 fi
 
-# Tag the VM with its owner
-_run qvm-tags "$name" "$RISK_VM_OWNER_TAG" "$IDENTITY"
-_catch "Failed to tag VM with identity"
 
-# 2 - Setup
-#
-# Simply run the setup command, which has access to all the flags
-# it needs to do its job. Tweak the args array for this to work.
+# Run the setup command, which will reuse all required flags.
 args['vm']="$name"
 risk_vpn_setup_command
 

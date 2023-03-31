@@ -107,7 +107,7 @@ function proxy.vpn_import_configs ()
 
         # If the file is a zip file, unzip it in the configs directory
         # and immediately run the setup prompt to choose one.
-        if [[ $new_path:t:e == "zip" ]]; then
+        if [[ $new_path:e == "zip" ]]; then
             local configs_dir="/rw/config/vpn/configs"
             _verbose "Unzipping files into $configs_dir"
             _run_exec "$name" mkdir -p "$configs_dir"
@@ -120,9 +120,6 @@ function proxy.vpn_import_configs ()
 
         _info "Done transfering VPN client configuration to VM"
         fi
-
-    # Add the gateway to the list of existing proxies for this identity
-    echo "$gw" > "${IDENTITY_DIR}/proxy_vms"
 }
 
 # proxy.vpn_next_name returns a name for a new VPN VM, such as vpn-1,

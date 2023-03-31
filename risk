@@ -4912,11 +4912,8 @@ risk_vpn_enable_command() {
 risk_vpn_disable_command() {
   # src/vpn_disable_command.sh
 
-  identity_set
-
-  local name="${args['vm']}"
-
-  qube.disable "$name"
+  # Same parameters for this command, just use it and its checks.
+  risk_qube_disable_command
 
 }
 

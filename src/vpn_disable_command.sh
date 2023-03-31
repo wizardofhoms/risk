@@ -1,6 +1,3 @@
 
-identity_set
-
-local name="${args['vm']}"
-
-qube.disable "$name"
+# Same parameters for this command, just use it and its checks.
+risk_qube_disable_command

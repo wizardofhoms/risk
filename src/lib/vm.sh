@@ -188,11 +188,8 @@ function qube.disable ()
 {
     local name="$1"
     _info "Disabling VM $name"
-    local autostart_qubes
-    autostart_qubes=$(identity.config_get AUTOSTART_QUBES)
 
-    autostart_qubes=$(sed /^"$name"\$/d <<<"${autostart_qubes}")
-    identity.config_set AUTOSTART_QUBES "${autostart_qubes}"
+    identity.config_reduce AUTOSTART_QUBES "${name}"
 }
 
 # qube.start [vm 1] ... [vm n]

@@ -100,7 +100,7 @@ function proxy.vpn_import_configs ()
         _info "Canceling setup: no file selected in VM $config_vm"
     else
         _verbose "Copying file $config_path to VPN VM"
-        _run_exec "$config_vm" qvm-copy-to-vm "$name" "$config_path"
+        qvm-run "$config_vm" "qvm-copy-to-vm $name $config_path"
 
         # Now our configuration is the QubesIncoming directory of our VPN,
         # so we move it where the VPN will look for when starting.
@@ -110,13 +110,13 @@ function proxy.vpn_import_configs ()
         # and immediately run the setup prompt to choose one.
         if [[ $new_path:e == "zip" ]]; then
             local configs_dir="/rw/config/vpn/configs"
-            _verbose "Unzipping files into $configs_dir"
-            _run_exec "$name" mkdir -p "$configs_dir"
-            _run_exec "$name" unzip -j -d "$configs_dir"
+            _info "Unzipping VPN configuration files into $configs_dir"
+            _run_exec "$name" sudo mkdir -p "$configs_dir"
+            _run_exec "$name" sudo unzip -j -d "$configs_dir"
             _run_exec "$name" /usr/local/bin/setup_VPN
         else
-            _verbose "Copying file directly to the VPN client config path"
-            _run_exec "$name" mv "$new_path" "$client_conf_path"
+            _info "Copying file directly to the VPN client config path"
+            _run_exec "$name" sudo mv "$new_path" "$client_conf_path"
         fi
 
         _info "Done transfering VPN client configuration to VM"
@@ -149,6 +149,7 @@ function proxy.vpn_next_name ()
 function proxy.fail_not_identity_proxy ()
 {
     local name="$1"
+    local found=false
 
     read -rA proxies < <(identity.proxy_qubes)
     for proxy in "${proxies[@]}" ; do
@@ -157,7 +158,7 @@ function proxy.fail_not_identity_proxy ()
         fi
     done
 
-    if [[ ! $found ]]; then
+    if [[ $found != true ]]; then
         _info "VM $name is not listed as a VPN gateway. Aborting."
         exit 1
     fi

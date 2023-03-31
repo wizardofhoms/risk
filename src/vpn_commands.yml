@@ -32,15 +32,19 @@ commands:
         short: -f
         help: "VM to clone instead of the default VPN_VM configuration setting"
         arg: vpn_gw 
-      - &set_default
-        long: --set-default
-        help: "Set this VM as the default NetVM for all identity client VMs (browsers, messaging, etc)"
-        # Other network options
       - &vpn_config
         long: --config-in
         help: "VM in which to browse for VPN configuration(s)"
         arg: config_vm
         conflicts: [ --choose ]
+      - &restart
+        long: --restart
+        short: -R
+        help: After setting the VPN configuration file, restart the VPN service.
+      - &set_default
+        long: --set-default
+        help: "Set this VM as the default NetVM for all identity client VMs (browsers, messaging, etc)"
+        # Other network options
       - &netvm
         long: --netvm
         short: -n
@@ -57,6 +61,7 @@ commands:
         validate: vm_exists
     flags:
       - *vpn_config
+      - *restart
       - *set_default
       - *netvm
       - long: --choose

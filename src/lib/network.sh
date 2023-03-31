@@ -59,14 +59,15 @@ function network.fail_networked_qube ()
     [[ $(qvm-prefs "$vm" provides_network) == "True" ]] || return 0
 
     # Check if it provides network to any VM, and if yes, fail.
-    read -rA vms <(qubes.list_all)
+    read -rA vms < <(qubes.list_all)
     for svm in "${vms[@]}" ; do
-        local netvm
-        if [[ "$(qvm-prefs "$svm" netvm)" == "$vm" ]]; then
+        [[ -z "${svm}" ]] && continue
+
+        if [[ "$(qvm-prefs "$svm" netvm 2>/dev/null)" == "$vm" ]]; then
             connected_vms+=( "$svm" )
         fi
     done
 
-    [[ ${#connected_vms} -gt 0 ]] && _failure "VM $vm is netVM for [ ${connected_vms[*]} ] VMs"
+    [[ ${#connected_vms} -gt 0 ]] && _failure "VM $vm is NetVM for [ ${connected_vms[*]} ] VMs"
 }
 

@@ -874,13 +874,18 @@ risk_vpn_create_usage() {
     echo
 
     # :flag.usage
-    printf "  %s\n" "--set-default"
-    printf "    Set this VM as the default NetVM for all identity client VMs (browsers,\n    messaging, etc)\n"
+    printf "  %s\n" "--config-in CONFIG_VM"
+    printf "    VM in which to browse for VPN configuration(s)\n"
     echo
 
     # :flag.usage
-    printf "  %s\n" "--config-in CONFIG_VM"
-    printf "    VM in which to browse for VPN configuration(s)\n"
+    printf "  %s\n" "--restart, -R"
+    printf "    After setting the VPN configuration file, restart the VPN service.\n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "--set-default"
+    printf "    Set this VM as the default NetVM for all identity client VMs (browsers,\n    messaging, etc)\n"
     echo
 
     # :flag.usage
@@ -929,6 +934,11 @@ risk_vpn_setup_usage() {
     # :flag.usage
     printf "  %s\n" "--config-in CONFIG_VM"
     printf "    VM in which to browse for VPN configuration(s)\n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "--restart, -R"
+    printf "    After setting the VPN configuration file, restart the VPN service.\n"
     echo
 
     # :flag.usage
@@ -2521,7 +2531,7 @@ function identity.proxy_qubes ()
     proxy_qubes=$(identity.config_get PROXY_QUBES)
     [[ -n "${proxy_qubes}" ]] || return
 
-    read -rA proxies <<< "${proxy_qubes}"
+    read -d '' -rA proxies <<< "${proxy_qubes}"
     echo "${proxies[@]}"
 }
 
@@ -2535,7 +2545,7 @@ function identity.client_qubes ()
     client_qubes=$(identity.config_get CLIENT_QUBES)
     [[ -n "${client_qubes}" ]] || return
 
-    read -rA clients <<< "${client_qubes}"
+    read -d '' -rA clients <<< "${client_qubes}"
     echo "${clients[@]}"
 }
 
@@ -2550,7 +2560,7 @@ function identity.enabled_qubes ()
     autostart_qubes=$(identity.config_get AUTOSTART_QUBES)
     [[ -n "${autostart_qubes}" ]] || return
 
-    read -rA clients <<< "${autostart_qubes}"
+    read -d '' -rA clients <<< "${autostart_qubes}"
     echo "${clients[@]}"
 }
 
@@ -2942,15 +2952,16 @@ function network.fail_networked_qube ()
     [[ $(qvm-prefs "$vm" provides_network) == "True" ]] || return 0
 
     # Check if it provides network to any VM, and if yes, fail.
-    read -rA vms <(qubes.list_all)
+    read -rA vms < <(qubes.list_all)
     for svm in "${vms[@]}" ; do
-        local netvm
-        if [[ "$(qvm-prefs "$svm" netvm)" == "$vm" ]]; then
+        [[ -z "${svm}" ]] && continue
+
+        if [[ "$(qvm-prefs "$svm" netvm 2>/dev/null)" == "$vm" ]]; then
             connected_vms+=( "$svm" )
         fi
     done
 
-    [[ ${#connected_vms} -gt 0 ]] && _failure "VM $vm is netVM for [ ${connected_vms[*]} ] VMs"
+    [[ ${#connected_vms} -gt 0 ]] && _failure "VM $vm is NetVM for [ ${connected_vms[*]} ] VMs"
 }
 
 # src/lib/run.sh
@@ -3827,13 +3838,13 @@ function proxy.vpn_import_configs ()
         # and immediately run the setup prompt to choose one.
         if [[ $new_path:e == "zip" ]]; then
             local configs_dir="/rw/config/vpn/configs"
-            _verbose "Unzipping files into $configs_dir"
-            _run_exec "$name" mkdir -p "$configs_dir"
-            _run_exec "$name" unzip -j -d "$configs_dir"
+            _info "Unzipping VPN configuration files into $configs_dir"
+            _run_exec "$name" sudo mkdir -p "$configs_dir"
+            _run_exec "$name" sudo unzip -j -d "$configs_dir"
             _run_exec "$name" /usr/local/bin/setup_VPN
         else
-            _verbose "Copying file directly to the VPN client config path"
-            _run_exec "$name" mv "$new_path" "$client_conf_path"
+            _info "Copying file directly to the VPN client config path"
+            _run_exec "$name" sudo mv "$new_path" "$client_conf_path"
         fi
 
         _info "Done transfering VPN client configuration to VM"
@@ -3867,6 +3878,7 @@ function proxy.vpn_next_name ()
 function proxy.fail_not_identity_proxy ()
 {
     local name="$1"
+    local found=false
 
     read -rA proxies < <(identity.proxy_qubes)
     for proxy in "${proxies[@]}" ; do
@@ -3875,7 +3887,7 @@ function proxy.fail_not_identity_proxy ()
         fi
     done
 
-    if [[ ! $found ]]; then
+    if [[ $found != true ]]; then
         _info "VM $name is not listed as a VPN gateway. Aborting."
         exit 1
     fi
@@ -4787,6 +4799,8 @@ risk_vpn_create_command() {
   clone="$(config_or_flag "${args['--from']}" VPN_VM)"
   template="$(config_or_flag "${args['--template']}" VPN_TEMPLATE)"
 
+  _warning "Starting VPN qube creation"
+
   # Get the name to use for this qube, from flags/args or defaults.
   if [[ -z "${args['vm']}" ]]; then
       name="$(proxy.vpn_next_name "$name")"
@@ -4794,10 +4808,8 @@ risk_vpn_create_command() {
 
   # Create or clone the qube.
   if [[ "${args['--clone']}" -eq 1 ]]; then
-      _info "Cloning VPN gateway (from VM $clone)"
       proxy.vpn_clone "$name" "$netvm" "$label" "$clone"
   else
-      _info "Creating VPN gateway (from template $template)"
       proxy.vpn_create "$name" "$netvm" "$label" "$template"
   fi
 
@@ -4826,11 +4838,11 @@ risk_vpn_setup_command() {
   name="${args['vm']}"
   config_vm="${args['--config-in']}"
   client_conf_path="$(config_or_flag "" DEFAULT_VPN_CLIENT_CONF)"
-  netvm="$(config_or_flag "${args['--netvm']}" "$(identity.config_get NETVM_QUBE)")"
+  netvm="$(config_or_flag "${args['--netvm']}" NETVM_QUBE)"
 
   # Set the netVM of this VPN if required.
-  if [[ -n "${netvm}" ]]; then
-      _info "Getting network from $netvm"
+  if [[ "$(qvm-prefs "${name}" netvm)" != "${netvm}" ]]; then
+      _info "Using $netvm as NetVM"
       qvm-prefs "$name" netvm "$netvm"
   fi
 
@@ -4856,6 +4868,12 @@ risk_vpn_setup_command() {
   elif [[ -n "${args['--config-in']}" ]]; then
       # Or if we are asked to browse one or more configuration files in another VM.
       proxy.vpn_import_configs "$name" "$config_vm" "$client_conf_path"
+  fi
+
+  # Immediately start the VPN service if the user wants to.
+  if [[ "${args['--restart']}" -eq 1 ]]; then
+      _info "Restarting VPN systemd service (qubes-vpn-handler)"
+      _run_exec "$name" systemctl restart qubes-vpn-handler.service
   fi
 
 }
@@ -7008,14 +7026,6 @@ risk_vpn_create_parse_requirements() {
         ;;
 
       # :flag.case
-      --set-default)
-
-        # :flag.case_no_arg
-        args['--set-default']=1
-        shift
-        ;;
-
-      # :flag.case
       --config-in)
         # :flag.conflicts
         if [[ -n "${args['--choose']:-}" ]]; then
@@ -7033,6 +7043,22 @@ risk_vpn_create_parse_requirements() {
           printf "%s\n" "--config-in requires an argument: --config-in CONFIG_VM" >&2
           exit 1
         fi
+        ;;
+
+      # :flag.case
+      --restart | -R)
+
+        # :flag.case_no_arg
+        args['--restart']=1
+        shift
+        ;;
+
+      # :flag.case
+      --set-default)
+
+        # :flag.case_no_arg
+        args['--set-default']=1
+        shift
         ;;
 
       # :flag.case
@@ -7122,6 +7148,14 @@ risk_vpn_setup_parse_requirements() {
           printf "%s\n" "--config-in requires an argument: --config-in CONFIG_VM" >&2
           exit 1
         fi
+        ;;
+
+      # :flag.case
+      --restart | -R)
+
+        # :flag.case_no_arg
+        args['--restart']=1
+        shift
         ;;
 
       # :flag.case

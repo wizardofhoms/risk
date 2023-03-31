@@ -13,6 +13,7 @@ netvm="$(config_or_flag "${args['--netvm']}" "$(identity.config_get NETVM_QUBE)"
 clone="$(config_or_flag "${args['--from']}" VPN_VM)"
 template="$(config_or_flag "${args['--template']}" VPN_TEMPLATE)"
 
+_warning "Starting VPN qube creation"
 
 # Get the name to use for this qube, from flags/args or defaults.
 if [[ -z "${args['vm']}" ]]; then
@@ -22,15 +23,14 @@ fi
 
 # Create or clone the qube.
 if [[ "${args['--clone']}" -eq 1 ]]; then
-    _info "Cloning VPN gateway (from VM $clone)"
     proxy.vpn_clone "$name" "$netvm" "$label" "$clone"
 else
-    _info "Creating VPN gateway (from template $template)"
     proxy.vpn_create "$name" "$netvm" "$label" "$template"
 fi
 
 
 # Run the setup command, which will reuse all required flags.
+echo
 args['vm']="$name"
 risk_vpn_setup_command
 

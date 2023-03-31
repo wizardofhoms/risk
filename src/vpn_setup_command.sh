@@ -6,11 +6,11 @@ local name config_vm client_conf_path netvm
 name="${args['vm']}"
 config_vm="${args['--config-in']}"
 client_conf_path="$(config_or_flag "" DEFAULT_VPN_CLIENT_CONF)"
-netvm="$(config_or_flag "${args['--netvm']}" "$(identity.config_get NETVM_QUBE)")"
+netvm="$(config_or_flag "${args['--netvm']}" NETVM_QUBE)"
 
 # Set the netVM of this VPN if required.
-if [[ -n "${netvm}" ]]; then
-    _info "Getting network from $netvm"
+if [[ "$(qvm-prefs "${name}" netvm)" != "${netvm}" ]]; then
+    _info "Using $netvm as NetVM"
     qvm-prefs "$name" netvm "$netvm"
 fi
 
@@ -36,4 +36,10 @@ if [[ "${args['--choose']}" -eq 1 ]]; then
 elif [[ -n "${args['--config-in']}" ]]; then
     # Or if we are asked to browse one or more configuration files in another VM.
     proxy.vpn_import_configs "$name" "$config_vm" "$client_conf_path"
+fi
+
+# Immediately start the VPN service if the user wants to.
+if [[ "${args['--restart']}" -eq 1 ]]; then
+    _info "Restarting VPN systemd service (qubes-vpn-handler)"
+    _run_exec "$name" systemctl restart qubes-vpn-handler.service
 fi

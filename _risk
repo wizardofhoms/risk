@@ -467,6 +467,7 @@ _flags_network=(
 _flags_vpn=(
     '(--choose)--config-in[VM in which to browse for VPN configuration(s)]:VM containing configs:_known_vms'
     '(--config-in)--choose[Choose an existing client config by running the setup wizard in the VPN VM]'
+    '(-R --restart)'{-R,--restart}'[After setting the VPN configuration file, restart the VPN service.]'
     '--set-default[Set this VM as the default NetVM for all client machines for identity (browser, messaging, etc)]'
 )
 

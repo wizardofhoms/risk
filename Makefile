@@ -46,3 +46,9 @@ release:
 	# Signatures
 	qubes-gpg-client-wrapper --detach-sign risq > risq.gpg
 	sha256sum risq > risq.sha
+
+publish:
+	@bash scripts/release
+	
+
+

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+tag=$(git describe --abbrev=0 --tags --always)
+
+# Release tag and notes
+read -r -p "Release notes: " notes
+
+release_cmd=(gh release create --title "${tag}")
+if [[ -n "${notes}" ]]; then
+    release_cmd+=( --notes "${notes}" )
+fi
+
+# Create release and upload assets
+echo "Creating release (tag: ${tag})"
+echo "${tag}" | "${release_cmd[@]}"
+
+echo "Uploading assets"
+gh release upload "${tag}" risk _risk risk.gpg risk.sha
+
+echo "Cleaning up"
+rm risk.gpg risk.sha

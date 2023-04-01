@@ -3,10 +3,10 @@
 # set identity to produce an random name to use as a file/directory name.
 function crypt.filename ()
 {
-    local encryption_key_cmd="echo '$1' | spectre -q -n -s 0 -F n -t n -u '$1' 'file_encryption_key'"
+    local encryption_key_cmd="echo '$1' | spectre -q -n -s 0 -F n -t n -u '$1' file_encryption_key"
     encryption_key="$(qvm-run --pass-io "$VAULT_VM" "$encryption_key_cmd")"
 
-    local encrypted_identity_command="echo '$encryption_key' | spectre -q -n -s 0 -F n -t n -u '$IDENTITY' '$1'"
+    local encrypted_identity_command="echo '$encryption_key' | spectre -q -n -s 0 -F n -t n -u $IDENTITY $1"
 
     # -q            Quiet: just output the password/filename
     # -n            Don't append a newline to the password output

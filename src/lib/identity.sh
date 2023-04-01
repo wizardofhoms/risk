@@ -17,8 +17,7 @@ function identity.set ()
     IDENTITY=$(identity.active_or_specified "$identity")
     _catch "Command requires either an identity to be active or given as argument"
 
-    # Set the identity directory and other settings.
-    IDENTITY_DIR="${RISK_IDENTITIES_DIR}/${IDENTITY}"
+    # Other settings.
     IDENTITY_BOOKMARKS_FILE="/home/user/.tomb/mgmt/$(crypt.filename 'bookmarks.tsv')"
 }
 
@@ -191,7 +190,7 @@ function identity.fail_none_active ()
 # identity.fail_other_active exits the program if another identity is already active (opened in vault).
 function identity.fail_other_active ()
 {
-    identity.active && _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
+    identity.is_active && _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
 }
 
 # identity.fail_unknown exits the program if an identity does not exist in the vault VM. 
@@ -200,11 +199,12 @@ function identity.fail_unknown ()
 {
     # Get the resulting encrypted name
     local encrypted_identity
-    encrypted_identity="$(crypt.filename "${IDENTITY}")"
+    encrypted_identity="$(crypt.filename "${IDENTITY}-gpg.coffin")"
 
+    echo "${encrypted_identity}"
     # And check the directory exists
     _run_exec "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
-    _catch "Invalid identity: $1 does not exists in ${VAULT_VM}"
+    _catch "Invalid identity: $IDENTITY does not exists in ${VAULT_VM}"
 }
 
 # identity.fail_exists exits the program if the given identity name already exists in the vault.

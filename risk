@@ -2099,10 +2099,10 @@ config_has_key() {
 # set identity to produce an random name to use as a file/directory name.
 function crypt.filename ()
 {
-    local encryption_key_cmd="echo '$1' | spectre -q -n -s 0 -F n -t n -u '$1' 'file_encryption_key'"
+    local encryption_key_cmd="echo '$1' | spectre -q -n -s 0 -F n -t n -u '$1' file_encryption_key"
     encryption_key="$(qvm-run --pass-io "$VAULT_VM" "$encryption_key_cmd")"
 
-    local encrypted_identity_command="echo '$encryption_key' | spectre -q -n -s 0 -F n -t n -u '$IDENTITY' '$1'"
+    local encrypted_identity_command="echo '$encryption_key' | spectre -q -n -s 0 -F n -t n -u $IDENTITY $1"
 
     # -q            Quiet: just output the password/filename
     # -n            Don't append a newline to the password output
@@ -2165,8 +2165,7 @@ function identity.set ()
     IDENTITY=$(identity.active_or_specified "$identity")
     _catch "Command requires either an identity to be active or given as argument"
 
-    # Set the identity directory and other settings.
-    IDENTITY_DIR="${RISK_IDENTITIES_DIR}/${IDENTITY}"
+    # Other settings.
     IDENTITY_BOOKMARKS_FILE="/home/user/.tomb/mgmt/$(crypt.filename 'bookmarks.tsv')"
 }
 
@@ -2337,7 +2336,7 @@ function identity.fail_none_active ()
 # identity.fail_other_active exits the program if another identity is already active (opened in vault).
 function identity.fail_other_active ()
 {
-    identity.active && _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
+    identity.is_active && _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
 }
 
 # identity.fail_unknown exits the program if an identity does not exist in the vault VM.
@@ -2347,11 +2346,12 @@ function identity.fail_unknown ()
 {
     # Get the resulting encrypted name
     local encrypted_identity
-    encrypted_identity="$(crypt.filename "${IDENTITY}")"
+    encrypted_identity="$(crypt.filename "${IDENTITY}-gpg.coffin")"
 
+    echo "${encrypted_identity}"
     # And check the directory exists
     _run_exec "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
-    _catch "Invalid identity: $1 does not exists in ${VAULT_VM}"
+    _catch "Invalid identity: $IDENTITY does not exists in ${VAULT_VM}"
 }
 
 # identity.fail_exists exits the program if the given identity name already exists in the vault.
@@ -2677,7 +2677,7 @@ last_level="message"
 declare -A log_colors
 log_colors=(
     [verbose]="blue"
-    [message]="white"
+    [message]="default"
     [warning]="yellow"
     [success]="green"
     [failure]="red"
@@ -4620,19 +4620,15 @@ risk_identity_nake_command() {
 risk_identity_open_command() {
   # src/identity_open_command.sh
 
-  local sdcard_block
-
-  sdcard_block="$(config_get SDCARD_BLOCK)"
+  device.fail_not_attached_to "$(config_get SDCARD_BLOCK)" "${VAULT_VM}"
 
   identity.set "${args['identity']}"
-
-  device.fail_not_attached_to "${sdcard_block}" "${VAULT_VM}"
-  identity.fail_none_active "$IDENTITY"
+  identity.fail_other_active
 
   # Send commands to vault
   _info "Opening identity $IDENTITY"
   _run_qube_term "$VAULT_VM" risks identity open "$IDENTITY"
-  _catch "Failed to open identity"
+  identity.is_active || _failure "Failed to open identity $IDENTITY"
 
   # Set the identity browser VM, if any, as the disposable VM of split-browser backend.
   _in_section "web"
@@ -4678,17 +4674,8 @@ risk_identity_start_command() {
 
   # Check the identity is valid, and open in vault if needed.
   identity.set "${args['identity']}"
-  identity.fail_unknown
-
-  active_identity="$(identity.active)"
-  if [[ -n "${active_identity}" ]]; then
-      if [[ "${active_identity}" != "${IDENTITY}" ]]; then
-          identity.fail_none_active "$IDENTITY"
-      fi
-      _info "Identity ${IDENTITY} already opened in vault"
-  else
-      risk_identity_open_command
-  fi
+  identity.fail_other_active
+  risk_identity_open_command
 
   # Start all enabled identity machines
   read -rA enabled_vms < <(identity.enabled_qubes)

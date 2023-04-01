@@ -19,7 +19,7 @@ last_level="message"
 declare -A log_colors
 log_colors=(
     [verbose]="blue"
-    [message]="white"
+    [message]="default"
     [warning]="yellow"
     [success]="green"
     [failure]="red"

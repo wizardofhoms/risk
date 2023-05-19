@@ -5425,6 +5425,8 @@ risk_qube_update_command() {
       web.update_torbrowser
   fi
 
+  _success "Done updating"
+
 }
 
 # :command.function

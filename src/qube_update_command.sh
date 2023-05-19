@@ -25,3 +25,5 @@ if [[ ${args['vms']} == torbrowser ]] || [[ ${other_args[(r)torbrowser]} == torb
     identity.set
     web.update_torbrowser
 fi
+
+_success "Done updating"

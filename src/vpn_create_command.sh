@@ -46,7 +46,7 @@ args['vm']="$name"
 risk_vpn_setup_command
 
 # If the VM is marked autostart
-if [[ -n ${args['--enable']} ]]; then
+if [[ ${args['--enable']} -eq 1 ]]; then
     _verbose "Enabling VM to autostart"
     risk_vpn_enable_command
 fi

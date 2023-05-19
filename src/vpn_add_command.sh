@@ -19,13 +19,9 @@ if [[ -n "$owner" ]] && [[ "$owner" != "$IDENTITY" ]]; then
     fi
 fi
 
-# Tag the VM with its owner, and mark as providing network.
-_run qvm-tags "$vm" set "$IDENTITY"
-_catch "Failed to tag qube with identity"
-
 # Network
 if [[ "$(qvm-prefs "$vm" netvm)" != 'None' ]]; then
-    _info "Qube is networked. Updating its network VM"
+    _info "Qube is networked, updating its network VM."
     netvm="$(identity.netvm)"
 
     # If the user overrode the default netVM, check that
@@ -55,7 +51,27 @@ if [[ ${args['--set-default']} -eq 1 ]]; then
     _info "Setting '$vm' as default NetVM for all future client qubes"
 fi
 
-# Enable autostart if asked to
-[[ "${args['--enable']}" -eq 1 ]] && qube.enable "$vm"
+# Tag the VM with its owner, and mark as providing network.
+_run qvm-tags "$vm" set "$IDENTITY"
+_catch "Failed to tag qube with identity"
+identity.config_append PROXY_QUBES "${vm}"
 
-_success "Successfully add $vm as identity gateway"
+# Enable autostart if asked to
+if [[ ${args['--enable']} -eq 1 ]]; then
+    _verbose "Enabling VM to autostart"
+    risk_vpn_enable_command
+fi
+
+# Client VPN Configurations
+config_vm="${args['--config-in']}"
+client_conf_path="$(config_or_flag "" DEFAULT_VPN_CLIENT_CONF)"
+
+if [[ "${args['--choose']}" -eq 1 ]]; then
+    # If we are asked to choose an existing configuration in the VM
+    _run_exec "$vm" /usr/local/bin/setup_VPN
+elif [[ -n "${args['--config-in']}" ]]; then
+    # Or if we are asked to browse one or more configuration files in another VM.
+    proxy.vpn_import_configs "$vm" "$config_vm" "$client_conf_path"
+fi
+
+_success "Successfully added $vm as identity gateway"

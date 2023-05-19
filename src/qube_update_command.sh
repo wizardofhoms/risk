@@ -6,7 +6,7 @@ read -rA vms < <(qube.command_args "${args['vms']}" "${other_args[@]}")
 if [[ -n "${vms[*]}" ]]; then
     _info "Updating following VMs:"
     for template in "${vms[@]}"; do
-            _info "$template"
+        _info "$template"
     done
 
     printf -v targets '%s,' "${vms[@]}"

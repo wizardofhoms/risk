@@ -753,11 +753,15 @@ _running_identity_vms ()
 _structured_vms ()
 {
     local -a identity_vms proxies client_vms other_vms 
+    local vault_vm=$(risk config get VAULT_VM)
 
     client_vms=($(_identity_clients))
     proxies=($(_identity_proxies))
     [[ -n "${client_vms[*]}" ]] && identity_vms+=( "${client_vms[@]}" )
     [[ -n "${proxies[*]}" ]] && identity_vms+=( "${proxies[@]}" )
+
+    tor_gateway="$(qvm-run --pass-io "${vault_vm}" 'risks kv get TOR_QUBE')"
+    [[ -n ${tor_gateway} ]] && identity_vms+=( ${tor_gateway} )
 
     # First return the qubes belonging to the identity
     [[ -n "${identity_vms[*]}" ]] && _alternative "identity qubes:identity qubes:($identity_vms)"

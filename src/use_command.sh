@@ -24,5 +24,8 @@ if [[ -n "$owner" ]] && [[ $owner != "$active_identity" ]]; then
 fi
 
 # At this point everything identity-related should be cleared and done.
-_run_exec "$vm" "${arguments[@]}"
+[[ -z "${arguments[*]}" ]] && command="$VM_TERMINAL"
+
+_verbose "Running command: ${command}"
+qvm-run "$vm" "${command}"
 _catch "Failed to execute command in $vm:"

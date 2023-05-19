@@ -3556,16 +3556,15 @@ function qube.command_args ()
                 ;;
             *)
                 # Else find qubes matching the argument exactly.
-                for vm in "${can_update[@]}"; do
-                    [[ "${vm}" == "${word}" ]] || continue
+                # Matching, check not added twice to the list.
+                template="$(qube.root_template "${word}")"
 
-                    # Matching, check not added twice to the list.
-                    local found=false
-                    for queued in "${all[@]}"; do
-                        [[ "$queued" == "$vm" ]] && found=true && break
-                    done
-                    [[ $found == false ]] && all+=( "${vm}" )
+                local found=false
+                for queued in "${all[@]}"; do
+                    [[ "$queued" == "$template" ]] && found=true && break
                 done
+
+                [[ $found == false ]] && all+=( "${template}" )
                 ;;
         esac
 
@@ -5406,7 +5405,7 @@ risk_qube_update_command() {
   if [[ -n "${vms[*]}" ]]; then
       _info "Updating following VMs:"
       for template in "${vms[@]}"; do
-              _info "$template"
+          _info "$template"
       done
 
       printf -v targets '%s,' "${vms[@]}"
@@ -5502,7 +5501,10 @@ risk_use_command() {
   fi
 
   # At this point everything identity-related should be cleared and done.
-  _run_exec "$vm" "${arguments[@]}"
+  [[ -z "${arguments[*]}" ]] && command="$VM_TERMINAL"
+
+  _verbose "Running command: ${command}"
+  qvm-run "$vm" "${command}"
   _catch "Failed to execute command in $vm:"
 
 }

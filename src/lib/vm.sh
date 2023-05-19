@@ -114,16 +114,15 @@ function qube.command_args ()
                 ;;
             *)
                 # Else find qubes matching the argument exactly.
-                for vm in "${can_update[@]}"; do
-                    [[ "${vm}" == "${word}" ]] || continue
+                # Matching, check not added twice to the list.
+                template="$(qube.root_template "${word}")"
 
-                    # Matching, check not added twice to the list.
-                    local found=false
-                    for queued in "${all[@]}"; do
-                        [[ "$queued" == "$vm" ]] && found=true && break
-                    done
-                    [[ $found == false ]] && all+=( "${vm}" )
+                local found=false
+                for queued in "${all[@]}"; do
+                    [[ "$queued" == "$template" ]] && found=true && break
                 done
+
+                [[ $found == false ]] && all+=( "${template}" )
                 ;;
         esac
 

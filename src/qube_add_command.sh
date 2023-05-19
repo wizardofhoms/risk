@@ -11,6 +11,15 @@ identity.fail_unknown "$IDENTITY"
 # Check VM ownership
 owner=$(qube.owner "$vm")
 
+# Check if the VM provides network. If yes we naturally consider
+# it to be a gateway, and we add it to the list of proxy_vms.
+if [[ "$(qvm-prefs "$vm" provides_network)" == 'True' ]]; then
+    _info "VM '${vm}' provides network: treating it as a gateway qube."
+    args['--set-default']=${args['--default-netvm']}
+    risk_vpn_add_command
+    return $?
+fi
+
 # If already belongs to an identity, ask for confirmation to update the settings.
 if [[ -n "$owner" ]] && [[ "$owner" != "$IDENTITY" ]]; then
     _warning "VM $vm already belongs to $owner"
@@ -51,23 +60,7 @@ if [[ "$(qvm-prefs "$vm" netvm)" != 'None' ]]; then
     _catch "Failed to set netvm"
 fi
 
-
-# Check if the VM provides network. If yes we naturally consider
-# it to be a gateway, and we add it to the list of proxy_vms.
-if [[ "$(qvm-prefs "$vm" provides_network)" == 'True' ]]; then
-    _info "VM provides network. Treating it as a gateway qube"
-
-    # Add as a proxy VM
-    identity.config_append PROXY_QUBES "${vm}"
-
-    # If the user specified to use it as the default netvm
-    if [[ ${args['--default-netvm']} -eq 1 ]]; then
-        identity.config_set NETVM_QUBE "${vm}"
-        _info "Setting '$vm' as default NetVM for all future client qubes"
-    fi
-else
-    identity.config_append CLIENT_QUBES "${vm}"
-fi
+identity.config_append CLIENT_QUBES "${vm}"
 
 # Enable autostart if asked to
 [[ "${args['--enable']}" -eq 1 ]] && qube.enable "$vm"

@@ -126,9 +126,8 @@ function proxy.vpn_import_configs ()
     _info "Done transfering VPN client configuration to VM"
 }
 
-# proxy.vpn_next_name returns a name for a new VPN VM, such as vpn-1,
-# where the number is the next value after the ones found in existing
-# VPN vms.
+# proxy.vpn_next_name returns a name for a new VPN VM, such as vpn-1, where 
+# the number is the next value after the ones found in existing VPN qubes.
 function proxy.vpn_next_name ()
 {
     local base_name="$1"

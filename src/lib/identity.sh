@@ -297,9 +297,7 @@ function identity.config_append ()
 
     [[ -z "${key}" || -z "${value}" ]] && return
 
-    local existing_value
-    existing_value="$(identity.config_get "${key}")"
-    _run_qube "$VAULT_VM" risks kv set "${key}" "${existing_value}" "${value}" &>/dev/null
+    _run_qube "$VAULT_VM" risks kv append "${key}" "${value}"
 }
 
 # identity.config_reduce uses 'risks kv get', 'risks kv get' and 'sed' to remove a 
@@ -314,23 +312,7 @@ function identity.config_reduce ()
 
     [[ -z "${key}" || -z "${values[*]}" ]] && return
 
-    # Retrieve the existing key value, or skip.
-    local existing_value
-    existing_value="$(identity.config_get "${key}")"
-    [[ -z "${existing_value}" ]] && return
-
-    # And remove each key if found.
-    for val in "${values[@]}"; do
-        [[ -n "${val}" ]] || continue
-        existing_value=$(sed /^"$val"\$/d <<<"${existing_value}")
-    done
-
-    # Either save the reduced value, or unset the key if empty.
-    if [[ -z "${existing_value}" ]]; then
-        identity.config_unset "${key}"
-    else
-        identity.config_set "${key}" "${existing_value}"
-    fi
+    _run_qube "$VAULT_VM" risks kv filter "${key}" "${values[@]}"
 }
 
 # identity.config_clear uses 'risks kv clean' in vault to clear all key-value pairs.

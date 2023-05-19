@@ -6,8 +6,19 @@ local name netvm clone template label
 
 # Identity specific values.
 name=$(identity.config_get QUBE_PREFIX)
+if [[ -n "${args['vm']}" ]]; then
+    name="${name}-${args['vm']}-vpn"
+fi
+
 label="${args['--label']:=$(identity.vm_label)}"
-netvm="$(config_or_flag "${args['--netvm']}" "$(identity.config_get NETVM_QUBE)")"
+
+netvm="${args['--netvm']}"
+if [[ -z "${netvm}" ]]; then
+    netvm="$(identity.config_get NETVM_QUBE)"
+fi
+if [[ -z "${netvm}" ]]; then
+    netvm="$(config_get DEFAULT_NETVM)"
+fi
 
 # Global config
 clone="$(config_or_flag "${args['--from']}" VPN_VM)"

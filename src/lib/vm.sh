@@ -219,7 +219,7 @@ function qube.dist_upgrade ()
         # Else, we're good to upgrade, change repository versions.
         _run_qube "${vm}" sudo sed -i "'s/${current}/${dist}/g'" /etc/apt/sources.list
         _run_qube "${vm}" sudo sed -i "'s/${current}/${dist}/g'" /etc/apt/sources.list.d/qubes-r4.list
-        # _run_qube "${vm}" sudo sed -i "'s/debian-security ${dist}\/updates/debian-security ${dist}-security/g'" /etc/apt/sources.list
+        _run_qube "${vm}" sudo sed -i "'s/debian-security ${dist}\/updates/debian-security ${dist}-security/g'" /etc/apt/sources.list
         
         # And run the updates/upgrades.
         _info "Starting repository update & upgrade"

@@ -6,7 +6,14 @@ local name config_vm client_conf_path netvm
 name="${args['vm']}"
 config_vm="${args['--config-in']}"
 client_conf_path="$(config_or_flag "" DEFAULT_VPN_CLIENT_CONF)"
-netvm="$(config_or_flag "${args['--netvm']}" NETVM_QUBE)"
+
+netvm="${args['--netvm']}"
+if [[ -z "${netvm}" ]]; then
+    netvm="$(identity.config_get NETVM_QUBE)"
+fi
+if [[ -z "${netvm}" ]]; then
+    netvm="$(config_get DEFAULT_NETVM)"
+fi
 
 # Set the netVM of this VPN if required.
 if [[ "$(qvm-prefs "${name}" netvm)" != "${netvm}" ]]; then

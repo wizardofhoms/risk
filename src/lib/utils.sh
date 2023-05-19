@@ -88,5 +88,4 @@ print_cloned_qube ()
     _info "Name:          ${fg_bold[white]} $name ${reset_color}"
     _info "Netvm:         ${fg_bold[white]} $netvm ${reset_color}"
     _info "Cloned from:   ${fg_bold[white]} $clone ${reset_color}"
-
 }

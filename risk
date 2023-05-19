@@ -844,11 +844,6 @@ risk_vpn_create_usage() {
 
     # :command.usage_flags
     # :flag.usage
-    printf "  %s\n" "--name, -N NAME"
-    printf "    Use a different name for naming identity VMs\n"
-    echo
-
-    # :flag.usage
     printf "  %s\n" "--label, -L COLOR"
     printf "    Specify a label color to be used for all VMs belonging to this identity\n"
     echo
@@ -898,7 +893,7 @@ risk_vpn_create_usage() {
 
     # :argument.usage
     printf "  %s\n" "$(blue "VM")"
-    printf "    (optional) name to use for this VM (=> name-vpn)\n"
+    printf "    (optional) name to use for this VM (=> identity-<name>-vpn)\n"
     echo
 
   fi
@@ -2487,9 +2482,7 @@ function identity.config_append ()
 
     [[ -z "${key}" || -z "${value}" ]] && return
 
-    local existing_value
-    existing_value="$(identity.config_get "${key}")"
-    _run_qube "$VAULT_VM" risks kv set "${key}" "${existing_value}" "${value}" &>/dev/null
+    _run_qube "$VAULT_VM" risks kv append "${key}" "${value}"
 }
 
 # identity.config_reduce uses 'risks kv get', 'risks kv get' and 'sed' to remove a
@@ -2505,23 +2498,7 @@ function identity.config_reduce ()
 
     [[ -z "${key}" || -z "${values[*]}" ]] && return
 
-    # Retrieve the existing key value, or skip.
-    local existing_value
-    existing_value="$(identity.config_get "${key}")"
-    [[ -z "${existing_value}" ]] && return
-
-    # And remove each key if found.
-    for val in "${values[@]}"; do
-        [[ -n "${val}" ]] || continue
-        existing_value=$(sed /^"$val"\$/d <<<"${existing_value}")
-    done
-
-    # Either save the reduced value, or unset the key if empty.
-    if [[ -z "${existing_value}" ]]; then
-        identity.config_unset "${key}"
-    else
-        identity.config_set "${key}" "${existing_value}"
-    fi
+    _run_qube "$VAULT_VM" risks kv filter "${key}" "${values[@]}"
 }
 
 # identity.config_clear uses 'risks kv clean' in vault to clear all key-value pairs.
@@ -3308,7 +3285,6 @@ print_cloned_qube ()
     _info "Name:          ${fg_bold[white]} $name ${reset_color}"
     _info "Netvm:         ${fg_bold[white]} $netvm ${reset_color}"
     _info "Cloned from:   ${fg_bold[white]} $clone ${reset_color}"
-
 }
 
 # src/lib/validations/validate_devices.sh
@@ -3620,7 +3596,7 @@ function qube.dist_upgrade ()
         # Else, we're good to upgrade, change repository versions.
         _run_qube "${vm}" sudo sed -i "'s/${current}/${dist}/g'" /etc/apt/sources.list
         _run_qube "${vm}" sudo sed -i "'s/${current}/${dist}/g'" /etc/apt/sources.list.d/qubes-r4.list
-        # _run_qube "${vm}" sudo sed -i "'s/debian-security ${dist}\/updates/debian-security ${dist}-security/g'" /etc/apt/sources.list
+        _run_qube "${vm}" sudo sed -i "'s/debian-security ${dist}\/updates/debian-security ${dist}-security/g'" /etc/apt/sources.list
 
         # And run the updates/upgrades.
         _info "Starting repository update & upgrade"
@@ -3840,9 +3816,9 @@ function qubes.list_all_updateable ()
 function proxy.vpn_create ()
 {
     local gw="${1}"
-    local netvm="${2-$(config_get DEFAULT_NETVM)}"
+    local netvm="${2}"
     local gw_label="${3-blue}"
-    local template="${4-$(config_get VPN_TEMPLATE)}"
+    local template="${4:=$(config_get VPN_TEMPLATE)}"
 
     _run qvm-create "${gw}" --property netvm="$netvm" --label "$gw_label" --template "$template"
     _catch "Failed to create VPN qube"
@@ -3857,8 +3833,8 @@ function proxy.vpn_create ()
 function proxy.vpn_clone ()
 {
     local gw="${1}"
-    local netvm="${2-$(config_get DEFAULT_NETVM)}"
-    local gw_label="${3:=blue}"
+    local netvm="${2}"
+    local gw_label="${3-blue}"
     local gw_clone="$4"
 
     _run qvm-clone "${gw_clone}" "${gw}"
@@ -4888,8 +4864,19 @@ risk_vpn_create_command() {
 
   # Identity specific values.
   name=$(identity.config_get QUBE_PREFIX)
+  if [[ -n "${args['vm']}" ]]; then
+      name="${name}-${args['vm']}-vpn"
+  fi
+
   label="${args['--label']:=$(identity.vm_label)}"
-  netvm="$(config_or_flag "${args['--netvm']}" "$(identity.config_get NETVM_QUBE)")"
+
+  netvm="${args['--netvm']}"
+  if [[ -z "${netvm}" ]]; then
+      netvm="$(identity.config_get NETVM_QUBE)"
+  fi
+  if [[ -z "${netvm}" ]]; then
+      netvm="$(config_get DEFAULT_NETVM)"
+  fi
 
   # Global config
   clone="$(config_or_flag "${args['--from']}" VPN_VM)"
@@ -4935,7 +4922,14 @@ risk_vpn_setup_command() {
   name="${args['vm']}"
   config_vm="${args['--config-in']}"
   client_conf_path="$(config_or_flag "" DEFAULT_VPN_CLIENT_CONF)"
-  netvm="$(config_or_flag "${args['--netvm']}" NETVM_QUBE)"
+
+  netvm="${args['--netvm']}"
+  if [[ -z "${netvm}" ]]; then
+      netvm="$(identity.config_get NETVM_QUBE)"
+  fi
+  if [[ -z "${netvm}" ]]; then
+      netvm="$(config_get DEFAULT_NETVM)"
+  fi
 
   # Set the netVM of this VPN if required.
   if [[ "$(qvm-prefs "${name}" netvm)" != "${netvm}" ]]; then
@@ -7082,21 +7076,6 @@ risk_vpn_create_parse_requirements() {
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
-      # :flag.case
-      --name | -N)
-
-        # :flag.case_arg
-        if [[ -n ${2+x} ]]; then
-
-          args['--name']="$2"
-          shift
-          shift
-        else
-          printf "%s\n" "--name requires an argument: --name, -N NAME" >&2
-          exit 1
-        fi
-        ;;
-
       # :flag.case
       --label | -L)
 

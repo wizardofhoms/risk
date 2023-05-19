@@ -15,13 +15,13 @@ tries to expand the principles provided by the latter, e.g grossly: strong isola
 easy use of them and of their associated tools (browsing VMs, VPN gateways, etc).
 
 - Easy creation, management and use of various VMs tied to, and used by, a given identity.
-- Strong isolation of identites and their associated VMs, such as network gateways (TOR, VPN, etc)
+- Strong isolation of identites and their associated VMs, (eg. network VMs).
 - Slight integration of vault functionality where it enhances the dom0 workflows.
 - Efficient and concise worklow logging, with detailed errors and verbose logging options.
 - Structured codebase for easier review and development, while preserving usability.
 - Functionality and workflows bundled into a single CLI.
  
-In addition, it provides a few helper commands to use with the vault functionality, such as mounting/umounting 
+In addition, it provides a few helper commands to use with the vault functionality, like as mounting/umounting 
 hush/backup devices, opening identies, create new ones along with some associated infrastructure (VMs), and more.
 
 ## Documentation

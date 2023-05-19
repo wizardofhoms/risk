@@ -6,13 +6,9 @@ commands:
     help: Create VPN gateway from a template, or by cloning an existing one. 
     args:
       - name: vm 
-        help: "(optional) name to use for this VM (=> name-vpn)"
+        help: "(optional) name to use for this VM (=> identity-<name>-vpn)"
         required: false 
     flags:
-      - long: --name
-        short: -N
-        help: "Use a different name for naming identity VMs"
-        arg: name 
       - long: --label
         short: -L
         help: "Specify a label color to be used for all VMs belonging to this identity"

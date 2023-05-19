@@ -3,9 +3,9 @@
 function proxy.vpn_create ()
 {
     local gw="${1}"
-    local netvm="${2-$(config_get DEFAULT_NETVM)}"
+    local netvm="${2}"
     local gw_label="${3-blue}"
-    local template="${4-$(config_get VPN_TEMPLATE)}"
+    local template="${4:=$(config_get VPN_TEMPLATE)}"
 
     _run qvm-create "${gw}" --property netvm="$netvm" --label "$gw_label" --template "$template"
     _catch "Failed to create VPN qube"
@@ -20,8 +20,8 @@ function proxy.vpn_create ()
 function proxy.vpn_clone ()
 {
     local gw="${1}"
-    local netvm="${2-$(config_get DEFAULT_NETVM)}"
-    local gw_label="${3:=blue}"
+    local netvm="${2}"
+    local gw_label="${3-blue}"
     local gw_clone="$4"
 
     _run qvm-clone "${gw_clone}" "${gw}"

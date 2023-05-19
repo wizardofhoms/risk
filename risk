@@ -3572,6 +3572,12 @@ function qube.distribution ()
     fi
 }
 
+# qube.dist_upgrade upgrades the target Qube template to a given version
+# (name or number), adapting the process depending on the distribution.
+# If the template is already to the target version, nothing is done.
+# $1 - Template to upgrade.
+# $2 - Name of linux distribution (lowercase, fedora/debian)
+# $3 - Target version (number or name) to upgrade to.
 function qube.dist_upgrade ()
 {
     local vm dist version
@@ -3581,36 +3587,47 @@ function qube.dist_upgrade ()
     version="$3"
 
     if [[ "${dist}" == "fedora" ]]; then
+        # Verify we are not already to the current version
+        release_file="$(qvm-run --pass-io "${vm}" cat /etc/os-release)"
+        current="$( echo "${release_file}" | sed -n 's/^VERSION_ID=//p')"
+
+        if [[ "${current}" == "${version}" ]]; then
+            _info "Template ${vm} is already to the target version ${version}"
+            return
+        fi
+
+        # Else, we're good to upgrade.
         _info "Cleaning package cache"
-        echo sudo dnf clean all
-        # _run_qube "${vm}" sudo dnf clean all
+        _run_qube "${vm}" sudo dnf clean all
         _info "Starting dist upgrade"
-        echo sudo dnf --releasever="${version}" --best --allowerasing distro-sync
-        # _run_qube_term "${vm}" sudo dnf --releasever="${dist}" --best --allowerasing distro-sync
+        _run_qube_term "${vm}" sudo dnf --releasever="${dist}" --best --allowerasing distro-sync
         _info "Trimming disk"
-        echo fstrim -v /
-        # _run_qube "${vm}" fstrim -v /
+        _run_qube "${vm}" fstrim -v /
 
     elif [[ "${dist}" == "debian" ]]; then
+        # Verify we are not already to the current version
         local current release_file
 
         _info "Changing repository source names"
         release_file="$(qvm-run --pass-io "${vm}" cat /etc/os-release)"
-        # _run_qube "$vm" cat /etc/os-release
         current="$( echo "${release_file}" | sed -n 's/^VERSION_CODENAME=//p')"
-        echo sudo sed -i "'s/${current}/${version}/g'" /etc/apt/sources.list
-        echo sudo sed -i "'s/debian-security ${version}\/updates/debian-security ${version}-security/g'" /etc/apt/sources.list
-        echo sudo sed -i "'s/${current}/${version}/g'" /etc/apt/sources.list.d/qubes-r4.list
 
-        # _run_qube "${vm}" sudo sed -i "'s/${current}/${dist}/g'" /etc/apt/sources.list
+        if [[ "${current}" == "${version}" ]]; then
+            _info "Template ${vm} is already to the target version ${version}"
+            return
+        fi
+
+        # Else, we're good to upgrade, change repository versions.
+        _run_qube "${vm}" sudo sed -i "'s/${current}/${dist}/g'" /etc/apt/sources.list
+        _run_qube "${vm}" sudo sed -i "'s/${current}/${dist}/g'" /etc/apt/sources.list.d/qubes-r4.list
         # _run_qube "${vm}" sudo sed -i "'s/debian-security ${dist}\/updates/debian-security ${dist}-security/g'" /etc/apt/sources.list
-        # _run_qube "${vm}" sudo sed -i "'s/${current}/${dist}/g'" /etc/apt/sources.list.d/qubes-r4.list
 
-        # _info "Starting repository update & upgrade"
-        # _run_qube_term "${vm}" sudo apt update
-        # _run_qube_term "${vm}" sudo apt upgrade
-        # _info "Starting dist upgrade"
-        # _run_qube_term "${vm}" sudo apt dist-upgrade
+        # And run the updates/upgrades.
+        _info "Starting repository update & upgrade"
+        _run_qube_term "${vm}" sudo apt update
+        _run_qube_term "${vm}" sudo apt upgrade
+        _info "Starting dist upgrade"
+        _run_qube_term "${vm}" sudo apt dist-upgrade
     fi
 }
 
@@ -5289,10 +5306,12 @@ risk_qube_dist_upgrade_command() {
   running="$(qube.assert_running "${template}")"
   dist="$(qube.distribution "${template}")"
 
-  if [[ ! "${version}" =~ ^[0-9]+$ ]] && [[ ${dist} == "fedora" ]] ; then
-      _failure "Template is Fedora linux, but got non-number version ${version}"
+  if [[ "${dist}" != "fedora" ]] && [[ "${dist}" != "debian" ]]; then
+      _failure "Distribution upgrade currently not supported for ${dist} qubes."
+  elif [[ ! "${version}" =~ ^[0-9]+$ ]] && [[ ${dist} == "fedora" ]] ; then
+      _failure "Template is Fedora linux, but got non-number version ${version}."
   elif [[ "${version}" =~ ^[0-9]+$ ]] && [[ ${dist} != "fedora" ]] ; then
-      _failure "Template is ${dist} linux, but got number version ${version}"
+      _failure "Template is ${dist} linux, but got number version ${version}."
   fi
 
   # Start updating

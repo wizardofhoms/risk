@@ -1165,12 +1165,13 @@ risk_qube_usage() {
   echo
   # :command.usage_commands
   printf "%s\n" "$(bold "Commands:")"
-  printf "  %s   Tag an existing VM as belonging to the active identity, and change its netVM if one is already set\n" "$(red "add")    "
-  printf "  %s   Delete a VM belonging to the current identity\n" "$(red "delete") "
-  printf "  %s   Enable an identity VM to autostart\n" "$(red "enable") "
-  printf "  %s   Disable an identity VM to autostart\n" "$(red "disable")"
-  printf "  %s   Update one or more VM templates, by name patterns or filters\n" "$(red "update") "
-  printf "  %s   Show all qubes belonging to the active identity\n" "$(red "list")   "
+  printf "  %s   Tag an existing VM as belonging to the active identity, and change its netVM if one is already set\n" "$(red "add")         "
+  printf "  %s   Delete a VM belonging to the current identity\n" "$(red "delete")      "
+  printf "  %s   Enable an identity VM to autostart\n" "$(red "enable")      "
+  printf "  %s   Disable an identity VM to autostart\n" "$(red "disable")     "
+  printf "  %s   Show all qubes belonging to the active identity\n" "$(red "list")        "
+  printf "  %s   Update one or more VM templates, by name patterns or filters\n" "$(red "update")      "
+  printf "  %s   Upgrade the distribution of a Qube template\n" "$(red "dist-upgrade")"
   echo
 
   # :command.long_usage
@@ -1350,6 +1351,35 @@ risk_qube_disable_usage() {
 }
 
 # :command.usage
+risk_qube_list_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk qube list - Show all qubes belonging to the active identity\n"
+    echo
+
+  else
+    printf "risk qube list - Show all qubes belonging to the active identity\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk qube list\n"
+  printf "  risk qube list --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.usage
 risk_qube_update_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk qube update - Update one or more VM templates, by name patterns or filters\n"
@@ -1393,20 +1423,20 @@ risk_qube_update_usage() {
 }
 
 # :command.usage
-risk_qube_list_usage() {
+risk_qube_dist_upgrade_usage() {
   if [[ -n $long_usage ]]; then
-    printf "risk qube list - Show all qubes belonging to the active identity\n"
+    printf "risk qube dist-upgrade - Upgrade the distribution of a Qube template\n"
     echo
 
   else
-    printf "risk qube list - Show all qubes belonging to the active identity\n"
+    printf "risk qube dist-upgrade - Upgrade the distribution of a Qube template\n"
     echo
 
   fi
 
   printf "%s\n" "$(bold "Usage:")"
-  printf "  risk qube list\n"
-  printf "  risk qube list --help | -h\n"
+  printf "  risk qube dist-upgrade VM VERSION\n"
+  printf "  risk qube dist-upgrade --help | -h\n"
   echo
 
   # :command.long_usage
@@ -1416,6 +1446,19 @@ risk_qube_list_usage() {
     # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "%s\n" "$(bold "Arguments:")"
+
+    # :argument.usage
+    printf "  %s\n" "$(blue "VM")"
+    printf "    Name of VM or template to upgrade (if VM, risk will use its template)\n"
+    echo
+
+    # :argument.usage
+    printf "  %s\n" "$(blue "VERSION")"
+    printf "    Name or number of version to upgrade to (eg. 37 for Fedora, or bookworm for\n    Debian)\n"
     echo
 
   fi
@@ -3005,7 +3048,6 @@ _run_qube ()
     # Prepare the full command
     terminal="$(config_get VM_TERMINAL)"
     shell="$(config_get VM_SHELL)"
-    # shell_command='zsh -c "'"$command"'"'
     shell_command="${shell} -c '$command'"
     full_command=(qvm-run --pass-io "$vm" "$shell_command")
 
@@ -3510,6 +3552,66 @@ function qube.is_browser_instance ()
     fi
 
     [[ "${qube}" == "$(identity.browser_qube)" ]] || return 1
+}
+
+# qube.distribution returns the name of the Linux flavor of a qube,
+# (eg. fedora, debian (for all debian-based), arch, etc ) based on
+
+# the package manager used by the qube.
+# $1 - Qube name
+function qube.distribution ()
+{
+    local vm="${1}"
+
+    if _run_qube "${vm}" which dnf; then
+        print "fedora"
+    elif _run_qube "${vm}" which apt; then
+        print "debian"
+    elif _run_qube "${vm}" which pacman; then
+        print "arch"
+    fi
+}
+
+function qube.dist_upgrade ()
+{
+    local vm dist version
+
+    vm="$1"
+    dist="$2"
+    version="$3"
+
+    if [[ "${dist}" == "fedora" ]]; then
+        _info "Cleaning package cache"
+        echo sudo dnf clean all
+        # _run_qube "${vm}" sudo dnf clean all
+        _info "Starting dist upgrade"
+        echo sudo dnf --releasever="${version}" --best --allowerasing distro-sync
+        # _run_qube_term "${vm}" sudo dnf --releasever="${dist}" --best --allowerasing distro-sync
+        _info "Trimming disk"
+        echo fstrim -v /
+        # _run_qube "${vm}" fstrim -v /
+
+    elif [[ "${dist}" == "debian" ]]; then
+        local current release_file
+
+        _info "Changing repository source names"
+        release_file="$(qvm-run --pass-io "${vm}" cat /etc/os-release)"
+        # _run_qube "$vm" cat /etc/os-release
+        current="$( echo "${release_file}" | sed -n 's/^VERSION_CODENAME=//p')"
+        echo sudo sed -i "'s/${current}/${version}/g'" /etc/apt/sources.list
+        echo sudo sed -i "'s/debian-security ${version}\/updates/debian-security ${version}-security/g'" /etc/apt/sources.list
+        echo sudo sed -i "'s/${current}/${version}/g'" /etc/apt/sources.list.d/qubes-r4.list
+
+        # _run_qube "${vm}" sudo sed -i "'s/${current}/${dist}/g'" /etc/apt/sources.list
+        # _run_qube "${vm}" sudo sed -i "'s/debian-security ${dist}\/updates/debian-security ${dist}-security/g'" /etc/apt/sources.list
+        # _run_qube "${vm}" sudo sed -i "'s/${current}/${dist}/g'" /etc/apt/sources.list.d/qubes-r4.list
+
+        # _info "Starting repository update & upgrade"
+        # _run_qube_term "${vm}" sudo apt update
+        # _run_qube_term "${vm}" sudo apt upgrade
+        # _info "Starting dist upgrade"
+        # _run_qube_term "${vm}" sudo apt dist-upgrade
+    fi
 }
 
 # ========================================================================================
@@ -5105,6 +5207,40 @@ risk_qube_disable_command() {
 }
 
 # :command.function
+risk_qube_list_command() {
+  # src/qube_list_command.sh
+
+  local clients proxies
+
+  identity.set
+
+  # Defaults
+  _warning "Global values and defaults:"
+  [[ -n "$(identity.netvm)" ]] && _info "${fg[blue]}Default netVM${fg[white]}: $(identity.netvm)"
+  [[ -n "$(identity.tor_gateway)" ]] && _info "${fg[blue]}Tor gateway${fg[white]}: \t$(identity.tor_gateway)"
+  [[ -n "$(identity.browser_qube)" ]] && _info "${fg[blue]}Browser qube${fg[white]}: \t$(identity.browser_qube)"
+
+  # Network VMs
+  read -rA proxies < <(identity.proxy_qubes)
+  if [[ -n "${proxies[*]}" ]]; then
+      echo && _warning "Proxy qubes:"
+      for proxy in "${proxies[@]}"; do
+          printf "\t\t%s" "${proxy}"
+      done
+  fi
+
+  # Client VMs
+  read -rA clients < <(identity.client_qubes)
+  if [[ -n "${clients[*]}" ]]; then
+      echo && _warning "Client qubes:"
+      for client in "${clients[@]}"; do
+          printf "\t\t%s" "${client}"
+      done
+  fi
+
+}
+
+# :command.function
 risk_qube_update_command() {
   # src/qube_update_command.sh
   # Analyze the arguments and extract all VMs
@@ -5138,35 +5274,44 @@ risk_qube_update_command() {
 }
 
 # :command.function
-risk_qube_list_command() {
-  # src/qube_list_command.sh
+risk_qube_dist_upgrade_command() {
+  # src/qube_dist_upgrade_command.sh
 
-  local clients proxies
+  local vm version
+  local template dist running
 
-  identity.set
+  vm="${args['vm']}"
+  version="${args['version']}"
 
-  # Defaults
-  _warning "Global values and defaults:"
-  [[ -n "$(identity.netvm)" ]] && _info "${fg[blue]}Default netVM${fg[white]}: $(identity.netvm)"
-  [[ -n "$(identity.tor_gateway)" ]] && _info "${fg[blue]}Tor gateway${fg[white]}: \t$(identity.tor_gateway)"
-  [[ -n "$(identity.browser_qube)" ]] && _info "${fg[blue]}Browser qube${fg[white]}: \t$(identity.browser_qube)"
+  # Determine if the VM is a Fedora or Debian,
+  # and fail if the distribution fits with the provided argument.
+  template="$(qube.root_template "${vm}")"
+  running="$(qube.assert_running "${template}")"
+  dist="$(qube.distribution "${template}")"
 
-  # Network VMs
-  read -rA proxies < <(identity.proxy_qubes)
-  if [[ -n "${proxies[*]}" ]]; then
-      echo && _warning "Proxy qubes:"
-      for proxy in "${proxies[@]}"; do
-          printf "\t\t%s" "${proxy}"
-      done
+  if [[ ! "${version}" =~ ^[0-9]+$ ]] && [[ ${dist} == "fedora" ]] ; then
+      _failure "Template is Fedora linux, but got non-number version ${version}"
+  elif [[ "${version}" =~ ^[0-9]+$ ]] && [[ ${dist} != "fedora" ]] ; then
+      _failure "Template is ${dist} linux, but got number version ${version}"
   fi
 
-  # Client VMs
-  read -rA clients < <(identity.client_qubes)
-  if [[ -n "${clients[*]}" ]]; then
-      echo && _warning "Client qubes:"
-      for client in "${clients[@]}"; do
-          printf "\t\t%s" "${client}"
-      done
+  # Start updating
+  if [[ "${template}" == "${vm}" ]]; then
+      _info "Trying to upgrade ${vm}"
+  else
+      _info "Trying to upgrade ${template} (template for ${vm})"
+  fi
+
+  _warning "You might be prompted for confirmations to import repo keys:"
+  _warning "Please attend the upgrade process."
+
+  qube.dist_upgrade "${template}" "${dist}" "${version}"
+
+  _info "Done upgrading."
+
+  if ! ${running}; then
+      _info "Shutting down qube"
+      qube.shutdown "${template}"
   fi
 
 }
@@ -7544,6 +7689,13 @@ risk_qube_parse_requirements() {
       shift $#
       ;;
 
+    list)
+      action="list"
+      shift
+      risk_qube_list_parse_requirements "$@"
+      shift $#
+      ;;
+
     update)
       action="update"
       shift
@@ -7551,10 +7703,10 @@ risk_qube_parse_requirements() {
       shift $#
       ;;
 
-    list)
-      action="list"
+    dist-upgrade)
+      action="dist-upgrade"
       shift
-      risk_qube_list_parse_requirements "$@"
+      risk_qube_dist_upgrade_parse_requirements "$@"
       shift $#
       ;;
 
@@ -7849,6 +8001,50 @@ risk_qube_disable_parse_requirements() {
 }
 
 # :command.parse_requirements
+risk_qube_list_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_qube_list_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="qube list"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        printf "invalid argument: %s\n" "$key" >&2
+        exit 1
+
+        ;;
+
+    esac
+  done
+
+}
+
+# :command.parse_requirements
 risk_qube_update_parse_requirements() {
   # :command.fixed_flags_filter
   while [[ $# -gt 0 ]]; do
@@ -7912,13 +8108,13 @@ risk_qube_update_parse_requirements() {
 }
 
 # :command.parse_requirements
-risk_qube_list_parse_requirements() {
+risk_qube_dist_upgrade_parse_requirements() {
   # :command.fixed_flags_filter
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
         long_usage=yes
-        risk_qube_list_usage
+        risk_qube_dist_upgrade_usage
         exit
         ;;
 
@@ -7930,7 +8126,7 @@ risk_qube_list_parse_requirements() {
   done
 
   # :command.command_filter
-  action="qube list"
+  action="qube dist-upgrade"
 
   # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
@@ -7945,13 +8141,33 @@ risk_qube_list_parse_requirements() {
       *)
         # :command.parse_requirements_case
         # :command.parse_requirements_case_simple
-        printf "invalid argument: %s\n" "$key" >&2
-        exit 1
+        if [[ -z ${args['vm']+x} ]]; then
+
+          args['vm']=$1
+          shift
+        elif [[ -z ${args['version']+x} ]]; then
+
+          args['version']=$1
+          shift
+        else
+          printf "invalid argument: %s\n" "$key" >&2
+          exit 1
+        fi
 
         ;;
 
     esac
   done
+
+  # :command.required_args_filter
+  if [[ -z ${args['vm']+x} ]]; then
+    printf "missing required argument: VM\nusage: risk qube dist-upgrade VM VERSION\n" >&2
+    exit 1
+  fi
+  if [[ -z ${args['version']+x} ]]; then
+    printf "missing required argument: VERSION\nusage: risk qube dist-upgrade VM VERSION\n" >&2
+    exit 1
+  fi
 
 }
 
@@ -8950,6 +9166,15 @@ run() {
       fi
       ;;
 
+    "qube list")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_qube_list_usage
+      else
+        risk_qube_list_command
+      fi
+      ;;
+
     "qube update")
       if [[ ${args['--help']:-} ]]; then
         long_usage=yes
@@ -8959,12 +9184,12 @@ run() {
       fi
       ;;
 
-    "qube list")
+    "qube dist-upgrade")
       if [[ ${args['--help']:-} ]]; then
         long_usage=yes
-        risk_qube_list_usage
+        risk_qube_dist_upgrade_usage
       else
-        risk_qube_list_command
+        risk_qube_dist_upgrade_command
       fi
       ;;
 

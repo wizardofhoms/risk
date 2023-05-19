@@ -41,6 +41,9 @@ commands:
         help: "VM to disable from autostart"
         required: true
 
+  - name: list
+    help: "Show all qubes belonging to the active identity"
+
   - name: update
     help: "Update one or more VM templates, by name patterns or filters"
     catch_all: true
@@ -53,5 +56,12 @@ commands:
         short: -I
         help: "Check for templates of all VMs belong to an identity"
 
-  - name: list
-    help: "Show all qubes belonging to the active identity"
+  - name: dist-upgrade 
+    help: "Upgrade the distribution of a Qube template"
+    args:
+      - name: vm 
+        help: Name of VM or template to upgrade (if VM, risk will use its template)
+        required: true 
+      - name: version 
+        help: Name or number of version to upgrade to (eg. 37 for Fedora, or bookworm for Debian)
+        required: true

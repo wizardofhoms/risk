@@ -338,8 +338,10 @@ _qube_commands ()
         'delete:Delete a VM belonging to the current identity'
         'enable:Enable an identity VM to autostart'
         'disable:Disable an identity VM from autostart'
-        'update:Update one or more VM templates, by name patterns or filters'
         'list:Show qubes belonging to the active identity, and related global settings'
+        'update:Update one or more VM templates, by name patterns or filters'
+        'dist-upgrade:Upgrade the distribution of a Qube template'
+
     )
     _describe -t commands 'vm commands' subcmds && ret=0
 }
@@ -379,6 +381,12 @@ _qube ()
                 update)
                     _domain_vm_keywords
                     _known_vms
+                    ;;
+                dist-upgrade)
+                    _arguments -c \
+                        '1:Name of VM or template to upgrade (if VM, risk will use its template):_known_vms' \
+                        '2:Name or number of distribution to upgrade to (eg. 37 for Fedora, or bookworm for Debian)' \
+                        && ret=0
                     ;;
             esac
     esac

@@ -44,7 +44,6 @@ _run_qube ()
     # Prepare the full command
     terminal="$(config_get VM_TERMINAL)"
     shell="$(config_get VM_SHELL)"
-    # shell_command='zsh -c "'"$command"'"'
     shell_command="${shell} -c '$command'"
     full_command=(qvm-run --pass-io "$vm" "$shell_command")
 

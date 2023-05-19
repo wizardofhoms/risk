@@ -155,6 +155,80 @@ function qube.is_browser_instance ()
     [[ "${qube}" == "$(identity.browser_qube)" ]] || return 1
 }
 
+# qube.distribution returns the name of the Linux flavor of a qube,
+# (eg. fedora, debian (for all debian-based), arch, etc ) based on 
+# the package manager used by the qube.
+# $1 - Qube name
+function qube.distribution ()
+{
+    local vm="${1}"
+
+    if _run_qube "${vm}" which dnf; then
+        print "fedora"
+    elif _run_qube "${vm}" which apt; then
+        print "debian"
+    elif _run_qube "${vm}" which pacman; then
+        print "arch"
+    fi
+}
+
+# qube.dist_upgrade upgrades the target Qube template to a given version
+# (name or number), adapting the process depending on the distribution.
+# If the template is already to the target version, nothing is done.
+# $1 - Template to upgrade.
+# $2 - Name of linux distribution (lowercase, fedora/debian)
+# $3 - Target version (number or name) to upgrade to.
+function qube.dist_upgrade ()
+{
+    local vm dist version 
+    vm="$1"
+    dist="$2"
+    version="$3"
+
+    if [[ "${dist}" == "fedora" ]]; then
+        # Verify we are not already to the current version
+        release_file="$(qvm-run --pass-io "${vm}" cat /etc/os-release)"
+        current="$( echo "${release_file}" | sed -n 's/^VERSION_ID=//p')"
+
+        if [[ "${current}" == "${version}" ]]; then
+            _info "Template ${vm} is already to the target version ${version}"
+            return
+        fi
+
+        # Else, we're good to upgrade.
+        _info "Cleaning package cache"
+        _run_qube "${vm}" sudo dnf clean all
+        _info "Starting dist upgrade"
+        _run_qube_term "${vm}" sudo dnf --releasever="${dist}" --best --allowerasing distro-sync
+        _info "Trimming disk"
+        _run_qube "${vm}" fstrim -v /
+
+    elif [[ "${dist}" == "debian" ]]; then
+        # Verify we are not already to the current version
+        local current release_file
+
+        _info "Changing repository source names"
+        release_file="$(qvm-run --pass-io "${vm}" cat /etc/os-release)"
+        current="$( echo "${release_file}" | sed -n 's/^VERSION_CODENAME=//p')"
+
+        if [[ "${current}" == "${version}" ]]; then
+            _info "Template ${vm} is already to the target version ${version}"
+            return
+        fi
+
+        # Else, we're good to upgrade, change repository versions.
+        _run_qube "${vm}" sudo sed -i "'s/${current}/${dist}/g'" /etc/apt/sources.list
+        _run_qube "${vm}" sudo sed -i "'s/${current}/${dist}/g'" /etc/apt/sources.list.d/qubes-r4.list
+        # _run_qube "${vm}" sudo sed -i "'s/debian-security ${dist}\/updates/debian-security ${dist}-security/g'" /etc/apt/sources.list
+        
+        # And run the updates/upgrades.
+        _info "Starting repository update & upgrade"
+        _run_qube_term "${vm}" sudo apt update
+        _run_qube_term "${vm}" sudo apt upgrade
+        _info "Starting dist upgrade"
+        _run_qube_term "${vm}" sudo apt dist-upgrade
+    fi
+}
 
 # ========================================================================================
 #  VM control and settings management

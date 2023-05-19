@@ -13,7 +13,8 @@ commands:
         short: -L
         help: "Specify a label color to be used for all VMs belonging to this identity"
         arg: color 
-      - long: --enable
+      - &enable
+        long: --enable
         short: -E
         help: "Autostart this VM when the identity is started"
         # VPN gateway options
@@ -33,6 +34,10 @@ commands:
         help: "VM in which to browse for VPN configuration(s)"
         arg: config_vm
         conflicts: [ --choose ]
+      - &choose
+        long: --choose
+        help: Choose an existing client config by running the setup wizard in the VPN VM
+        conflicts: [ --config-in ]
       - &set_default
         long: --set-default
         help: "Set this VM as the default NetVM for all identity client VMs (browsers, messaging, etc)"
@@ -44,6 +49,20 @@ commands:
         arg: vm
         validate: netvm
 
+  - name: add
+    help: Add an existing qube as an identity VPN gateway.
+    args:
+      - name: vm 
+        help: "Qube to add as VPN gateway"
+        required: true
+        validate: vm_exists
+    flags:
+      - *enable
+      - *set_default
+      - *netvm
+      - *vpn_config
+      - *choose
+
   - name: setup
     help: Manage, import network configurations and run associated setup wizards
     args:
@@ -52,12 +71,10 @@ commands:
         required: true
         validate: vm_exists
     flags:
-      - *vpn_config
       - *set_default
       - *netvm
-      - long: --choose
-        help: Choose an existing client config by running the setup wizard in the VPN VM
-        conflicts: [ --config-in ]
+      - *vpn_config
+      - *choose
 
   - name: start 
     help: Start a VPN gateway in the background

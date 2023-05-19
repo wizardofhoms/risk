@@ -1,12 +1,10 @@
 
-local vm owner               # Variables for the target VM
-local netvm netvm_owner      # Variables for any netvm found/used.
-local chown chnet            # Questions variable (ex. do you want to blablabla)
-
-vm="${args['vm']}"
+# Prepare some settings for this new VM
+local vm netvm
 
 identity.set
-identity.fail_unknown "$IDENTITY"
+
+vm="${args['vm']}"
 
 # Check VM ownership
 owner=$(qube.owner "$vm")
@@ -21,12 +19,11 @@ if [[ -n "$owner" ]] && [[ "$owner" != "$IDENTITY" ]]; then
     fi
 fi
 
-# Tag the VM with its owner
+# Tag the VM with its owner, and mark as providing network.
 _run qvm-tags "$vm" set "$IDENTITY"
 _catch "Failed to tag qube with identity"
 
-# If the target qube is networked, change its network VM, either with
-# the default for the identity, or with the netvm flag, which has precedence.
+# Network
 if [[ "$(qvm-prefs "$vm" netvm)" != 'None' ]]; then
     _info "Qube is networked. Updating its network VM"
     netvm="$(identity.netvm)"
@@ -51,25 +48,14 @@ if [[ "$(qvm-prefs "$vm" netvm)" != 'None' ]]; then
     _catch "Failed to set netvm"
 fi
 
+_run qvm-prefs "$vm" provides_network True
 
-# Check if the VM provides network. If yes we naturally consider
-# it to be a gateway, and we add it to the list of proxy_vms.
-if [[ "$(qvm-prefs "$vm" provides_network)" == 'True' ]]; then
-    _info "VM provides network. Treating it as a gateway qube"
-
-    # Add as a proxy VM
-    identity.config_append PROXY_QUBES "${vm}"
-
-    # If the user specified to use it as the default netvm
-    if [[ ${args['--default-netvm']} -eq 1 ]]; then
-        identity.config_set NETVM_QUBE "${vm}"
-        _info "Setting '$vm' as default NetVM for all future client qubes"
-    fi
-else
-    identity.config_append CLIENT_QUBES "${vm}"
+if [[ ${args['--set-default']} -eq 1 ]]; then
+    identity.config_set NETVM_QUBE "${vm}"
+    _info "Setting '$vm' as default NetVM for all future client qubes"
 fi
 
 # Enable autostart if asked to
 [[ "${args['--enable']}" -eq 1 ]] && qube.enable "$vm"
 
-_success "Successfully set qube $vm as belonging to identity $IDENTITY"
+_success "Successfully add $vm as identity gateway"

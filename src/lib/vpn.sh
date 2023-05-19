@@ -9,6 +9,8 @@ function proxy.vpn_create ()
 
     _run qvm-create "${gw}" --property netvm="$netvm" --label "$gw_label" --template "$template"
     _catch "Failed to create VPN qube"
+
+    _run qvm-prefs "${gw}" provides_network True
     print_new_qube "${gw}" "New VPN qube"
 
     # Tag the VM with its owner, and add the gateway to the list of proxies
@@ -33,6 +35,8 @@ function proxy.vpn_clone ()
     local disp_template
     disp_template=$(qvm-prefs "${gw}" template_for_dispvms)
     [[ "$disp_template" = "True" ]] && qvm-prefs "${gw}" template_for_dispvms False
+
+    _run qvm-prefs "${gw}" provides_network True
 
     print_cloned_qube "${gw}" "${gw_clone}" "New VPN qube"
 
@@ -108,7 +112,7 @@ function proxy.vpn_import_configs ()
 
     # If the file is a zip file, unzip it in the configs directory
     # and immediately run the setup prompt to choose one.
-    if [[ $new_path:e == "zip" ]]; then
+    if [[ ${new_path:e} == "zip" ]]; then
         local configs_dir="/rw/config/vpn/configs"
         _info "Unzipping VPN configuration files into $configs_dir"
         qvm-run "$name" "sudo mkdir -p $configs_dir" &>/dev/null

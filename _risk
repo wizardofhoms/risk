@@ -266,6 +266,7 @@ _vpn_commands ()
     local -a subcmds 
     subcmds=(
         'create:Create VPN gateway from a template, or by cloning an existing one'
+        'add:Add an existing qube as an identity VPN gateway'
         'setup:Manage, import network configurations and run associated setup wizards'
         'enable:Automatically start a VPN gateway when starting the identity'
         'disable:Do not autostart this VM when the identity is started'
@@ -298,6 +299,14 @@ _vpn ()
                         "${_flags_network[@]}" \
                         "${_flags_vpn[@]}" \
                         '1::VPN gateway name (optional):' && ret=0
+                    ;;
+                add)
+                    _arguments -C \
+                        "${_flags_network[@]}" \
+                        "${_flags_vpn[@]}" \
+                        '(-E --enable)'{-E,--enable}'[Autostart this VM when the identity is started]' \
+                        '1::VM to tag with identity settings:_known_vms' \
+                        && ret=0
                     ;;
                 setup)
                     _arguments "${_flags_vpn[@]}" "${_flags_network[@]}" \

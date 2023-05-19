@@ -801,6 +801,7 @@ risk_vpn_usage() {
   # :command.usage_commands
   printf "%s\n" "$(bold "Commands:")"
   printf "  %s   Create VPN gateway from a template, or by cloning an existing one.\n" "$(red "create") "
+  printf "  %s   Add an existing qube as an identity VPN gateway.\n" "$(red "add")    "
   printf "  %s   Manage, import network configurations and run associated setup wizards\n" "$(red "setup")  "
   printf "  %s   Start a VPN gateway in the background\n" "$(red "start")  "
   printf "  %s   Stop a VPN gateway\n" "$(red "stop")   "
@@ -874,6 +875,11 @@ risk_vpn_create_usage() {
     echo
 
     # :flag.usage
+    printf "  %s\n" "--choose"
+    printf "    Choose an existing client config by running the setup wizard in the VPN VM\n"
+    echo
+
+    # :flag.usage
     printf "  %s\n" "--set-default"
     printf "    Set this VM as the default NetVM for all identity client VMs (browsers,\n    messaging, etc)\n"
     echo
@@ -894,6 +900,69 @@ risk_vpn_create_usage() {
     # :argument.usage
     printf "  %s\n" "$(blue "VM")"
     printf "    (optional) name to use for this VM (=> identity-<name>-vpn)\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+risk_vpn_add_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "risk vpn add - Add an existing qube as an identity VPN gateway.\n"
+    echo
+
+  else
+    printf "risk vpn add - Add an existing qube as an identity VPN gateway.\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "Usage:")"
+  printf "  risk vpn add VM [OPTIONS]\n"
+  printf "  risk vpn add --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "Options:")"
+
+    # :command.usage_flags
+    # :flag.usage
+    printf "  %s\n" "--enable, -E"
+    printf "    Autostart this VM when the identity is started\n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "--set-default"
+    printf "    Set this VM as the default NetVM for all identity client VMs (browsers,\n    messaging, etc)\n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "--netvm, -n VM"
+    printf "    NetVM to use for the gateway\n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "--config-in CONFIG_VM"
+    printf "    VM in which to browse for VPN configuration(s)\n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "--choose"
+    printf "    Choose an existing client config by running the setup wizard in the VPN VM\n"
+    echo
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "--help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "%s\n" "$(bold "Arguments:")"
+
+    # :argument.usage
+    printf "  %s\n" "$(blue "VM")"
+    printf "    Qube to add as VPN gateway\n"
     echo
 
   fi
@@ -922,11 +991,6 @@ risk_vpn_setup_usage() {
 
     # :command.usage_flags
     # :flag.usage
-    printf "  %s\n" "--config-in CONFIG_VM"
-    printf "    VM in which to browse for VPN configuration(s)\n"
-    echo
-
-    # :flag.usage
     printf "  %s\n" "--set-default"
     printf "    Set this VM as the default NetVM for all identity client VMs (browsers,\n    messaging, etc)\n"
     echo
@@ -934,6 +998,11 @@ risk_vpn_setup_usage() {
     # :flag.usage
     printf "  %s\n" "--netvm, -n VM"
     printf "    NetVM to use for the gateway\n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "--config-in CONFIG_VM"
+    printf "    VM in which to browse for VPN configuration(s)\n"
     echo
 
     # :flag.usage
@@ -3822,6 +3891,8 @@ function proxy.vpn_create ()
 
     _run qvm-create "${gw}" --property netvm="$netvm" --label "$gw_label" --template "$template"
     _catch "Failed to create VPN qube"
+
+    _run qvm-prefs "${gw}" provides_network True
     print_new_qube "${gw}" "New VPN qube"
 
     # Tag the VM with its owner, and add the gateway to the list of proxies
@@ -3846,6 +3917,8 @@ function proxy.vpn_clone ()
     local disp_template
     disp_template=$(qvm-prefs "${gw}" template_for_dispvms)
     [[ "$disp_template" = "True" ]] && qvm-prefs "${gw}" template_for_dispvms False
+
+    _run qvm-prefs "${gw}" provides_network True
 
     print_cloned_qube "${gw}" "${gw_clone}" "New VPN qube"
 
@@ -3922,7 +3995,7 @@ function proxy.vpn_import_configs ()
 
     # If the file is a zip file, unzip it in the configs directory
     # and immediately run the setup prompt to choose one.
-    if [[ $new_path:e == "zip" ]]; then
+    if [[ ${new_path:e} == "zip" ]]; then
         local configs_dir="/rw/config/vpn/configs"
         _info "Unzipping VPN configuration files into $configs_dir"
         qvm-run "$name" "sudo mkdir -p $configs_dir" &>/dev/null
@@ -4912,6 +4985,73 @@ risk_vpn_create_command() {
 }
 
 # :command.function
+risk_vpn_add_command() {
+  # src/vpn_add_command.sh
+
+  # Prepare some settings for this new VM
+  local vm netvm
+
+  identity.set
+
+  vm="${args['vm']}"
+
+  # Check VM ownership
+  owner=$(qube.owner "$vm")
+
+  # If already belongs to an identity, ask for confirmation to update the settings.
+  if [[ -n "$owner" ]] && [[ "$owner" != "$IDENTITY" ]]; then
+      _warning "VM $vm already belongs to $owner"
+      chown=$(prompt_question "Do you really want to assign a new identity ($IDENTITY) to this qube ? (YES/n)")
+      if [[ "$chown" != 'YES' ]]; then
+          _info "Aborting qube owner change. Exiting"
+          exit 0
+      fi
+  fi
+
+  # Tag the VM with its owner, and mark as providing network.
+  _run qvm-tags "$vm" set "$IDENTITY"
+  _catch "Failed to tag qube with identity"
+
+  # Network
+  if [[ "$(qvm-prefs "$vm" netvm)" != 'None' ]]; then
+      _info "Qube is networked. Updating its network VM"
+      netvm="$(identity.netvm)"
+
+      # If the user overrode the default netVM, check that
+      # it belongs to the identity, or ask confirmation.
+      if [[ -n "${args['--netvm']}" ]]; then
+          netvm="${args['--netvm']}"
+          netvm_owner=$(qube.owner "${netvm}")
+
+          if [[ -n "${netvm_owner}" ]] && [[ "$netvm_owner" != "$IDENTITY" ]]; then
+              _warning "Network VM $netvm already belongs to $netvm_owner"
+              chnet=$(prompt_question "Do you really want to use this qube as network VM for $vm? (YES/n)")
+              if [[ "$chnet" != 'YES' ]]; then
+                  netvm="$(identity.netvm)"
+              fi
+          fi
+      fi
+
+      _info "Setting network VM to $netvm"
+      _run qvm-prefs "$vm" netvm "$netvm"
+      _catch "Failed to set netvm"
+  fi
+
+  _run qvm-prefs "$vm" provides_network True
+
+  if [[ ${args['--set-default']} -eq 1 ]]; then
+      identity.config_set NETVM_QUBE "${vm}"
+      _info "Setting '$vm' as default NetVM for all future client qubes"
+  fi
+
+  # Enable autostart if asked to
+  [[ "${args['--enable']}" -eq 1 ]] && qube.enable "$vm"
+
+  _success "Successfully add $vm as identity gateway"
+
+}
+
+# :command.function
 risk_vpn_setup_command() {
   # src/vpn_setup_command.sh
 
@@ -4924,16 +5064,10 @@ risk_vpn_setup_command() {
   client_conf_path="$(config_or_flag "" DEFAULT_VPN_CLIENT_CONF)"
 
   netvm="${args['--netvm']}"
-  if [[ -z "${netvm}" ]]; then
-      netvm="$(identity.config_get NETVM_QUBE)"
-  fi
-  if [[ -z "${netvm}" ]]; then
-      netvm="$(config_get DEFAULT_NETVM)"
-  fi
 
   # Set the netVM of this VPN if required.
-  if [[ "$(qvm-prefs "${name}" netvm)" != "${netvm}" ]]; then
-      _info "Using $netvm as NetVM"
+  if [[ -n  "${netvm}" ]] && [[ "$(qvm-prefs "${name}" netvm)" != "${netvm}" ]]; then
+      _info "Setting the VPN network VM to $netvm"
       qvm-prefs "$name" netvm "$netvm"
   fi
 
@@ -5104,7 +5238,7 @@ risk_qube_add_command() {
 
           if [[ -n "${netvm_owner}" ]] && [[ "$netvm_owner" != "$IDENTITY" ]]; then
               _warning "Network VM $netvm already belongs to $netvm_owner"
-              chnet=$(prompt_question "Do you really want to use this qube as netvm for $netvm? (YES/n)")
+              chnet=$(prompt_question "Do you really want to use this qube as network VM for $vm? (YES/n)")
               if [[ "$chnet" != 'YES' ]]; then
                   netvm="$(identity.netvm)"
               fi
@@ -5122,12 +5256,12 @@ risk_qube_add_command() {
       _info "VM provides network. Treating it as a gateway qube"
 
       # Add as a proxy VM
-      identity.config_set PROXY_QUBES "${vm}"
+      identity.config_append PROXY_QUBES "${vm}"
 
       # If the user specified to use it as the default netvm
       if [[ ${args['--default-netvm']} -eq 1 ]]; then
           identity.config_set NETVM_QUBE "${vm}"
-          _info "Setting '$vm' as default NetVM for all client machines"
+          _info "Setting '$vm' as default NetVM for all future client qubes"
       fi
   else
       identity.config_append CLIENT_QUBES "${vm}"
@@ -6973,6 +7107,13 @@ risk_vpn_parse_requirements() {
       shift $#
       ;;
 
+    add)
+      action="add"
+      shift
+      risk_vpn_add_parse_requirements "$@"
+      shift $#
+      ;;
+
     setup)
       action="setup"
       shift
@@ -7158,6 +7299,19 @@ risk_vpn_create_parse_requirements() {
         ;;
 
       # :flag.case
+      --choose)
+        # :flag.conflicts
+        if [[ -n "${args['--config-in']:-}" ]]; then
+          printf "conflicting options: %s cannot be used with %s\n" "$key" "--config-in" >&2
+          exit 1
+        fi
+
+        # :flag.case_no_arg
+        args['--choose']=1
+        shift
+        ;;
+
+      # :flag.case
       --set-default)
 
         # :flag.case_no_arg
@@ -7210,13 +7364,13 @@ risk_vpn_create_parse_requirements() {
 }
 
 # :command.parse_requirements
-risk_vpn_setup_parse_requirements() {
+risk_vpn_add_parse_requirements() {
   # :command.fixed_flags_filter
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
         long_usage=yes
-        risk_vpn_setup_usage
+        risk_vpn_add_usage
         exit
         ;;
 
@@ -7228,30 +7382,18 @@ risk_vpn_setup_parse_requirements() {
   done
 
   # :command.command_filter
-  action="vpn setup"
+  action="vpn add"
 
   # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
       # :flag.case
-      --config-in)
-        # :flag.conflicts
-        if [[ -n "${args['--choose']:-}" ]]; then
-          printf "conflicting options: %s cannot be used with %s\n" "$key" "--choose" >&2
-          exit 1
-        fi
+      --enable | -E)
 
-        # :flag.case_arg
-        if [[ -n ${2+x} ]]; then
-
-          args['--config-in']="$2"
-          shift
-          shift
-        else
-          printf "%s\n" "--config-in requires an argument: --config-in CONFIG_VM" >&2
-          exit 1
-        fi
+        # :flag.case_no_arg
+        args['--enable']=1
+        shift
         ;;
 
       # :flag.case
@@ -7278,6 +7420,147 @@ risk_vpn_setup_parse_requirements() {
           shift
         else
           printf "%s\n" "--netvm requires an argument: --netvm, -n VM" >&2
+          exit 1
+        fi
+        ;;
+
+      # :flag.case
+      --config-in)
+        # :flag.conflicts
+        if [[ -n "${args['--choose']:-}" ]]; then
+          printf "conflicting options: %s cannot be used with %s\n" "$key" "--choose" >&2
+          exit 1
+        fi
+
+        # :flag.case_arg
+        if [[ -n ${2+x} ]]; then
+
+          args['--config-in']="$2"
+          shift
+          shift
+        else
+          printf "%s\n" "--config-in requires an argument: --config-in CONFIG_VM" >&2
+          exit 1
+        fi
+        ;;
+
+      # :flag.case
+      --choose)
+        # :flag.conflicts
+        if [[ -n "${args['--config-in']:-}" ]]; then
+          printf "conflicting options: %s cannot be used with %s\n" "$key" "--config-in" >&2
+          exit 1
+        fi
+
+        # :flag.case_no_arg
+        args['--choose']=1
+        shift
+        ;;
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        if [[ -z ${args['vm']+x} ]]; then
+          # :argument.validations
+          if [[ -n $(validate_vm_exists "$1") ]]; then
+            printf "validation error in %s:\n%s\n" "VM" "$(validate_vm_exists "$1")" >&2
+            exit 1
+          fi
+
+          args['vm']=$1
+          shift
+        else
+          printf "invalid argument: %s\n" "$key" >&2
+          exit 1
+        fi
+
+        ;;
+
+    esac
+  done
+
+  # :command.required_args_filter
+  if [[ -z ${args['vm']+x} ]]; then
+    printf "missing required argument: VM\nusage: risk vpn add VM [OPTIONS]\n" >&2
+    exit 1
+  fi
+
+}
+
+# :command.parse_requirements
+risk_vpn_setup_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        risk_vpn_setup_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="vpn setup"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+      # :flag.case
+      --set-default)
+
+        # :flag.case_no_arg
+        args['--set-default']=1
+        shift
+        ;;
+
+      # :flag.case
+      --netvm | -n)
+
+        # :flag.case_arg
+        if [[ -n ${2+x} ]]; then
+          # :flag.validations
+          if [[ -n $(validate_netvm "$2") ]]; then
+            printf "validation error in %s:\n%s\n" "--netvm, -n VM" "$(validate_netvm "$2")" >&2
+            exit 1
+          fi
+
+          args['--netvm']="$2"
+          shift
+          shift
+        else
+          printf "%s\n" "--netvm requires an argument: --netvm, -n VM" >&2
+          exit 1
+        fi
+        ;;
+
+      # :flag.case
+      --config-in)
+        # :flag.conflicts
+        if [[ -n "${args['--choose']:-}" ]]; then
+          printf "conflicting options: %s cannot be used with %s\n" "$key" "--choose" >&2
+          exit 1
+        fi
+
+        # :flag.case_arg
+        if [[ -n ${2+x} ]]; then
+
+          args['--config-in']="$2"
+          shift
+          shift
+        else
+          printf "%s\n" "--config-in requires an argument: --config-in CONFIG_VM" >&2
           exit 1
         fi
         ;;
@@ -9062,6 +9345,15 @@ run() {
         risk_vpn_create_usage
       else
         risk_vpn_create_command
+      fi
+      ;;
+
+    "vpn add")
+      if [[ ${args['--help']:-} ]]; then
+        long_usage=yes
+        risk_vpn_add_usage
+      else
+        risk_vpn_add_command
       fi
       ;;
 

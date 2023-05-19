@@ -8,16 +8,10 @@ config_vm="${args['--config-in']}"
 client_conf_path="$(config_or_flag "" DEFAULT_VPN_CLIENT_CONF)"
 
 netvm="${args['--netvm']}"
-if [[ -z "${netvm}" ]]; then
-    netvm="$(identity.config_get NETVM_QUBE)"
-fi
-if [[ -z "${netvm}" ]]; then
-    netvm="$(config_get DEFAULT_NETVM)"
-fi
 
 # Set the netVM of this VPN if required.
-if [[ "$(qvm-prefs "${name}" netvm)" != "${netvm}" ]]; then
-    _info "Using $netvm as NetVM"
+if [[ -n  "${netvm}" ]] && [[ "$(qvm-prefs "${name}" netvm)" != "${netvm}" ]]; then
+    _info "Setting the VPN network VM to $netvm"
     qvm-prefs "$name" netvm "$netvm"
 fi
 

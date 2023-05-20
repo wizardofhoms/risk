@@ -176,21 +176,21 @@ function identity.delete_home_directory ()
 function identity.fail_none_active ()
 {
     active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
-    if [[ -n $active_identity ]]; then
-        # It might be the same
-        if [[ $active_identity == "$1" ]]; then
-            _info "Identity $1 is already active"
-            exit 0
-        fi
-
-        _failure "Identity $active_identity is active. Close/slam/fold it and rerun this command"
-    fi
+    [[ -z "${active_identity}" ]] && _failure "No active identity in vault"
 }
 
 # identity.fail_other_active exits the program if another identity is already active (opened in vault).
 function identity.fail_other_active ()
 {
-    identity.is_active && _failure "Another identity ($IDENTITY) is active. Close/slam/stop it and rerun this command"
+    active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
+
+    if [[ -n $active_identity ]]; then
+        if [[ $active_identity == "$1" ]]; then
+            return
+        fi
+
+        _failure "Identity $active_identity is active. Close/slam/fold it and rerun this command"
+    fi
 }
 
 # identity.fail_unknown exits the program if an identity does not exist in the vault VM. 

@@ -2,6 +2,8 @@
 # First check the identity is valid
 identity.set "${args['identity']}"
 identity.fail_unknown
+identity.fail_none_active
+identity.fail_other_active
 
 # Close the identity and all its running VMs
 _warning "Stopping machines of identity $IDENTITY"

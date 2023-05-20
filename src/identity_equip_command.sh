@@ -8,9 +8,11 @@ local gw_netvm          # NetVM for the tor gateway
 local web_netvm         # NetVM for the Web browser VM
 local clone             # A variable that might be overritten several times, used to assign a VM to clone.
 
-# 1 - Identity basic setup
+# 1 - Identity basic setup.
 identity.set "${name}"
 identity.fail_unknown "$IDENTITY"
+identity.fail_none_active
+identity.fail_other_active
 
 _in_section "risk" 8 && _info "Creating qubes for identity $IDENTITY" && echo
 

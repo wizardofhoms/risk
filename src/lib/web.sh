@@ -241,12 +241,11 @@ EOF
     # Prepare the second script, which will read that same file from the vault.
     read -r -d '' QREXEC_SPLIT_BOOKMARK <<'EOF'
 #!/bin/sh
-# Read the bookmarks file contents.
-IFS= read -r BOOKMARKS
-
-# And write it to the path.
 bookmarks_split_file="/home/user/.local/share/split-browser/bookmarks.tsv"
-echo "${BOOKMARKS}" > "${bookmarks_split_file}"
+# Read the bookmarks file contents.
+while IFS= read -r bookmark; do
+    echo "${bookmark}" >> "${bookmarks_split_file}"
+done
 EOF
 
     # Write the script
@@ -337,10 +336,18 @@ function web.backend.open_url ()
 function web.backend.save_bookmarks ()
 {
     local split_backend="$1"
+    local bookmarks_split_file bookmarks_file
 
     # Prepare the encrypted bookmark filename
     filename="$(crypt.filename "bookmarks.tsv")"
     bookmarks_file="/home/user/.tomb/mgmt/${filename}"
+
+    # Test for the file, and if not empty, otherwise
+    # we risk doing dangerous and unwanted things.
+    bookmarks="$(qvm-run --pass-io "${split_backend}" "cat ${bookmarks_split_file}")"
+    if [[ $? -ne 0 ]] || [[ -z "${bookmarks}" ]] ; then
+         return
+    fi
 
     _info "Backing up bookmarks"
     backup_command="qrexec-client-vm ${split_backend} risk.SplitBookmarkBackup > ${bookmarks_file}"

@@ -357,9 +357,7 @@ function qube.delete ()
     local vm="${1}"
     local file="${2}"
 
-    if [[ -z "${vm}" ]]; then
-        return
-    fi
+    [[ -z "${vm}" ]] && return
 
     # Attempt to delete: if fails, return without touching the specified file.
     _info "Deleting VM ${vm}"

@@ -197,13 +197,11 @@ function identity.fail_other_active ()
 # $1 - Identity name
 function identity.fail_unknown ()
 {
-    # Get the resulting encrypted name
-    local encrypted_identity
-    encrypted_identity="$(crypt.filename "${IDENTITY}-gpg.coffin")"
+    # Attempt to resolve the coffin with the name
+    encrypted_identity="$(qvm-run --pass-io "${VAULT_VM}" "risks resolve coffin ${IDENTITY}")"
 
-    echo "${encrypted_identity}"
     # And check the directory exists
-    _run_exec "$VAULT_VM" "stat /home/user/.graveyard/$encrypted_identity &>/dev/null"
+    _run_exec "$VAULT_VM" "stat ${encrypted_identity} &>/dev/null"
     _catch "Invalid identity: $IDENTITY does not exists in ${VAULT_VM}"
 }
 
@@ -456,26 +454,28 @@ function identity.delete_qubes ()
     # Client VMs
     read -rA clients < <(identity.client_qubes)
     for client in "${clients[@]}"; do
-        qube.delete "${client}" "client_vms"
+        qube.delete "${client}" CLIENT_QUBES
     done
+    identity.config_unset CLIENT_QUBES
 
     # Browser VM
     browser_vm="$(identity.browser_qube)"
     if [[ -n "${browser_vm}" ]]; then
-        qube.delete "${browser_vm}" "browser_vm"
+        qube.delete "${browser_vm}" BROWSER_QUBE
         identity.config_unset BROWSER_QUBE
     fi
 
     # Proxy VMs
-    read -rA proxies < <(identity.client_qubes)
+    read -rA proxies < <(identity.proxy_qubes)
     for proxy in "${proxies[@]}"; do
-        qube.delete "${proxy}" "proxy_vms"
+        qube.delete "${proxy}" PROXY_QUBES
     done
+    identity.config_unset PROXY_QUBES
 
     # Tor gateway.
     tor_gateway="$(identity.tor_gateway)"
     if [[ -n "${tor_gateway}" ]]; then
-        qube.delete "${tor_gateway}" "tor_gw"
+        qube.delete "${tor_gateway}" TOR_QUBE
         identity.config_unset TOR_QUBE
     fi
 

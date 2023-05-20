@@ -1,10 +1,9 @@
-
 # ========================================================================================
-# Virtual machines / equipment functions
+# Client browser qubes 
 # ========================================================================================
 
-# Create a web browsing VM from a template
-function web.browser_create ()
+# web.client.create creates a web browsing VM from a template.
+function web.client.create ()
 {
     local web="${1}-web"
     local netvm="${2-$(identity.config_get NETVM_QUBE)}"
@@ -18,7 +17,7 @@ function web.browser_create ()
     # this means we must create a named disposable VM.
     if [[ "${template_disp}" == True ]]; then
         _verbose "VM template is a disposable template, cloning it instead"
-        web.browser_clone "${1}" "${template}" "${netvm}" "${label}"
+        web.client.clone "${1}" "${template}" "${netvm}" "${label}"
         return
     fi
 
@@ -39,8 +38,8 @@ function web.browser_create ()
     identity.config_set BROWSER_QUBE "${web}"
 }
 
-# Clone a web browsing VM from an existing one
-function web.browser_clone ()
+# web.client.clone clones a web browsing VM from an existing AppVM one.
+function web.client.clone ()
 {
     local web="${1}-web"
     local web_clone="$2"
@@ -65,9 +64,25 @@ function web.browser_clone ()
     identity.config_set BROWSER_QUBE "${web}"
 }
 
-# web.fail_config_browser exits the program if risk lacks some information
+# web.client.skip returns 0 when there not enough information in the configuration
+# file or in command flags for creating a new browser qube (no templates/clones 
+# indicated, etc).
+# Needs access to command-line flags
+function web.client.skip ()
+{
+    local template clone netvm
+
+    # Check qubes specified in config or flags.
+    template="$(config_get WHONIX_WS_TEMPLATE)"
+    [[ -n "${args['--clone-web-from']}" ]] && clone="${args['--clone-web-from']}"
+
+    [[ -z ${template} && -z ${clone} ]] && \
+        _info "Skipping browser qube: no TemplateVM/AppVM specified in config or flags" && return 0
+}
+
+# web.client.fail_invalid_config exits the program if risk lacks some information
 # (which templates/clones to use) when attempting to create a browser qube.
-function web.fail_config_browser ()
+function web.client.fail_invalid_config ()
 {
     local template clone netvm
 
@@ -83,143 +98,11 @@ function web.fail_config_browser ()
     fi
 }
 
-# proxy.skip_browser_create returns 0 when there not enough information in the configuration
-# file or in command flags for creating a new browser qube (no templates/clones indicated, etc).
-# Needs access to command-line flags
-function web.skip_browser_create ()
-{
-    local template clone netvm
-
-    # Check qubes specified in config or flags.
-    template="$(config_get WHONIX_WS_TEMPLATE)"
-    [[ -n "${args['--clone-web-from']}" ]] && clone="${args['--clone-web-from']}"
-
-    [[ -z ${template} && -z ${clone} ]] && \
-        _info "Skipping browser qube: no TemplateVM/AppVM specified in config or flags" && return 0
-    }
-
-# Create a split-browser VM from a template
-function web.split_backend_create ()
-{
-    local web="${1}-split-web"
-    local web_label="${2-gray}"
-    local split_template="$(config_get SPLIT_BROWSER_TEMPLATE)"
-
-    qvm-create --property netvm=None --label "$web_label" --template "$split_template"
-    print_new_qube "${web}" "New split-browser backend"
-
-    # Once created, set the configuration with this qube.
-    config_set SPLIT_BROWSER "${web}"
-}
-
-# Clone an existing split-browser VM, and change its dispvms
-function web.split_backend_clone ()
-{
-    local web="${1}-split-web"
-    local web_clone="$2"
-    local web_label="${3-gray}"
-
-    qvm-clone "${web_clone}" "${web}"
-    qvm-prefs "$web" label "$web_label"
-    qvm-prefs "$web" netvm None
-
-    print_cloned_qube "${web}" "${web_clone}" "New split-browser backend"
-
-    # Once created, set the configuration with this qube.
-    config_set SPLIT_BROWSER "${web}"
-}
-
-# web.skip_split_create returns 0 when there not enough information in the configuration
-# file or in command flags for creating a new split-browser backend qube (no templates/clones 
-# indicated, etc).
-# Needs access to command-line flags
-function web.skip_split_create ()
-{
-    [[ ${args['--no-split-browser']} -eq 1 ]] && return 0
-
-    local template clone
-
-    template="$(config_get SPLIT_BROWSER_TEMPLATE)"
-    clone="$(config_get SPLIT_BROWSER)"
-
-    [[ -z ${template} && -z ${clone} ]] && \
-        _info "Skipping split-browser backend: no TemplateVM/AppVM specified in config" && return 0
-
-    [[ -n ${clone} ]] && return 0
-
-    return 1
-}
-
-# web.fail_config_split_backend exits the program if risk lacks some information
-# (which templates/clones to use) when attempting to create a split-browser qube.
-function web.fail_config_split_backend ()
-{
-    local template clone
-
-}
-
-# web.browser_set_split_dispvm updates the default disposable VM
-# used by the split browser backend to use the active identity's one.
-function web.browser_set_split_dispvm ()
-{
-    local browser_vm split_backend filename copy_command
-
-    split_backend="$(config_get SPLIT_BROWSER)"
-    browser_vm=$(identity.config_get BROWSER_QUBE)
-
-    filename="$(crypt.filename "bookmarks.tsv")"
-    local bookmarks_file="/home/user/.tomb/mgmt/${filename}"
-    local bookmarks_split_file="/home/user/.local/share/split-browser/bookmarks.tsv"
-
-    [[ -z "${browser_vm}" ]] && return
-
-    # Use this browser as the split dispVM
-    _info "Setting split-browser: $browser_vm"
-    qvm-prefs "${split_backend}" default_dispvm "${browser_vm}"
-
-    # And copy identity bookmarks from vault to the split-backend.
-    _info "Bookmarks: copying"
-    copy_command="qvm-copy-to-vm ${split_backend} ${bookmarks_file}" 
-    qvm-run "${VAULT_VM}" "${copy_command}" &>/dev/null
-    _run_qube "${split_backend}" "mv QubesIncoming/${VAULT_VM}/${filename} ${bookmarks_split_file}"
-}
-
-# web.browser_unset_split_dispvm removes the dispvm setting of the
-# tor split-browser backend if it is set to the identity browser VM.
-function web.browser_unset_split_dispvm ()
-{
-    local browser_vm split_backend filename
-
-    browser_vm=$(identity.config_get BROWSER_QUBE)
-    # browser_vm=$(cat "${IDENTITY_DIR}/browser_vm" 2>/dev/null)
-    split_backend="$(config_get SPLIT_BROWSER)"
-
-    filename="$(crypt.filename "bookmarks.tsv")"
-    local bookmarks_backend_path="/home/user/.local/share/split-browser/bookmarks.tsv"
-
-    [[ -z "${browser_vm}" ]] && return
-
-    if [[ "$(qvm-prefs "${split_backend}" default_dispvm)" == "${browser_vm}" ]]; then
-        qvm-prefs "${split_backend}" default_dispvm ''
-    fi
-
-    _info "Bookmarks: removed"
-    _run_qube "${split_backend}" "qvm-copy-to-vm ${VAULT_VM} ${bookmarks_backend_path}"
-    _run_qube "${split_backend}" "shred -u ${bookmarks_backend_path}"
-}
-
-# web.no_split_backend returns 0 if there is no split-browser backend 
-# qube specified in the configuration/flags, or 1 if one is found.
-function web.no_split_backend ()
-{
-    echo -n
-}
-
-# web.update_torbrowser finds the active identity's browser qube template,
+# web.client.update_tor_browser finds the active identity's browser qube template,
 # or if not existing, the globally configured whonix workstation, and updates
 # the Tor browser in it.
 # Requires an identity to be active.
-function web.update_torbrowser ()
+function web.client.update_tor_browser ()
 {
     local browser_vm browser_template running
 
@@ -240,57 +123,253 @@ function web.update_torbrowser ()
     [[ ${running} -eq 1 ]] && qube.shutdown "${browser_template}"
 }
 
-# ========================================================================================
-# Browsing activities and data
-# ========================================================================================
-#
-# web.bookmark_create_system writes and encrypts a file to store all-users bookmarks.
-function web.bookmark_create_system ()
+# web.client.open_url attempts to a URL with the system browser of a qube.
+# $1 - URL to open.
+# $2 - Target qube.
+function web.client.open_url ()
 {
-    local filename="bookmarks.tsv"
+    local url="$1"
+    local qube="$2"
 
-    # A hush device should be mounted.
-
-    # If the file exists, return
-
-    # Ask for a password to use, or generate a random seed to use for the encryption.
-
-    # Get an encrypted name for the file.
-
-    # And create it.
+    _info "Opening ${url} in ${qube}"
+    _run qvm-run "${qube}" "x-www-browser ${url}" &
 }
 
-# web.bookmark_create_system writes and encrypts a file to store per-user bookmarks.
-function web.bookmark_create_file ()
+
+# ========================================================================================
+# Backend browser qubes (split-browser) 
+# ========================================================================================
+
+# web.backend.create creates a split-browser backend qube from a template.
+function web.backend.create ()
 {
-    local filename="$(crypt.filename "bookmarks.tsv")"
-    bookmarks_path="/home/user/.tomb/mgmt/${filename}"
-    _run_exec "$VAULT_VM" "touch ${bookmarks_path}"
+    local web web_label split_template
+
+    web="${1}-split-web"
+    web_label="${2-gray}"
+    split_template="$(config_get SPLIT_BROWSER_TEMPLATE)"
+
+    qvm-create --property netvm=None --label "$web_label" --template "$split_template"
+    print_new_qube "${web}" "New split-browser backend"
+
+    # Once created, set the configuration with this qube.
+    config_set SPLIT_BROWSER "${web}"
+
+    # And write the required qrexec services.
+    echo && _info "Writing split-bookmark RPC services/policies"
+    web.backend.setup_policy "${web}"
+    web.backend.setup_policy_dom0 "${web}"
 }
 
-# web.bookmark_create_system writes and encrypts a file for blacklisted links.
-function web.blacklist_create_file ()
+# web.backend.clone clones an existing split-browser backend qube.
+function web.backend.clone ()
+{
+    local web="${1}-split-web"
+    local web_clone="$2"
+    local web_label="${3-gray}"
+
+    qvm-clone "${web_clone}" "${web}"
+    qvm-prefs "$web" label "$web_label"
+    qvm-prefs "$web" netvm None
+
+    print_cloned_qube "${web}" "${web_clone}" "New split-browser backend"
+
+    # Once created, set the configuration with this qube.
+    config_set SPLIT_BROWSER "${web}"
+
+    # And write the required qrexec services.
+    echo && _info "Writing split-bookmark RPC services/policies"
+    web.backend.setup_policy "${web}"
+    web.backend.setup_policy_dom0 "${web}"
+}
+
+# web.backend.skip returns 0 when there not enough information in the configuration
+# file or in command flags for creating a new split-browser backend qube (no templates
+# or clones indicated, etc).
+# Needs access to command-line flags
+function web.backend.skip ()
+{
+    [[ ${args['--no-split-browser']} -eq 1 ]] && return 0
+
+    local template clone
+
+    template="$(config_get SPLIT_BROWSER_TEMPLATE)"
+    clone="$(config_get SPLIT_BROWSER)"
+
+    [[ -z ${template} && -z ${clone} ]] && \
+        _info "Skipping split-browser backend: no TemplateVM/AppVM specified in config" && return 0
+
+    [[ -n ${clone} ]] && return 0
+
+    return 1
+}
+
+# web.backend.fail_invalid_config exits the program if risk lacks some information
+# (which templates/clones to use) when attempting to create a split-browser qube.
+function web.backend.fail_invalid_config ()
+{
+    local template clone
+
+}
+
+# web.backend.setup_policy writes two RPC policy scripts to the split-browser backend, that 
+# are used either to read the bookmarks file from vault, or send it back and delete it.
+# $1 - split-browser backend qube name.
+function web.backend.setup_policy ()
+{
+    local vm="$1"
+
+    # Prepare the script to write as the backend qrexec service.
+    read -r -d '' QREXEC_SPLIT_BOOKMARK_BACKUP <<'EOF'
+#!/bin/sh
+bookmarks_split_file="/home/user/.local/share/split-browser/bookmarks.tsv"
+
+# Print the bookmarks file or return
+[[ -e "${bookmarks_split_file}" ]] || return
+cat "${bookmarks_split_file}"
+
+# And delete it
+shred -uzf "${bookmarks_split_file}"
+EOF
+    
+    # Write the script to the target path and make it executable.
+    local qrexec_backup_path="/usr/local/etc/qubes-rpc/risk.SplitBookmarkBackup"
+    qvm-run -q "${vm}" "echo '${QREXEC_SPLIT_BOOKMARK_BACKUP}' | sudo tee ${qrexec_backup_path}"
+    qvm-run -q "${vm}" "sudo chmod +x ${qrexec_backup_path}"
+
+    # Prepare the second script, which will read that same file from the vault.
+    read -r -d '' QREXEC_SPLIT_BOOKMARK <<'EOF'
+#!/bin/sh
+# Read the bookmarks file contents.
+IFS= read -r BOOKMARKS
+
+# And write it to the path.
+bookmarks_split_file="/home/user/.local/share/split-browser/bookmarks.tsv"
+echo "${BOOKMARKS}" > "${bookmarks_split_file}"
+EOF
+
+    # Write the script
+    local qrexec_path="/usr/local/etc/qubes-rpc/risk.SplitBookmark"
+    qvm-run -q "${vm}" "echo '${QREXEC_SPLIT_BOOKMARK}' | sudo tee ${qrexec_path}"
+    qvm-run -q "${vm}" "sudo chmod +x ${qrexec_path}"
+}
+
+# web.backend.setup_policy_dom0 creates two RPC policy files in Dom0, which are used to
+# allow the vault qube to copy/read and delete the bookmarks file in the split-backend qube.
+# $1 - split-browser backend qube name.
+function web.backend.setup_policy_dom0 ()
+{
+    local split_backend="$1"
+
+    # Echo both permission lines to their appropriate policy files.
+    local bookmarks_policy="${VAULT_VM}    ${split_backend}    allow"
+
+    _info "Writing split-bookmark policies to dom0"
+    echo "${bookmarks_policy}" | sudo tee -a /etc/qubes-rpc/policy/risk.SplitBookmark &>/dev/null
+    echo "${bookmarks_policy}" | sudo tee -a /etc/qubes-rpc/policy/risk.SplitBookmarkBackup &>/dev/null
+}
+
+# web.backend.set_client updates the default disposable VM
+# used by the split backend to use the active identity's one.
+function web.backend.set_client ()
+{
+    local browser_vm split_backend filename copy_command
+
+    # Set browser qubes
+    split_backend="$(config_get SPLIT_BROWSER)"
+    browser_vm=$(identity.config_get BROWSER_QUBE)
+
+    # Prepare the encrypted bookmark filename
+    filename="$(crypt.filename "bookmarks.tsv")"
+    local bookmarks_file="/home/user/.tomb/mgmt/${filename}"
+
+    [[ -z "${browser_vm}" ]] && return
+
+    # Use this browser as the split dispVM
+    _info "Setting split-browser: $browser_vm"
+    qvm-prefs "${split_backend}" default_dispvm "${browser_vm}"
+
+    # And copy identity bookmarks with an RPC call from vault to the split-backend.
+    _info "Copying bookmarks"
+    copy_command="cat ${bookmarks_file} | qrexec-client-vm ${split_backend} risk.SplitBookmark"
+    qvm-run "${VAULT_VM}" "${copy_command}"
+}
+
+# web.backend.unset_client removes the dispvm setting of the
+# tor split backend if it is set to the identity browser VM.
+function web.backend.unset_client ()
+{
+    local browser_vm split_backend filename backup_command bookmarks_file
+
+    browser_vm=$(identity.config_get BROWSER_QUBE)
+    split_backend="$(config_get SPLIT_BROWSER)"
+
+    # Prepare the encrypted bookmark filename
+    filename="$(crypt.filename "bookmarks.tsv")"
+    bookmarks_file="/home/user/.tomb/mgmt/${filename}"
+
+    [[ -z "${browser_vm}" ]] && return
+
+    # Unset the browser as the split-backend dispVM
+    if [[ "$(qvm-prefs "${split_backend}" default_dispvm)" == "${browser_vm}" ]]; then
+        qvm-prefs "${split_backend}" default_dispvm ''
+    fi
+
+    # And backup the bookmarks file with an RPC call to the backend from the vault.
+    _info "Backing up bookmarks"
+    backup_command="qrexec-client-vm ${split_backend} risk.SplitBookmarkBackup > ${bookmarks_file}"
+    qvm-run "${VAULT_VM}" "${backup_command}"
+}
+
+# web.backend.open_url attempts to open a URL with the split-browser backend.
+function web.backend.open_url ()
+{
+    local url="$1"
+    local qube
+    qube="$(config_get SPLIT_BROWSER)"
+
+    _info "Opening ${url} in ${qube}"
+    _run qvm-run "${qube}" "split-browser ${url}" &
+}
+
+# web.backend.save_bookmarks asks the vault qube to make use of an RPC 
+# call to read the bookmarks file from the split backend and save it. 
+# The split-browser backend then deletes the bookmark file.
+function web.backend.save_bookmarks ()
 {
     echo
 }
 
-# web.bookmark_display_command returns a command string
-# to use as the dmenu displayer of a bookmarks file.
-function web.bookmark_display_command ()
+# web.backend.read_bookmarks asks the vault to make use of an RPC call 
+# to send the identity's bookmarks file to the split-backend qube.
+function web.backend.read_bookmarks ()
 {
-    # This command will not work if qubes-split-browser is not installed in the split-browser VM
-    local window_focus_command='_NET_WM_NAME="Split Browser" x11-unoverride-redirect stdbuf -oL'
-
-    if [[ -n "$(config_get BOOKMARKS_DMENU_COMMAND)" ]]; then
-        echo "${window_focus_command} $(config_get BOOKMARKS_DMENU_COMMAND)"
-    else
-        echo "${window_focus_command} dmenu -i -l 20 -b -p 'RISKS Bookmark'"
-    fi
+    echo
 }
 
-# web.bookmarks_file_is_empty returns 0 if no bookmark
+
+# ========================================================================================
+# Bookmarks management 
+# ========================================================================================
+
+# Command to spawn split-browser dmenu with bookmarks, and select one (written to file '~/bookmark').
+SPLIT_BROWSER_QUERY_COMMAND='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
+
+# web.bookmark.create_user_file writes a file to store per-user 
+# bookmarks, and obfuscates its name. If the file already exists, 
+# nothing will happen (except modified touch timestamp).
+function web.bookmark.create_user_file ()
+{
+    local filename bookmarks_path
+
+    filename="$(crypt.filename "bookmarks.tsv")"
+    bookmarks_path="/home/user/.tomb/mgmt/${filename}"
+    _run_exec "$VAULT_VM" "touch ${bookmarks_path}"
+}
+
+# web.bookmark.file_is_empty returns 0 if no bookmark
 # file exists in split-browser or if it is empty.
-function web.bookmarks_file_is_empty ()
+function web.bookmark.file_is_empty ()
 {
     local split_command contents
     split_command=( qvm-run --pass-io "$(config_get SPLIT_BROWSER)" "cat .local/share/split-browser/bookmarks.tsv" )
@@ -306,33 +385,42 @@ function web.bookmarks_file_is_empty ()
     return 1
 }
 
-# web.bookmarks_select prompts the user with bookmarks,
-# and returns the URL extracted from the selection.
-function web.bookmarks_select ()
+# web.bookmark.prompt_command returns a command string
+# to use as the dmenu displayer of a bookmarks file.
+function web.bookmark.prompt_command ()
 {
-    local bookmarks_command result
+    # This command will not work if qubes-split-browser is not installed in the split-browser VM
+    local window_focus_command='_NET_WM_NAME="Split Browser" x11-unoverride-redirect stdbuf -oL'
 
-    # bookmark_prompt=( $(web.bookmark_display_command) )
-    bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
-    qvm-run --pass-io "${vm}" "${bookmarks_command}"
-    result="$(qvm-run --pass-io "${vm}" cat bookmark)"
-    print "$result" | awk '{print $2}'
+    if [[ -n "$(config_get BOOKMARKS_DMENU_COMMAND)" ]]; then
+        echo "${window_focus_command} $(config_get BOOKMARKS_DMENU_COMMAND)"
+    else
+        echo "${window_focus_command} dmenu -i -l 20 -b -p 'RISKS Bookmark'"
+    fi
 }
 
-# web.bookmark_pop prompts the user with bookmarks, returns the URL
+# web.bookmark.prompt_select prompts the user with bookmarks,
+# and returns the URL extracted from the selection.
+function web.bookmark.prompt_select ()
+{
+    # bookmark_prompt=( $(web.bookmark.prompt_command) )
+    qvm-run "${vm}" "${SPLIT_BROWSER_QUERY_COMMAND}"
+    qvm-run --pass-io "${vm}" cat bookmark | awk '{print $2}'
+}
+
+# web.bookmark.prompt_pop prompts the user with bookmarks, returns the URL
 # extracted from the selection and deletes the line in the file.
 # Returns the complete bookmark entry.
-function web.bookmark_pop ()
+function web.bookmark.prompt_pop ()
 {
-    local bookmarks_command result bookmark_line vm
+    local result bookmark_line vm
     bookmark_file=".local/share/split-browser/bookmarks.tsv"
     vm="$(config_get SPLIT_BROWSER)"
 
     # Get the URL
-    bookmarks_command='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
-    qvm-run --pass-io "${vm}" "${bookmarks_command}"
+    qvm-run "${vm}" "${SPLIT_BROWSER_QUERY_COMMAND}"
     result=$( qvm-run --pass-io "${vm}" cat bookmark | awk '{print $2}')
-    qvm-run --pass-io "${vm}" "rm bookmark"
+    qvm-run "${vm}" "rm bookmark"
 
     # Get the entire line, with the title and timestamp.
     bookmark_line="$(qvm-run --pass-io "${vm}" "cat ${bookmark_file}")"
@@ -343,14 +431,14 @@ function web.bookmark_pop ()
 
     # Remove the line from the file.
     remove_command="sed -i '\#${result}#d' .local/share/split-browser/bookmarks.tsv"
-        qvm-run --pass-io "${vm}" "${remove_command}"
+    qvm-run "${vm}" "${remove_command}"
 
     print "${line}"
 }
 
-# web.bookmark_prompt opens a zenity prompt in the focused qube
-# for the user to enter a URL and an optional page title.
-function web.bookmark_prompt ()
+# web.bookmark.prompt_create opens a zenity prompt in the focused 
+# qube for the user to enter a URL and an optional page title.
+function web.bookmark.prompt_create ()
 {
     local zenity_prompt result active_vm
     active_vm="$(qubes.focused_qube)"
@@ -359,44 +447,46 @@ function web.bookmark_prompt ()
     qvm-run --pass-io "${active_vm}" "${zenity_prompt}"
 }
 
-# web.bookmark_exists returns 0 if the bookmark 
+# web.bookmark.url_bookmarked returns 0 if the bookmark 
 # is found in the user bookmarks file, or 1 if not.
 # $1 - Bookmark URL path.
-function web.bookmark_exists ()
+function web.bookmark.url_bookmarked ()
 {
     local url="${1}"
 
     qvm-run --pass-io "${VAULT_VM}" "cat ${IDENTITY_BOOKMARKS_FILE} | grep ${url}" &>/dev/null
 }
 
-# web.bookmark_save writes a bookmark in split-browser 
+# web.bookmark.url_save writes a bookmark in split-browser 
 # format to the identity's bookmarks file.
 # $1 - Bookmark entry
-function web.bookmark_save ()
+function web.bookmark.url_save ()
 {
     local bookmark_entry="$1"
     qvm-run --pass-io "${VAULT_VM}" "echo '${bookmark_entry}' >> ${IDENTITY_BOOKMARKS_FILE}"
 }
 
-# web.bookmark_open_in attempts to a URL with the system browser of a qube.
-# $1 - URL to open.
-# $2 - Target qube.
-function web.bookmark_open_in ()
-{
-    local url="$1"
-    local qube="$2"
 
-    _info "Opening ${url} in ${qube}"
-    _run qvm-run "${qube}" "x-www-browser ${url}" &
+
+# ========================================================================================
+# Other functions 
+# ========================================================================================
+
+
+# web.bookmark_create_system writes and encrypts a file for blacklisted links.
+function web.blacklist_create_file ()
+{
+    echo
 }
 
-# web.bookmark_open_split attempts to open a URL with the split-browser backend.
-function web.bookmark_open_split ()
+# web.no_split_backend returns 0 if there is no split-browser backend 
+# qube specified in the configuration/flags, or 1 if one is found.
+function web.no_split_backend ()
 {
-    local url="$1"
-    local qube
-    qube="$(config_get SPLIT_BROWSER)"
+    echo -n
+}
 
-    _info "Opening ${url} in ${qube}"
-    _run qvm-run "${qube}" "split-browser ${url}" &
+
+policy () {
+echo
 }

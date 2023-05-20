@@ -4261,8 +4261,20 @@ function web.backend.skip ()
 # (which templates/clones to use) when attempting to create a split-browser qube.
 function web.backend.fail_invalid_config ()
 {
+    [[ ${args['--no-split-browser']} -eq 1 ]] && return
+
     local template clone
 
+    # Check qubes specified in config or flags.
+    template="$(config_get SPLIT_BROWSER_TEMPLATE)"
+    [[ -n "${args['--clone-split-from']}" ]] && clone="${args['--clone-split-from']}"
+
+    # Check those qubes exist
+    if [[ -n ${clone} ]]; then
+        ! qube.exists "${clone}" && _failure "Qube to clone ${clone} does not exist"
+    else
+        ! qube.exists "${template}" && _failure "Qube template ${template} does not exist"
+    fi
 }
 
 # web.backend.setup_policy writes two RPC policy scripts to the split-browser backend, that

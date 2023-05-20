@@ -10,7 +10,7 @@ section='risk'
 
 # When multiple sections are used within a single risks
 # operation, we padd them, for clearer/better aesthetics.
-section_padding=0
+section_padding=6
 
 # Last log level used. Inline logging uses this.
 last_level="message"

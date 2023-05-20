@@ -235,6 +235,7 @@ EOF
     # Write the script to the target path and make it executable.
     local qrexec_backup_path="/usr/local/etc/qubes-rpc/risk.SplitBookmarkBackup"
     qvm-run -q "${vm}" "echo '${QREXEC_SPLIT_BOOKMARK_BACKUP}' | sudo tee ${qrexec_backup_path}"
+    [[ $? -ne 0 ]] && _warning "Failed to write risk.SplitBookmarkBackup policy to ${vm}"
     qvm-run -q "${vm}" "sudo chmod +x ${qrexec_backup_path}"
 
     # Prepare the second script, which will read that same file from the vault.
@@ -251,6 +252,7 @@ EOF
     # Write the script
     local qrexec_path="/usr/local/etc/qubes-rpc/risk.SplitBookmark"
     qvm-run -q "${vm}" "echo '${QREXEC_SPLIT_BOOKMARK}' | sudo tee ${qrexec_path}"
+    [[ $? -ne 0 ]] && _warning "Failed to write risk.SplitBookmark policy to ${vm}"
     qvm-run -q "${vm}" "sudo chmod +x ${qrexec_path}"
 }
 
@@ -265,8 +267,17 @@ function web.backend.setup_policy_dom0 ()
     local bookmarks_policy="${VAULT_VM}    ${split_backend}    allow"
 
     _info "Writing split-bookmark policies to dom0"
-    echo "${bookmarks_policy}" | sudo tee -a /etc/qubes-rpc/policy/risk.SplitBookmark &>/dev/null
-    echo "${bookmarks_policy}" | sudo tee -a /etc/qubes-rpc/policy/risk.SplitBookmarkBackup &>/dev/null
+
+    local split_bookmark_policy_path="/etc/qubes-rpc/policy/risk.SplitBookmark"
+    local split_bookmark_backup_policy_path="/etc/qubes-rpc/policy/risk.SplitBookmarkBackup"
+
+    if ! grep "${bookmarks_policy}" "${split_bookmark_policy_path}" &>/dev/null; then
+        echo "${bookmarks_policy}" | sudo tee -a "${split_bookmark_policy_path}" &>/dev/null
+    fi
+
+    if ! grep "${bookmarks_policy}" "${split_bookmark_backup_policy_path}" &>/dev/null; then
+        echo "${bookmarks_policy}" | sudo tee -a "${split_bookmark_backup_policy_path}" &>/dev/null
+    fi
 }
 
 # web.backend.set_client updates the default disposable VM
@@ -279,34 +290,24 @@ function web.backend.set_client ()
     split_backend="$(config_get SPLIT_BROWSER)"
     browser_vm=$(identity.config_get BROWSER_QUBE)
 
-    # Prepare the encrypted bookmark filename
-    filename="$(crypt.filename "bookmarks.tsv")"
-    local bookmarks_file="/home/user/.tomb/mgmt/${filename}"
-
     [[ -z "${browser_vm}" ]] && return
 
     # Use this browser as the split dispVM
     _info "Setting split-browser: $browser_vm"
     qvm-prefs "${split_backend}" default_dispvm "${browser_vm}"
 
-    # And copy identity bookmarks with an RPC call from vault to the split-backend.
-    _info "Copying bookmarks"
-    copy_command="cat ${bookmarks_file} | qrexec-client-vm ${split_backend} risk.SplitBookmark"
-    qvm-run "${VAULT_VM}" "${copy_command}"
+    # And copy identity bookmarks. 
+    web.backend.read_bookmarks "${split_backend}"
 }
 
 # web.backend.unset_client removes the dispvm setting of the
 # tor split backend if it is set to the identity browser VM.
 function web.backend.unset_client ()
 {
-    local browser_vm split_backend filename backup_command bookmarks_file
+    local browser_vm split_backend filename backup_command
 
     browser_vm=$(identity.config_get BROWSER_QUBE)
     split_backend="$(config_get SPLIT_BROWSER)"
-
-    # Prepare the encrypted bookmark filename
-    filename="$(crypt.filename "bookmarks.tsv")"
-    bookmarks_file="/home/user/.tomb/mgmt/${filename}"
 
     [[ -z "${browser_vm}" ]] && return
 
@@ -315,10 +316,8 @@ function web.backend.unset_client ()
         qvm-prefs "${split_backend}" default_dispvm ''
     fi
 
-    # And backup the bookmarks file with an RPC call to the backend from the vault.
-    _info "Backing up bookmarks"
-    backup_command="qrexec-client-vm ${split_backend} risk.SplitBookmarkBackup > ${bookmarks_file}"
-    qvm-run "${VAULT_VM}" "${backup_command}"
+    # And backup the bookmarks file. 
+    web.backend.save_bookmarks "${split_backend}"
 }
 
 # web.backend.open_url attempts to open a URL with the split-browser backend.
@@ -337,14 +336,33 @@ function web.backend.open_url ()
 # The split-browser backend then deletes the bookmark file.
 function web.backend.save_bookmarks ()
 {
-    echo
+    local split_backend="$1"
+
+    # Prepare the encrypted bookmark filename
+    filename="$(crypt.filename "bookmarks.tsv")"
+    bookmarks_file="/home/user/.tomb/mgmt/${filename}"
+
+    _info "Backing up bookmarks"
+    backup_command="qrexec-client-vm ${split_backend} risk.SplitBookmarkBackup > ${bookmarks_file}"
+    qvm-run -q "${VAULT_VM}" "${backup_command}"
+    [[ $? -ne 0 ]] && _warning "Failed to backup bookmarks"
 }
 
 # web.backend.read_bookmarks asks the vault to make use of an RPC call 
 # to send the identity's bookmarks file to the split-backend qube.
 function web.backend.read_bookmarks ()
 {
-    echo
+    local split_backend="$1"
+
+    # Prepare the encrypted bookmark filename
+    filename="$(crypt.filename "bookmarks.tsv")"
+    local bookmarks_file="/home/user/.tomb/mgmt/${filename}"
+
+    _info "Copying bookmarks"
+    copy_command="cat ${bookmarks_file} | qrexec-client-vm ${split_backend} risk.SplitBookmark"
+    qvm-run -q "${VAULT_VM}" "${copy_command}"
+    [[ $? -ne 0 ]] && _warning "Failed to send bookmarks"
+
 }
 
 
@@ -353,6 +371,7 @@ function web.backend.read_bookmarks ()
 # ========================================================================================
 
 # Command to spawn split-browser dmenu with bookmarks, and select one (written to file '~/bookmark').
+# shellcheck disable=2016
 SPLIT_BROWSER_QUERY_COMMAND='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; split-browser-bookmark get'
 
 # web.bookmark.create_user_file writes a file to store per-user 
@@ -484,9 +503,4 @@ function web.blacklist_create_file ()
 function web.no_split_backend ()
 {
     echo -n
-}
-
-
-policy () {
-echo
 }

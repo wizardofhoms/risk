@@ -23,7 +23,7 @@ fi
 # We need to know for which identity to update, so we need one active.
 if [[ ${args['vms']} == torbrowser ]] || [[ ${other_args[(r)torbrowser]} == torbrowser ]]; then
     identity.set
-    web.update_torbrowser
+    web.client.update_tor_browser
 fi
 
 _success "Done updating"

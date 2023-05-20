@@ -11,6 +11,6 @@ identity.is_active || _failure "Failed to open identity $IDENTITY"
 
 # Set the identity browser VM, if any, as the disposable VM of split-browser backend.
 _in_section "web"
-web.browser_set_split_dispvm
+web.backend.set_client
 
 _in_section "risk" && _info "Identity $IDENTITY is active"

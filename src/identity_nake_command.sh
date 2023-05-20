@@ -8,7 +8,7 @@ _warning "Stopping machines of identity $IDENTITY"
 identity.shutdown_qubes
 
 # If the identity browser VM is used with the split-browser backend.
-web.browser_unset_split_dispvm
+web.backend.unset_client
 
 echo && _warning "Deleting identity VMs"
 identity.delete_qubes
@@ -19,4 +19,4 @@ identity.config_unset QUBE_PREFIX
 identity.config_unset NETVM_QUBE
 
 
-echo && _success "Successfully deleted VMs of identity $IDENTITY"
+echo && _success "Successfully deleted qubes of identity $IDENTITY"

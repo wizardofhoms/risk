@@ -12,7 +12,7 @@ fi
 
 # If the identity browser VM is used with the split-browser backend.
 _in_section "web" 4
-web.browser_unset_split_dispvm
+web.backend.unset_client
 
 _in_section "risk" && _info "Closing identity $active_identity"
 

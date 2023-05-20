@@ -11,7 +11,7 @@ active_vm="$(qubes.focused_qube)"
 
 # Get the bookmark entry from either split-browser file, args, or user-input in prompt.
 if [[ -z "${url}" ]]; then
-    if ! web.bookmarks_file_is_empty; then
+    if ! web.bookmark.file_is_empty; then
         _info "No URL argument, starting dmenu with bookmarks list in ${split_vm}"
         url="$( web.bookmark_select | awk '{print $2}' )"
     else
@@ -28,7 +28,7 @@ fi
 # If the focused VM is a disposable browser, do not go through split-browser to open it.
 # Else, pass the URL as a split-browser command argument.
 if qube.is_browser_instance "${active_vm}"; then
-    web.bookmark_open_in "${url}" "${active_vm}"
+    web.client.open_url "${url}" "${active_vm}"
 else
-    web.bookmark_open_split "${url}"
+    web.backend.open_url "${url}"
 fi

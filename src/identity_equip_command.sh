@@ -12,7 +12,7 @@ local clone             # A variable that might be overritten several times, use
 identity.set "${name}"
 identity.fail_unknown "$IDENTITY"
 
-_in_section "risk" 8 && _info "Creating qubes for identity $IDENTITY"
+_in_section "risk" 8 && _info "Creating qubes for identity $IDENTITY" && echo
 
 identity.set_global_props
 label=$(identity.config_get QUBE_LABEL)
@@ -36,22 +36,26 @@ _in_section "web" && echo && _warning "Creating browsing VMs"
 web_netvm="$(identity.config_get NETVM_QUBE)"
 
 # Browser client
-if ! web.skip_browser_create; then
+if ! web.client.skip; then
     if [[ -n ${args['--clone-web-from']} ]]; then
         clone="${args['--clone-web-from']}"
-        web.browser_clone "$vm_name" "$clone" "$web_netvm" "$label"
+        web.client.clone "$vm_name" "$clone" "$web_netvm" "$label"
     else
-        web.browser_create "$vm_name" "$web_netvm" "$label"
+        web.client.create "$vm_name" "$web_netvm" "$label"
     fi
 fi
 
 # Split-browser backend
-if ! web.skip_split_create; then
-    web.split_backend_create "${vm_name}" "${label}"
+if ! web.backend.skip; then
+    web.backend.create "${vm_name}" "${label}"
+else
+    echo && _info "Writing split-bookmark RPC services/policies"
+    web.backend.setup_policy "$(config_get SPLIT_BROWSER)"
+    web.backend.setup_policy_dom0 "$(config_get SPLIT_BROWSER)"
 fi
 
 # Per-identity bookmarks file in vault management tomb.
-web.bookmark_create_file
+web.bookmark.create_user_file
 
 ## All done ##
-echo && _in_section 'risk' && _success "Successfully initialized infrastructure for identity $IDENTITY"
+echo && _in_section 'risk' && _success "Successfully initialized qubes for identity $IDENTITY"

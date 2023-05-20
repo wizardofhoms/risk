@@ -11,14 +11,14 @@ split_vm="$(config_get SPLIT_BROWSER)"
 
 # Get the bookmark entry from either split-browser file, args, or user-input in prompt.
 if [[ -z "${url}" ]]; then
-    if web.bookmarks_file_is_empty; then
+    if web.bookmark.file_is_empty; then
         _info "No bookmarks file in ${split_vm}, prompting user to enter it."
-        result="$(web.bookmark_prompt)"
+        result="$(web.bookmark.prompt_create)"
         url="$( echo "${result}" | cut -f 1 -d $'\t')"
         title="$( echo "${result}" | cut -f 2- -d $'\t')"
     else
         _info "No URL argument, starting dmenu with bookmarks list in ${split_vm}"
-        bookmark_entry="$(web.bookmark_pop)"
+        bookmark_entry="$(web.bookmark.prompt_pop)"
         url="$( echo "${bookmark_entry}" | awk '{print $2}' )"
         title="$( echo "${bookmark_entry}" | awk '{print $3}' )"
     fi
@@ -34,6 +34,6 @@ fi
 
 # Transfer the results to the vault's user bookmarks file.
 _info "Transfering entry to vault bookmarks file."
-if ! web.bookmark_exists "${url}" ; then
-    web.bookmark_save "${bookmark_entry}"
+if ! web.bookmark.url_bookmarked "${url}" ; then
+    web.bookmark.url_save "${bookmark_entry}"
 fi

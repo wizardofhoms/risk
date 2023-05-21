@@ -4193,7 +4193,8 @@ function web.bookmark.prompt_command ()
 # and returns the URL extracted from the selection.
 function web.bookmark.prompt_select ()
 {
-    # bookmark_prompt=( $(web.bookmark.prompt_command) )
+    local vm="$1"
+
     qvm-run "${vm}" "${SPLIT_BROWSER_QUERY_COMMAND}"
     qvm-run --pass-io "${vm}" cat bookmark | awk '{print $2}'
 }
@@ -5297,7 +5298,7 @@ risk_url_open_command() {
   if [[ -z "${url}" ]]; then
       if ! web.bookmark.file_is_empty; then
           _info "No URL argument, starting dmenu with bookmarks list in ${split_vm}"
-          url="$( web.bookmark.prompt_select | awk '{print $2}' )"
+          url="$( web.bookmark.prompt_select "${split_vm}" | awk '{print $2}' )"
       else
           _info "Bookmark file is empty, and no URL argument was given." && return
       fi

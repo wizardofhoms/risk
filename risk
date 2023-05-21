@@ -5297,7 +5297,7 @@ risk_url_open_command() {
   if [[ -z "${url}" ]]; then
       if ! web.bookmark.file_is_empty; then
           _info "No URL argument, starting dmenu with bookmarks list in ${split_vm}"
-          url="$( web.bookmark_select | awk '{print $2}' )"
+          url="$( web.bookmark.prompt_select | awk '{print $2}' )"
       else
           _info "Bookmark file is empty, and no URL argument was given." && return
       fi
@@ -5339,11 +5339,11 @@ risk_url_bookmark_command() {
           result="$(web.bookmark.prompt_create)"
           url="$( echo "${result}" | cut -f 1 -d $'\t')"
           title="$( echo "${result}" | cut -f 2- -d $'\t')"
-      else
-          _info "No URL argument, starting dmenu with bookmarks list in ${split_vm}"
-          bookmark_entry="$(web.bookmark.prompt_pop)"
-          url="$( echo "${bookmark_entry}" | awk '{print $2}' )"
-          title="$( echo "${bookmark_entry}" | awk '{print $3}' )"
+      # else
+      #     _info "No URL argument, starting dmenu with bookmarks list in ${split_vm}"
+      #     bookmark_entry="$(web.bookmark.prompt_pop)"
+      #     url="$( echo "${bookmark_entry}" | awk '{print $2}' )"
+      #     title="$( echo "${bookmark_entry}" | awk '{print $3}' )"
       fi
   fi
 
@@ -8583,7 +8583,7 @@ risk_help_parse_requirements() {
 }
 
 initialize() {
-  version="0.1.1"
+  version="0.1.2"
   long_usage=''
   
 

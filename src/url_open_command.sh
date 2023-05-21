@@ -13,7 +13,7 @@ active_vm="$(qubes.focused_qube)"
 if [[ -z "${url}" ]]; then
     if ! web.bookmark.file_is_empty; then
         _info "No URL argument, starting dmenu with bookmarks list in ${split_vm}"
-        url="$( web.bookmark_select | awk '{print $2}' )"
+        url="$( web.bookmark.prompt_select | awk '{print $2}' )"
     else
         _info "Bookmark file is empty, and no URL argument was given." && return
     fi

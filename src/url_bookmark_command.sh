@@ -17,11 +17,11 @@ if [[ -z "${url}" ]]; then
         result="$(web.bookmark.prompt_create)"
         url="$( echo "${result}" | cut -f 1 -d $'\t')"
         title="$( echo "${result}" | cut -f 2- -d $'\t')"
-    else
-        _info "No URL argument, starting dmenu with bookmarks list in ${split_vm}"
-        bookmark_entry="$(web.bookmark.prompt_pop)"
-        url="$( echo "${bookmark_entry}" | awk '{print $2}' )"
-        title="$( echo "${bookmark_entry}" | awk '{print $3}' )"
+    # else
+    #     _info "No URL argument, starting dmenu with bookmarks list in ${split_vm}"
+    #     bookmark_entry="$(web.bookmark.prompt_pop)"
+    #     url="$( echo "${bookmark_entry}" | awk '{print $2}' )"
+    #     title="$( echo "${bookmark_entry}" | awk '{print $3}' )"
     fi
 fi
 

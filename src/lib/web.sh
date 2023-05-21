@@ -430,7 +430,7 @@ function web.bookmark.prompt_select ()
 {
     local vm="$1"
 
-    qvm-run "${vm}" "${SPLIT_BROWSER_QUERY_COMMAND}"
+    qvm-run --quiet "${vm}" "${SPLIT_BROWSER_QUERY_COMMAND}"
     qvm-run --pass-io "${vm}" cat bookmark | awk '{print $2}'
 }
 

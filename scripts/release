@@ -5,10 +5,13 @@ tag=$(git describe --abbrev=0 --tags --always)
 # Release tag and notes
 read -r -p "Release notes: " notes
 
-release_cmd=(gh release create --title "${tag}")
+release_cmd=(gh release create "${tag}" --title "${tag}")
 if [[ -n "${notes}" ]]; then
     release_cmd+=( --notes "${notes}" )
 fi
+
+# Ensure tags are present remotely
+git push --tags
 
 # Create release and upload assets
 echo "Creating release (tag: ${tag})"

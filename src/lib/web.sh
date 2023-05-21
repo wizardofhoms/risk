@@ -315,7 +315,7 @@ function web.backend.set_client ()
 # tor split backend if it is set to the identity browser VM.
 function web.backend.unset_client ()
 {
-    local browser_vm split_backend filename backup_command
+    local browser_vm split_backend backup_command
 
     browser_vm=$(identity.config_get BROWSER_QUBE)
     split_backend="$(config_get SPLIT_BROWSER)"
@@ -348,11 +348,11 @@ function web.backend.open_url ()
 function web.backend.save_bookmarks ()
 {
     local split_backend="$1"
-    local bookmarks_split_file
+    local bookmarks_split_file=".local/share/split-browser/bookmarks.tsv"
 
     # Test for the file, and if not empty, otherwise
     # we risk doing dangerous and unwanted things.
-    bookmarks="$(qvm-run --pass-io "${split_backend}" "cat ${bookmarks_split_file}")"
+    bookmarks="$(qvm-run --pass-io "${split_backend}" "cat ${bookmarks_split_file}" 2>/dev/null)"
     if [[ $? -ne 0 ]] || [[ -z "${bookmarks}" ]] ; then
          return
     fi
@@ -373,7 +373,6 @@ function web.backend.read_bookmarks ()
     copy_command="cat ${IDENTITY_BOOKMARKS_FILE} | qrexec-client-vm ${split_backend} risk.SplitBookmark"
     qvm-run -q "${VAULT_VM}" "${copy_command}"
     [[ $? -ne 0 ]] && _warning "Failed to send bookmarks"
-
 }
 
 

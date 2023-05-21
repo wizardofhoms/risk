@@ -15,13 +15,9 @@ commands:
       - name: url
         help: URL to bookmark (optional, if empty the split-bookmarks file is opened, or the user is prompted for URL/info)
         required: false
-    flags:
-      - long: --user
-        short: -u
-        help: Add to identity bookmarks
-      - long: --system
-        short: -s
-        help: Add to system-wide (all identities) bookmarks
+      - name: title
+        help: Title of URL page (optional)
+        required: false
 
   # - name: verify
   #   help: Verify the authenticity/signatures and reputation of an onion URL.

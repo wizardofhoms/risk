@@ -18,7 +18,7 @@ function identity.set ()
     _catch "Command requires either an identity to be active or given as argument"
 
     # Other settings.
-    IDENTITY_BOOKMARKS_FILE="/home/user/.tomb/mgmt/$(crypt.filename 'bookmarks.tsv')"
+    IDENTITY_BOOKMARKS_FILE="/home/user/.tomb/mgmt/$(crypt.filename bookmarks.tsv)"
 }
 
 # identity.set_active sets the name as an ENV variable that we can use in further functions and commands.
@@ -185,7 +185,7 @@ function identity.fail_other_active ()
     active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
 
     if [[ -n $active_identity ]]; then
-        if [[ $active_identity == "$1" ]]; then
+        if [[ $active_identity == "$IDENTITY" ]]; then
             return
         fi
 

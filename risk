@@ -1653,24 +1653,13 @@ risk_url_bookmark_usage() {
   fi
 
   printf "%s\n" "$(bold "Usage:")"
-  printf "  risk url bookmark [URL] [OPTIONS]\n"
+  printf "  risk url bookmark [URL] [TITLE]\n"
   printf "  risk url bookmark --help | -h\n"
   echo
 
   # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
-
-    # :command.usage_flags
-    # :flag.usage
-    printf "  %s\n" "--user, -u"
-    printf "    Add to identity bookmarks\n"
-    echo
-
-    # :flag.usage
-    printf "  %s\n" "--system, -s"
-    printf "    Add to system-wide (all identities) bookmarks\n"
-    echo
 
     # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
@@ -1683,6 +1672,11 @@ risk_url_bookmark_usage() {
     # :argument.usage
     printf "  %s\n" "$(blue "URL")"
     printf "    URL to bookmark (optional, if empty the split-bookmarks file is opened, or\n    the user is prompted for URL/info)\n"
+    echo
+
+    # :argument.usage
+    printf "  %s\n" "$(blue "TITLE")"
+    printf "    Title of URL page (optional)\n"
     echo
 
   fi
@@ -2273,7 +2267,7 @@ function identity.set ()
     _catch "Command requires either an identity to be active or given as argument"
 
     # Other settings.
-    IDENTITY_BOOKMARKS_FILE="/home/user/.tomb/mgmt/$(crypt.filename 'bookmarks.tsv')"
+    IDENTITY_BOOKMARKS_FILE="/home/user/.tomb/mgmt/$(crypt.filename bookmarks.tsv)"
 }
 
 # identity.set_active sets the name as an ENV variable that we can use in further functions and commands.
@@ -2438,7 +2432,7 @@ function identity.fail_other_active ()
     active_identity=$(qvm-run --pass-io "$VAULT_VM" 'risks identity active' 2>/dev/null)
 
     if [[ -n $active_identity ]]; then
-        if [[ $active_identity == "$1" ]]; then
+        if [[ $active_identity == "$IDENTITY" ]]; then
             return
         fi
 
@@ -3047,399 +3041,7 @@ function network.fail_networked_qube ()
     [[ ${#connected_vms} -gt 0 ]] && _failure "VM $vm is NetVM for [ ${connected_vms[*]} ] VMs"
 }
 
-# src/lib/run.sh
-
-COMMAND_STDOUT=''           # Stores a command's stdout output.
-COMMAND_STDERR=''           # Stores a command's stderr output.
-
-# do a command, splitting and storing stdout/stderr output and printing
-# the former to screen only if the command is ran with verbose flag.
-# Returns the command's exit code, so we can catch any errors and inform.
-_run ()
-{
-    # The STDOUT/STDERR variables are populated, which
-    # makes their content available to any subsequent call
-    # to _failure, which needs STDERR output
-    {
-        IFS=$'\n' read -r -d '' COMMAND_STDERR;
-        IFS=$'\n' read -r -d '' COMMAND_STDOUT;
-        (IFS=$'\n' read -r -d '' _ERRNO_; exit "${_ERRNO_}");
-    } < <((printf '\0%s\0%d\0' "$("$@")" "${?}" 1>&2) 2>&1)
-
-    local ret="$?"
-
-    # Output the command's result depending on the verbose mode
-    # and if the command ran successfully. We check that either
-    # stdout or stderr are non-empty: sometimes commands might
-    # output to stderr, like wipe.
-    if [[ $ret -eq 0 ]] && is_verbose_set ; then
-        if [[ -n "$COMMAND_STDOUT" ]]; then
-            _verbose "$COMMAND_STDOUT"
-        fi
-    fi
-
-    # Return the command's exit code
-    return $ret
-}
-
-# run a command in a qube
-# $1 - Qube name
-# $@ - Command string to run
-_run_qube ()
-{
-    local vm="$1" ; shift
-    local command="$*"
-    local terminal shell shell_command full_command
-
-    # Prepare the full command
-    terminal="$(config_get VM_TERMINAL)"
-    shell="$(config_get VM_SHELL)"
-    shell_command="${shell} -c '$command'"
-    full_command=(qvm-run --pass-io "$vm" "$shell_command")
-
-    _verbose "Running command: ${full_command[*]}"
-
-    # Split io like in _run, and store the return value
-    # Note that we don't double quote the $full_command variable.
-    {
-        IFS=$'\n' read -r -d '' COMMAND_STDERR;
-        IFS=$'\n' read -r -d '' COMMAND_STDOUT;
-        (IFS=$'\n' read -r -d '' _ERRNO_; exit "${_ERRNO_}");
-    } < <((printf '\0%s\0%d\0' "$( "${full_command[@]}" )" "${?}" 1>&2) 2>&1)
-
-    local ret="$?"
-
-    # Output the command's result depending on the verbose mode
-    # and if the command ran successfully like in _run also.
-    if [[ $ret -eq 0 ]] && is_verbose_set ; then
-        if [[ -n "$COMMAND_STDOUT" ]]; then
-            _verbose "$COMMAND_STDOUT"
-        fi
-    fi
-
-    return $ret
-}
-
-# _run_exec is a simplified version of _run_qube, without stdout/err split & store.
-_run_exec ()
-{
-    local vm="$1"
-    shift
-    local command="$*"
-
-    # If we don't have any command arguments, we run the default terminal
-    [[ -z "$command" ]] && command="$VM_TERMINAL"
-
-    _verbose "Running command: ${command}"
-
-    # Run the command raw, so that we get the output as it is.
-    qvm-run --pass-io "$vm" "${command}"
-}
-
-# _run_qube_term spawns a terminal on a target qube, with an associated command to run.
-_run_qube_term ()
-{
-    local vm="$1" ; shift
-    local command="$*"
-    local terminal shell shell_command
-
-    # Prepare the full command
-    terminal="$(config_get VM_TERMINAL)"
-    shell="$(config_get VM_SHELL)"
-    shell_command="${shell} -c '$command'"
-
-    # Run the raw command, so that we get the output as it is.
-    qvm-run --pass-io "$vm" "$terminal" -e "$shell_command"
-}
-
-# Checks the return code of a command, and if not successful,
-# fails with the associated error message. Usage:
-# catch $ret "hush" "Failed to execute this command"
-function _catch ()
-{
-    local ret="$?"
-
-    if [[ ! $ret -eq 0 ]]; then
-        _failure "$@"
-    fi
-}
-
-# src/lib/tor.sh
-
-# proxy.tor_create creates a new TOR Whonix gateway AppVM.
-# $1 - Name to use for new VM
-# $2 - Netvm for this gateway
-# $3 - Label
-function proxy.tor_create ()
-{
-    local gw="${1}-tor"
-    local netvm="${2-$(identity.config_get NETVM_QUBE)}"
-    local gw_label="${3-yellow}"
-    local gw_template="$(config_get WHONIX_GW_TEMPLATE)"
-
-    _run qvm-create "${gw}" --property netvm="$netvm" --label "$gw_label" --template "$gw_template"
-    _run qvm-prefs "$gw" provides_network true
-
-    print_new_qube "${gw}" "New TOR gateway qube"
-
-    # Tag the VM with its owner, and save as identity tor gateway
-    _run qvm-tags "$gw" set "$IDENTITY"
-    identity.config_set TOR_QUBE "${gw}"
-    identity.config_set NETVM_QUBE "${gw}"
-}
-
-# proxy.tor_clone is similar to proxy.tor_create, except that we clone
-
-# an existing gateway AppVM instead of creating a new one from a Template.
-function proxy.tor_clone ()
-{
-    local gw="${1}-tor"
-    local gw_clone="$2"
-    local netvm="${3-$(identity.config_get NETVM_QUBE)}"
-    local gw_label="${4-yellow}"
-
-    _run qvm-clone "${gw_clone}" "${gw}"
-    _catch "Failed to clone VM ${gw_clone}"
-
-    print_cloned_qube "${gw}" "${gw_clone}" "New TOR gateway qube"
-
-    # For now disposables are not allowed, since it would create too many VMs,
-    # and complicate a bit the setup steps for VPNs. If the clone is a template
-    # for disposables, unset it
-    local disp_template
-    disp_template=$(qvm-prefs "${gw}" template_for_dispvms)
-    if [[ "$disp_template" = "True" ]]; then
-        qvm-prefs "${gw}" template_for_dispvms False
-    fi
-
-    _info "Getting network from $netvm"
-    _run qvm-prefs "$gw" netvm "$netvm"
-
-    _verbose "Setting label to $gw_label"
-    _run qvm-prefs "$gw" label "$gw_label"
-
-    # Tag the VM with its owner, and save as identity tor gateway
-    _run qvm-tags "$gw" set "$IDENTITY"
-    identity.config_set TOR_QUBE "${gw}"
-    identity.config_set NETVM_QUBE "${gw}"
-}
-
-# proxy.fail_config_tor exits the program if risk lacks some information
-# (which templates/clones to use) when attempting to create a Tor qube.
-function proxy.fail_config_tor ()
-{
-    [[ ${args['--no-tor']} -eq 1 ]] && return
-
-    local template clone netvm
-
-    # Check qubes specified in config or flags.
-    template="$(config_get WHONIX_GW_TEMPLATE)"
-    [[ -n "${args['--clone-tor-from']}" ]] && clone="${args['--clone-tor-from']}"
-
-    # Check those qubes exist
-    if [[ -n ${clone} ]]; then
-        ! qube.exists "${clone}" && _failure "Qube to clone ${clone} does not exist"
-    else
-        ! qube.exists "${template}" && _failure "Qube template ${template} does not exist"
-    fi
-}
-
-# proxy.skip_tor_create returns 0 when there not enough information in the configuration
-# file or in command flags for creating a new TOR qube (no templates/clones indicated, etc).
-# Needs access to command-line flags
-function proxy.skip_tor_create ()
-{
-    [[ ${args['--no-tor']} -eq 1 ]] && return 0
-
-    local template clone netvm
-
-    template="$(config_get WHONIX_GW_TEMPLATE)"
-    [[ -n "${args['--clone-tor-from']}" ]] && clone="${args['--clone-tor-from']}"
-
-    [[ -z ${template} && -z ${clone} ]] && \
-        _info "Skipping TOR gateway: no TemplateVM/AppVM specified in config or flags" && return 0
-
-    return 1
-}
-
-# src/lib/utils.sh
-
-# Return 0 if is set, 1 otherwise
-option_is_set() {
-	local -i r	 # the return code (0 = set, 1 = unset)
-
-	[[ -n ${(k)OPTS[$1]} ]];
-	r=$?
-
-	[[ $2 == "out" ]] && {
-		[[ $r == 0 ]] && { print 'set' } || { print 'unset' }
-	}
-
-	return $r;
-}
-
-# Retrieves the value of a variable first by looking in the risk
-# config file, and optionally overrides it if the flag is set.
-# $1 - Flag argument
-# $2 - Key name in config
-config_or_flag ()
-{
-    local value config_value
-
-    config_value=$(config_get $2)   # From config
-    value="${1:=$config_value}"      # overriden by flag if set
-
-    print $value
-}
-
-# contains(string, substring)
-#
-# Returns 0 if the specified string contains the specified substring,
-# otherwise returns 1.
-contains() {
-    string="$1"
-    substring="$2"
-    if test "${string#*$substring}" != "$string"
-    then
-        return 0    # $substring is in $string
-    else
-        return 1    # $substring is not in $string
-    fi
-}
-
-# prompt_question asks the user to answer a question prompt.
-# $@ - A question string.
-prompt_question ()
-{
-    printf >&2 '%s ' "$*"
-
-    read -r ans
-    echo "${ans}"
-}
-
-# print_new_qube is used to display the properties of a newly created qube.
-# $1 - Name
-# $2 - Message to display above properties
-print_new_qube ()
-{
-    local name="$1"
-    local template netvm
-
-    qvm-ls "${name}" &>/dev/null || return
-
-    template=$(qvm-prefs "${name}" template)
-    netvm=$(qvm-prefs "${name}" netvm)
-
-    [[ -n "${2}" ]] && _info "${2}"
-    _info "Name:       ${fg_bold[white]} $name ${reset_color}"
-    _info "Netvm:      ${fg_bold[white]} $netvm ${reset_color}"
-    _info "Template:   ${fg_bold[white]} $template ${reset_color}"
-}
-
-# print_new_qube is used to display the properties of a newly cloned qube.
-# $1 - Name
-# $2 - Clone name
-# $2 - Message to display above properties
-print_cloned_qube ()
-{
-    local name="$1"
-    local clone="$2"
-    local netvm
-
-    qvm-ls "${name}" &>/dev/null || return
-
-    netvm=$(qvm-prefs "${name}" netvm)
-
-    [[ -n "${3}" ]] && _info "${3}"
-    _info "Name:          ${fg_bold[white]} $name ${reset_color}"
-    _info "Netvm:         ${fg_bold[white]} $netvm ${reset_color}"
-    _info "Cloned from:   ${fg_bold[white]} $clone ${reset_color}"
-}
-
-# src/lib/validations/validate_devices.sh
-
-validate_device () {
-    local block="$1"
-
-    # And check not already attached to another qube
-    ovm=$(qvm-block list | grep "${block}" | awk {'print $4'} | cut -d" " -f1)
-
-    if [[ ${#ovm} -gt 0 ]]; then
-        echo -e "Block ${block} is currently attached to ${ovm}."
-        echo "Please umount it properly from there and rerun this program."
-        return
-    fi
-}
-
-# src/lib/validations/validate_dir_exists.sh
-validate_dir_exists() {
-  [[ -d "$1" ]] || echo "must be an existing directory"
-}
-
-# src/lib/validations/validate_file_exists.sh
-validate_file_exists() {
-  [[ -f "$1" ]] || echo "must be an existing file"
-}
-
-# src/lib/validations/validate_integer.sh
-validate_integer() {
-  [[ "$1" =~ ^[0-9]+$ ]] || echo "must be an integer"
-}
-
-# src/lib/validations/validate_not_empty.sh
-validate_not_empty() {
-  [[ -z "$1" ]] && echo "must not be empty"
-}
-
-# src/lib/validations/validate_vm.sh
-
-# does the vm exist?
-validate_vm_exists () {
-    vm=""
-    for item in $(qvm-ls | grep -v dom0 | awk '{print $1}' | grep "${1}")
-    do
-        if [ "${item}" == "${1}" ]; then
-            vm=${1}
-        fi
-    done
-    if [ ${#vm} -eq 0 ]; then
-        echo "No vm with name ${1} exists or can not be used. Aborted."
-        return
-    fi
-}
-
-# Checks that the vault VM obeys a few requirements, like no network
-validate_valid_vaultvm () {
-    vm=""
-    for item in $(qvm-ls | grep -v dom0 | awk '{print $1}' | grep "${1}")
-    do
-        if [ "${item}" == "${1}" ]; then
-            vm=${1}
-        fi
-    done
-    if [ ${#vm} -eq 0 ]; then
-        echo "No vm with name ${1} exists or can not be used. Aborted."
-        return
-    fi
-
-    netvm=$(qvm-prefs "${vm}" | grep "netvm" | awk '{print $3}')
-    if [ "${netvm}" != "None" ]; then
-        echo "${vm} might be connected to the internet. Aborted."
-        echo "Check: qvm-prefs ${vm} | grep netvm"
-    fi
-}
-
-# validate_netvm fails if the specified VM does not provide network.
-validate_netvm ()
-{
-    local netvm="${1}"
-
-    if [[ $(qvm-prefs "${netvm}" provides_network) == False ]]; then
-        echo "Qube ${netvm} is specified as netvm, but does not provide network."
-    fi
-}
-
-# src/lib/vm.sh
+# src/lib/qube.sh
 
 #
 # ========================================================================================
@@ -3874,6 +3476,398 @@ function qubes.list_all_updateable ()
     done < <(qvm-ls --raw-data --fields name,class | sort)
 
     echo "${templates[@]}"
+}
+
+# src/lib/run.sh
+
+COMMAND_STDOUT=''           # Stores a command's stdout output.
+COMMAND_STDERR=''           # Stores a command's stderr output.
+
+# do a command, splitting and storing stdout/stderr output and printing
+# the former to screen only if the command is ran with verbose flag.
+# Returns the command's exit code, so we can catch any errors and inform.
+_run ()
+{
+    # The STDOUT/STDERR variables are populated, which
+    # makes their content available to any subsequent call
+    # to _failure, which needs STDERR output
+    {
+        IFS=$'\n' read -r -d '' COMMAND_STDERR;
+        IFS=$'\n' read -r -d '' COMMAND_STDOUT;
+        (IFS=$'\n' read -r -d '' _ERRNO_; exit "${_ERRNO_}");
+    } < <((printf '\0%s\0%d\0' "$("$@")" "${?}" 1>&2) 2>&1)
+
+    local ret="$?"
+
+    # Output the command's result depending on the verbose mode
+    # and if the command ran successfully. We check that either
+    # stdout or stderr are non-empty: sometimes commands might
+    # output to stderr, like wipe.
+    if [[ $ret -eq 0 ]] && is_verbose_set ; then
+        if [[ -n "$COMMAND_STDOUT" ]]; then
+            _verbose "$COMMAND_STDOUT"
+        fi
+    fi
+
+    # Return the command's exit code
+    return $ret
+}
+
+# run a command in a qube
+# $1 - Qube name
+# $@ - Command string to run
+_run_qube ()
+{
+    local vm="$1" ; shift
+    local command="$*"
+    local terminal shell shell_command full_command
+
+    # Prepare the full command
+    terminal="$(config_get VM_TERMINAL)"
+    shell="$(config_get VM_SHELL)"
+    shell_command="${shell} -c '$command'"
+    full_command=(qvm-run --pass-io "$vm" "$shell_command")
+
+    _verbose "Running command: ${full_command[*]}"
+
+    # Split io like in _run, and store the return value
+    # Note that we don't double quote the $full_command variable.
+    {
+        IFS=$'\n' read -r -d '' COMMAND_STDERR;
+        IFS=$'\n' read -r -d '' COMMAND_STDOUT;
+        (IFS=$'\n' read -r -d '' _ERRNO_; exit "${_ERRNO_}");
+    } < <((printf '\0%s\0%d\0' "$( "${full_command[@]}" )" "${?}" 1>&2) 2>&1)
+
+    local ret="$?"
+
+    # Output the command's result depending on the verbose mode
+    # and if the command ran successfully like in _run also.
+    if [[ $ret -eq 0 ]] && is_verbose_set ; then
+        if [[ -n "$COMMAND_STDOUT" ]]; then
+            _verbose "$COMMAND_STDOUT"
+        fi
+    fi
+
+    return $ret
+}
+
+# _run_exec is a simplified version of _run_qube, without stdout/err split & store.
+_run_exec ()
+{
+    local vm="$1"
+    shift
+    local command="$*"
+
+    # If we don't have any command arguments, we run the default terminal
+    [[ -z "$command" ]] && command="$VM_TERMINAL"
+
+    _verbose "Running command: ${command}"
+
+    # Run the command raw, so that we get the output as it is.
+    qvm-run --pass-io "$vm" "${command}"
+}
+
+# _run_qube_term spawns a terminal on a target qube, with an associated command to run.
+_run_qube_term ()
+{
+    local vm="$1" ; shift
+    local command="$*"
+    local terminal shell shell_command
+
+    # Prepare the full command
+    terminal="$(config_get VM_TERMINAL)"
+    shell="$(config_get VM_SHELL)"
+    shell_command="${shell} -c '$command'"
+
+    # Run the raw command, so that we get the output as it is.
+    qvm-run --pass-io "$vm" "$terminal" -e "$shell_command"
+}
+
+# Checks the return code of a command, and if not successful,
+# fails with the associated error message. Usage:
+# catch $ret "hush" "Failed to execute this command"
+function _catch ()
+{
+    local ret="$?"
+
+    if [[ ! $ret -eq 0 ]]; then
+        _failure "$@"
+    fi
+}
+
+# src/lib/tor.sh
+
+# proxy.tor_create creates a new TOR Whonix gateway AppVM.
+# $1 - Name to use for new VM
+# $2 - Netvm for this gateway
+# $3 - Label
+function proxy.tor_create ()
+{
+    local gw="${1}-tor"
+    local netvm="${2-$(identity.config_get NETVM_QUBE)}"
+    local gw_label="${3-yellow}"
+    local gw_template="$(config_get WHONIX_GW_TEMPLATE)"
+
+    _run qvm-create "${gw}" --property netvm="$netvm" --label "$gw_label" --template "$gw_template"
+    _run qvm-prefs "$gw" provides_network true
+
+    print_new_qube "${gw}" "New TOR gateway qube"
+
+    # Tag the VM with its owner, and save as identity tor gateway
+    _run qvm-tags "$gw" set "$IDENTITY"
+    identity.config_set TOR_QUBE "${gw}"
+    identity.config_set NETVM_QUBE "${gw}"
+}
+
+# proxy.tor_clone is similar to proxy.tor_create, except that we clone
+
+# an existing gateway AppVM instead of creating a new one from a Template.
+function proxy.tor_clone ()
+{
+    local gw="${1}-tor"
+    local gw_clone="$2"
+    local netvm="${3-$(identity.config_get NETVM_QUBE)}"
+    local gw_label="${4-yellow}"
+
+    _run qvm-clone "${gw_clone}" "${gw}"
+    _catch "Failed to clone VM ${gw_clone}"
+
+    print_cloned_qube "${gw}" "${gw_clone}" "New TOR gateway qube"
+
+    # For now disposables are not allowed, since it would create too many VMs,
+    # and complicate a bit the setup steps for VPNs. If the clone is a template
+    # for disposables, unset it
+    local disp_template
+    disp_template=$(qvm-prefs "${gw}" template_for_dispvms)
+    if [[ "$disp_template" = "True" ]]; then
+        qvm-prefs "${gw}" template_for_dispvms False
+    fi
+
+    _info "Getting network from $netvm"
+    _run qvm-prefs "$gw" netvm "$netvm"
+
+    _verbose "Setting label to $gw_label"
+    _run qvm-prefs "$gw" label "$gw_label"
+
+    # Tag the VM with its owner, and save as identity tor gateway
+    _run qvm-tags "$gw" set "$IDENTITY"
+    identity.config_set TOR_QUBE "${gw}"
+    identity.config_set NETVM_QUBE "${gw}"
+}
+
+# proxy.fail_config_tor exits the program if risk lacks some information
+# (which templates/clones to use) when attempting to create a Tor qube.
+function proxy.fail_config_tor ()
+{
+    [[ ${args['--no-tor']} -eq 1 ]] && return
+
+    local template clone netvm
+
+    # Check qubes specified in config or flags.
+    template="$(config_get WHONIX_GW_TEMPLATE)"
+    [[ -n "${args['--clone-tor-from']}" ]] && clone="${args['--clone-tor-from']}"
+
+    # Check those qubes exist
+    if [[ -n ${clone} ]]; then
+        ! qube.exists "${clone}" && _failure "Qube to clone ${clone} does not exist"
+    else
+        ! qube.exists "${template}" && _failure "Qube template ${template} does not exist"
+    fi
+}
+
+# proxy.skip_tor_create returns 0 when there not enough information in the configuration
+# file or in command flags for creating a new TOR qube (no templates/clones indicated, etc).
+# Needs access to command-line flags
+function proxy.skip_tor_create ()
+{
+    [[ ${args['--no-tor']} -eq 1 ]] && return 0
+
+    local template clone netvm
+
+    template="$(config_get WHONIX_GW_TEMPLATE)"
+    [[ -n "${args['--clone-tor-from']}" ]] && clone="${args['--clone-tor-from']}"
+
+    [[ -z ${template} && -z ${clone} ]] && \
+        _info "Skipping TOR gateway: no TemplateVM/AppVM specified in config or flags" && return 0
+
+    return 1
+}
+
+# src/lib/utils.sh
+
+# Return 0 if is set, 1 otherwise
+option_is_set() {
+	local -i r	 # the return code (0 = set, 1 = unset)
+
+	[[ -n ${(k)OPTS[$1]} ]];
+	r=$?
+
+	[[ $2 == "out" ]] && {
+		[[ $r == 0 ]] && { print 'set' } || { print 'unset' }
+	}
+
+	return $r;
+}
+
+# Retrieves the value of a variable first by looking in the risk
+# config file, and optionally overrides it if the flag is set.
+# $1 - Flag argument
+# $2 - Key name in config
+config_or_flag ()
+{
+    local value config_value
+
+    config_value=$(config_get $2)   # From config
+    value="${1:=$config_value}"      # overriden by flag if set
+
+    print $value
+}
+
+# contains(string, substring)
+#
+# Returns 0 if the specified string contains the specified substring,
+# otherwise returns 1.
+contains() {
+    string="$1"
+    substring="$2"
+    if test "${string#*$substring}" != "$string"
+    then
+        return 0    # $substring is in $string
+    else
+        return 1    # $substring is not in $string
+    fi
+}
+
+# prompt_question asks the user to answer a question prompt.
+# $@ - A question string.
+prompt_question ()
+{
+    printf >&2 '%s ' "$*"
+
+    read -r ans
+    echo "${ans}"
+}
+
+# print_new_qube is used to display the properties of a newly created qube.
+# $1 - Name
+# $2 - Message to display above properties
+print_new_qube ()
+{
+    local name="$1"
+    local template netvm
+
+    qvm-ls "${name}" &>/dev/null || return
+
+    template=$(qvm-prefs "${name}" template)
+    netvm=$(qvm-prefs "${name}" netvm)
+
+    [[ -n "${2}" ]] && _info "${2}"
+    _info "Name:       ${fg_bold[white]} $name ${reset_color}"
+    _info "Netvm:      ${fg_bold[white]} $netvm ${reset_color}"
+    _info "Template:   ${fg_bold[white]} $template ${reset_color}"
+}
+
+# print_new_qube is used to display the properties of a newly cloned qube.
+# $1 - Name
+# $2 - Clone name
+# $2 - Message to display above properties
+print_cloned_qube ()
+{
+    local name="$1"
+    local clone="$2"
+    local netvm
+
+    qvm-ls "${name}" &>/dev/null || return
+
+    netvm=$(qvm-prefs "${name}" netvm)
+
+    [[ -n "${3}" ]] && _info "${3}"
+    _info "Name:          ${fg_bold[white]} $name ${reset_color}"
+    _info "Netvm:         ${fg_bold[white]} $netvm ${reset_color}"
+    _info "Cloned from:   ${fg_bold[white]} $clone ${reset_color}"
+}
+
+# src/lib/validations/validate_devices.sh
+
+validate_device () {
+    local block="$1"
+
+    # And check not already attached to another qube
+    ovm=$(qvm-block list | grep "${block}" | awk {'print $4'} | cut -d" " -f1)
+
+    if [[ ${#ovm} -gt 0 ]]; then
+        echo -e "Block ${block} is currently attached to ${ovm}."
+        echo "Please umount it properly from there and rerun this program."
+        return
+    fi
+}
+
+# src/lib/validations/validate_dir_exists.sh
+validate_dir_exists() {
+  [[ -d "$1" ]] || echo "must be an existing directory"
+}
+
+# src/lib/validations/validate_file_exists.sh
+validate_file_exists() {
+  [[ -f "$1" ]] || echo "must be an existing file"
+}
+
+# src/lib/validations/validate_integer.sh
+validate_integer() {
+  [[ "$1" =~ ^[0-9]+$ ]] || echo "must be an integer"
+}
+
+# src/lib/validations/validate_not_empty.sh
+validate_not_empty() {
+  [[ -z "$1" ]] && echo "must not be empty"
+}
+
+# src/lib/validations/validate_vm.sh
+
+# does the vm exist?
+validate_vm_exists () {
+    vm=""
+    for item in $(qvm-ls | grep -v dom0 | awk '{print $1}' | grep "${1}")
+    do
+        if [ "${item}" == "${1}" ]; then
+            vm=${1}
+        fi
+    done
+    if [ ${#vm} -eq 0 ]; then
+        echo "No vm with name ${1} exists or can not be used. Aborted."
+        return
+    fi
+}
+
+# Checks that the vault VM obeys a few requirements, like no network
+validate_valid_vaultvm () {
+    vm=""
+    for item in $(qvm-ls | grep -v dom0 | awk '{print $1}' | grep "${1}")
+    do
+        if [ "${item}" == "${1}" ]; then
+            vm=${1}
+        fi
+    done
+    if [ ${#vm} -eq 0 ]; then
+        echo "No vm with name ${1} exists or can not be used. Aborted."
+        return
+    fi
+
+    netvm=$(qvm-prefs "${vm}" | grep "netvm" | awk '{print $3}')
+    if [ "${netvm}" != "None" ]; then
+        echo "${vm} might be connected to the internet. Aborted."
+        echo "Check: qvm-prefs ${vm} | grep netvm"
+    fi
+}
+
+# validate_netvm fails if the specified VM does not provide network.
+validate_netvm ()
+{
+    local netvm="${1}"
+
+    if [[ $(qvm-prefs "${netvm}" provides_network) == False ]]; then
+        echo "Qube ${netvm} is specified as netvm, but does not provide network."
+    fi
 }
 
 # src/lib/vpn.sh
@@ -4406,11 +4400,7 @@ function web.backend.open_url ()
 function web.backend.save_bookmarks ()
 {
     local split_backend="$1"
-    local bookmarks_split_file bookmarks_file
-
-    # Prepare the encrypted bookmark filename
-    filename="$(crypt.filename "bookmarks.tsv")"
-    bookmarks_file="/home/user/.tomb/mgmt/${filename}"
+    local bookmarks_split_file
 
     # Test for the file, and if not empty, otherwise
     # we risk doing dangerous and unwanted things.
@@ -4420,7 +4410,7 @@ function web.backend.save_bookmarks ()
     fi
 
     _info "Backing up bookmarks"
-    backup_command="qrexec-client-vm ${split_backend} risk.SplitBookmarkBackup > ${bookmarks_file}"
+    backup_command="qrexec-client-vm ${split_backend} risk.SplitBookmarkBackup > ${IDENTITY_BOOKMARKS_FILE}"
     qvm-run -q "${VAULT_VM}" "${backup_command}"
     [[ $? -ne 0 ]] && _warning "Failed to backup bookmarks"
 }
@@ -4432,12 +4422,8 @@ function web.backend.read_bookmarks ()
 {
     local split_backend="$1"
 
-    # Prepare the encrypted bookmark filename
-    filename="$(crypt.filename "bookmarks.tsv")"
-    local bookmarks_file="/home/user/.tomb/mgmt/${filename}"
-
     _info "Copying bookmarks"
-    copy_command="cat ${bookmarks_file} | qrexec-client-vm ${split_backend} risk.SplitBookmark"
+    copy_command="cat ${IDENTITY_BOOKMARKS_FILE} | qrexec-client-vm ${split_backend} risk.SplitBookmark"
     qvm-run -q "${VAULT_VM}" "${copy_command}"
     [[ $? -ne 0 ]] && _warning "Failed to send bookmarks"
 
@@ -4459,11 +4445,7 @@ SPLIT_BROWSER_QUERY_COMMAND='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; 
 # nothing will happen (except modified touch timestamp).
 function web.bookmark.create_user_file ()
 {
-    local filename bookmarks_path
-
-    filename="$(crypt.filename "bookmarks.tsv")"
-    bookmarks_path="/home/user/.tomb/mgmt/${filename}"
-    _run_exec "$VAULT_VM" "touch ${bookmarks_path}"
+    _run_exec "$VAULT_VM" "touch ${IDENTITY_BOOKMARKS_FILE}"
 }
 
 # web.bookmark.file_is_empty returns 0 if no bookmark
@@ -4543,8 +4525,13 @@ function web.bookmark.prompt_create ()
     local zenity_prompt result active_vm
     active_vm="$(qubes.focused_qube)"
 
-    zenity_prompt="zenity --text 'URL Bookmark' --forms --add-entry='URL' --add-entry='Page Title' --separator=\$'\t'"
-    qvm-run --pass-io "${active_vm}" "${zenity_prompt}"
+    zenity_prompt=(zenity --text 'URL Bookmark' --forms --add-entry='URL' --add-entry='Page Title' --separator=$'\t')
+
+    if [[ "${active_vm}" != "dom0" ]]; then
+        qvm-run --pass-io "${active_vm}" "${zenity_prompt[@]}"
+    else
+        "${zenity_prompt[@]}"
+    fi
 }
 
 # web.bookmark.url_bookmarked returns 0 if the bookmark
@@ -5699,6 +5686,7 @@ risk_url_bookmark_command() {
   identity.set
 
   url="${args['url']}"
+  title="${args['title']}"
   split_vm="$(config_get SPLIT_BROWSER)"
 
   # Get the bookmark entry from either split-browser file, args, or user-input in prompt.
@@ -8813,21 +8801,6 @@ risk_url_bookmark_parse_requirements() {
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
-      # :flag.case
-      --user | -u)
-
-        # :flag.case_no_arg
-        args['--user']=1
-        shift
-        ;;
-
-      # :flag.case
-      --system | -s)
-
-        # :flag.case_no_arg
-        args['--system']=1
-        shift
-        ;;
 
       -?*)
         printf "invalid option: %s\n" "$key" >&2
@@ -8840,6 +8813,10 @@ risk_url_bookmark_parse_requirements() {
         if [[ -z ${args['url']+x} ]]; then
 
           args['url']=$1
+          shift
+        elif [[ -z ${args['title']+x} ]]; then
+
+          args['title']=$1
           shift
         else
           printf "invalid argument: %s\n" "$key" >&2

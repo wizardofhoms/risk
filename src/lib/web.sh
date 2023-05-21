@@ -348,11 +348,7 @@ function web.backend.open_url ()
 function web.backend.save_bookmarks ()
 {
     local split_backend="$1"
-    local bookmarks_split_file bookmarks_file
-
-    # Prepare the encrypted bookmark filename
-    filename="$(crypt.filename "bookmarks.tsv")"
-    bookmarks_file="/home/user/.tomb/mgmt/${filename}"
+    local bookmarks_split_file
 
     # Test for the file, and if not empty, otherwise
     # we risk doing dangerous and unwanted things.
@@ -362,7 +358,7 @@ function web.backend.save_bookmarks ()
     fi
 
     _info "Backing up bookmarks"
-    backup_command="qrexec-client-vm ${split_backend} risk.SplitBookmarkBackup > ${bookmarks_file}"
+    backup_command="qrexec-client-vm ${split_backend} risk.SplitBookmarkBackup > ${IDENTITY_BOOKMARKS_FILE}"
     qvm-run -q "${VAULT_VM}" "${backup_command}"
     [[ $? -ne 0 ]] && _warning "Failed to backup bookmarks"
 }
@@ -373,12 +369,8 @@ function web.backend.read_bookmarks ()
 {
     local split_backend="$1"
 
-    # Prepare the encrypted bookmark filename
-    filename="$(crypt.filename "bookmarks.tsv")"
-    local bookmarks_file="/home/user/.tomb/mgmt/${filename}"
-
     _info "Copying bookmarks"
-    copy_command="cat ${bookmarks_file} | qrexec-client-vm ${split_backend} risk.SplitBookmark"
+    copy_command="cat ${IDENTITY_BOOKMARKS_FILE} | qrexec-client-vm ${split_backend} risk.SplitBookmark"
     qvm-run -q "${VAULT_VM}" "${copy_command}"
     [[ $? -ne 0 ]] && _warning "Failed to send bookmarks"
 
@@ -398,11 +390,7 @@ SPLIT_BROWSER_QUERY_COMMAND='export SB_CMD_INPUT=bookmark; touch $SB_CMD_INPUT; 
 # nothing will happen (except modified touch timestamp).
 function web.bookmark.create_user_file ()
 {
-    local filename bookmarks_path
-
-    filename="$(crypt.filename "bookmarks.tsv")"
-    bookmarks_path="/home/user/.tomb/mgmt/${filename}"
-    _run_exec "$VAULT_VM" "touch ${bookmarks_path}"
+    _run_exec "$VAULT_VM" "touch ${IDENTITY_BOOKMARKS_FILE}"
 }
 
 # web.bookmark.file_is_empty returns 0 if no bookmark
@@ -481,8 +469,13 @@ function web.bookmark.prompt_create ()
     local zenity_prompt result active_vm
     active_vm="$(qubes.focused_qube)"
 
-    zenity_prompt="zenity --text 'URL Bookmark' --forms --add-entry='URL' --add-entry='Page Title' --separator=\$'\t'"
-    qvm-run --pass-io "${active_vm}" "${zenity_prompt}"
+    zenity_prompt=(zenity --text 'URL Bookmark' --forms --add-entry='URL' --add-entry='Page Title' --separator=$'\t')
+
+    if [[ "${active_vm}" != "dom0" ]]; then
+        qvm-run --pass-io "${active_vm}" "${zenity_prompt[@]}"
+    else
+        "${zenity_prompt[@]}"
+    fi
 }
 
 # web.bookmark.url_bookmarked returns 0 if the bookmark 

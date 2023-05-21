@@ -437,10 +437,8 @@ _url ()
                     ;;
                 bookmark)
                     _arguments -C \
-                        '(-u --user)'{-u,--user}'[Add to identity bookmarks]' \
-                        '(-s --system)'{-s,--system}'[Add to system-wide (all identities) bookmarks]' \
                         '1:url/onion:' \
-                        '2:URL name:' \
+                        '2:URL title (optional):' \
                         && ret=0
                     ;;
                 open|blacklist|news)

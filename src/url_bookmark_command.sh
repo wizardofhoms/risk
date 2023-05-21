@@ -7,6 +7,7 @@ local split_vm          # The split-browser backend qube.
 identity.set
 
 url="${args['url']}"
+title="${args['title']}"
 split_vm="$(config_get SPLIT_BROWSER)"
 
 # Get the bookmark entry from either split-browser file, args, or user-input in prompt.

@@ -1,13 +1,9 @@
 #!/usr/bin/env zsh
 
-# :command.master_script
-
-# :command.version_command
 version_command() {
   echo "$version"
 }
 
-# :command.usage
 risk_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk - RISKS Dom0 management application\n"
@@ -24,7 +20,7 @@ risk_usage() {
   printf "  risk [COMMAND] --help | -h\n"
   printf "  risk --version\n"
   echo
-  # :command.usage_commands
+
   printf "%s\n" "$(bold "Commands:")"
   printf "  %s   Manage the hush partition attach/detach from qubes\n" "$(red "hush")    "
   printf "  %s   Manage backup devices attach/detach from qubes\n" "$(red "backup")  "
@@ -38,22 +34,17 @@ risk_usage() {
   printf "  %s   Show help about a command\n" "$(red "help")    "
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_flags
-    # :flag.usage
     printf "  %s\n" "--verbose, -v"
     printf "    Show verbose logging\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--log-file, -l LOGFILE"
     printf "    Path to log file\n"
     echo
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
@@ -64,7 +55,6 @@ risk_usage() {
   fi
 }
 
-# :command.usage
 risk_hush_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk hush - Manage the hush partition attach/detach from qubes\n"
@@ -80,17 +70,15 @@ risk_hush_usage() {
   printf "  risk hush COMMAND\n"
   printf "  risk hush [COMMAND] --help | -h\n"
   echo
-  # :command.usage_commands
+
   printf "%s\n" "$(bold "Commands:")"
   printf "  %s   Attach the hush device to a qube. Accepts optional args to override default hush/vault\n" "$(red "attach")"
   printf "  %s   Detach the hush device from its current qube, making sure it's not in a read-write state\n" "$(red "detach")"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
@@ -98,7 +86,6 @@ risk_hush_usage() {
   fi
 }
 
-# :command.usage
 risk_hush_attach_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk hush attach - Attach the hush device to a qube. Accepts optional args to override default hush/vault\n"
@@ -115,30 +102,23 @@ risk_hush_attach_usage() {
   printf "  risk hush attach --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_flags
-    # :flag.usage
     printf "  %s\n" "--mount, -m"
     printf "    Mount the hush device in the vault (prompts for password)\n"
     echo
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "DEVICE")"
     printf "    (optional) qubes path to device to use as hush (defaults to SDCARD_BLOCK)\n"
     echo
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VAULT_VM")"
     printf "    (optional) qube to use as vault VM (defaults to VAULT_VM)\n"
     echo
@@ -146,7 +126,6 @@ risk_hush_attach_usage() {
   fi
 }
 
-# :command.usage
 risk_hush_detach_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk hush detach - Detach the hush device from its current qube, making sure it's not in a read-write state\n"
@@ -163,24 +142,19 @@ risk_hush_detach_usage() {
   printf "  risk hush detach --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "DEVICE")"
     printf "    (optional) qubes path to device to use as backup (defaults to BACKUP_BLOCK)\n"
     echo
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VAULT_VM")"
     printf "    (optional) qube to use as vault VM (defaults to VAULT_VM)\n"
     echo
@@ -188,7 +162,6 @@ risk_hush_detach_usage() {
   fi
 }
 
-# :command.usage
 risk_backup_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk backup - Manage backup devices attach/detach from qubes\n"
@@ -204,17 +177,15 @@ risk_backup_usage() {
   printf "  risk backup COMMAND\n"
   printf "  risk backup [COMMAND] --help | -h\n"
   echo
-  # :command.usage_commands
+
   printf "%s\n" "$(bold "Commands:")"
   printf "  %s   Attach a backup device to a qube. Accepts optional args to override default backup/vault\n" "$(red "attach")"
   printf "  %s   Detach the backup device from its current qube, making sure it's not in a read-write state\n" "$(red "detach")"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
@@ -222,7 +193,6 @@ risk_backup_usage() {
   fi
 }
 
-# :command.usage
 risk_backup_attach_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk backup attach - Attach a backup device to a qube. Accepts optional args to override default backup/vault\n"
@@ -239,24 +209,19 @@ risk_backup_attach_usage() {
   printf "  risk backup attach --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "DEVICE")"
     printf "    (optional) qubes path to device to use as backup (defaults to BACKUP_BLOCK)\n"
     echo
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VAULT_VM")"
     printf "    (optional) qube to use as vault VM (defaults to VAULT_VM)\n"
     echo
@@ -264,7 +229,6 @@ risk_backup_attach_usage() {
   fi
 }
 
-# :command.usage
 risk_backup_detach_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk backup detach - Detach the backup device from its current qube, making sure it's not in a read-write state\n"
@@ -281,24 +245,19 @@ risk_backup_detach_usage() {
   printf "  risk backup detach --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "DEVICE")"
     printf "    (optional) qubes path to device to use as backup (defaults to BACKUP_BLOCK)\n"
     echo
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VAULT_VM")"
     printf "    (optional) qube to use as vault VM (defaults to VAULT_VM)\n"
     echo
@@ -306,7 +265,6 @@ risk_backup_detach_usage() {
   fi
 }
 
-# :command.usage
 risk_identity_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk identity - Create, manage and use identities and/or use their machines\n"
@@ -322,7 +280,7 @@ risk_identity_usage() {
   printf "  risk identity COMMAND\n"
   printf "  risk identity [COMMAND] --help | -h\n"
   echo
-  # :command.usage_commands
+
   printf "%s\n" "$(bold "Commands:")"
   printf "  %s   Creates associated VMs for an identity (joe-gw, joe-vpn, joe-msg, joe-web)\n" "$(red "create")"
   printf "  %s   Creates the infrastructure for an already exiting identity.\n" "$(red "equip") "
@@ -334,11 +292,9 @@ risk_identity_usage() {
   printf "  %s   Stops all machines belonging to an identity, and close its vault if active.\n" "$(red "stop")  "
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
@@ -346,7 +302,6 @@ risk_identity_usage() {
   fi
 }
 
-# :command.usage
 risk_identity_create_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk identity create - Creates associated VMs for an identity (joe-gw, joe-vpn, joe-msg, joe-web)\n"
@@ -363,80 +318,63 @@ risk_identity_create_usage() {
   printf "  risk identity create --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_flags
-    # :flag.usage
     printf "  %s\n" "--backup, -b"
     printf "    Device file of the backup drive (must be a whole drive without a partition\n    number, eg. /dev/sdb)\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--burner, -B"
     printf "    Generate a random username, and only generate GPG/Pass stores\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--vault-only"
     printf "    Only create the identity in the vault: do not create any machines\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--mail, -m"
     printf "    Mail provider to use for the GPG key (appended to the name when no full mail\n    is given as arg)\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--prefix, -P NAME"
     printf "    Use a different name for naming identity VMs\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--label, -L COLOR"
     printf "    Specify a label color to be used for all VMs belonging to this identity\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--no-tor, -T"
     printf "    Don't create a Whonix TOR gateway\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--clone-tor-from TOR_GW"
     printf "    Instead of creating the TOR gateway from a template, clone an existing TOR\n    AppVM\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--clone-web-from WEB_VM"
     printf "    Instead of creating the Web browsing VM from a template, clone an existing\n    browser AppVM\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--clone-split-from SPLIT_BROWSER_VM"
     printf "    Instead of creating the split-browser VM from a template, clone an existing\n    one\n"
     echo
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "IDENTITY")"
     printf "    Name of the identity for which to initialize infrastructure\n"
     echo
 
-    # :argument.usage
     printf "  %s\n" "$(blue "EMAIL")"
     printf "    Email address to use for the GPG identity\n"
     echo
 
-    # :argument.usage
     printf "  %s\n" "$(blue "EXPIRY_DATE")"
     printf "    Human readable, or GPG-compliant expiry duration to use for the GPG subkeys\n    (eg. '1 year', '1 week', etc)\n"
     echo
@@ -444,7 +382,6 @@ risk_identity_create_usage() {
   fi
 }
 
-# :command.usage
 risk_identity_equip_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk identity equip - Creates the infrastructure for an already exiting identity.\n"
@@ -461,50 +398,39 @@ risk_identity_equip_usage() {
   printf "  risk identity equip --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_flags
-    # :flag.usage
     printf "  %s\n" "--prefix, -P NAME"
     printf "    Use a different name for naming identity VMs\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--label, -L COLOR"
     printf "    Specify a label color to be used for all VMs belonging to this identity\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--no-tor, -T"
     printf "    Don't create a Whonix TOR gateway\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--clone-tor-from TOR_GW"
     printf "    Instead of creating the TOR gateway from a template, clone an existing TOR\n    AppVM\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--clone-web-from WEB_VM"
     printf "    Instead of creating the Web browsing VM from a template, clone an existing\n    browser AppVM\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--clone-split-from SPLIT_BROWSER_VM"
     printf "    Instead of creating the split-browser VM from a template, clone an existing\n    one\n"
     echo
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "IDENTITY")"
     printf "    Identity for which to setup infrastructure\n"
     echo
@@ -512,7 +438,6 @@ risk_identity_equip_usage() {
   fi
 }
 
-# :command.usage
 risk_identity_delete_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk identity delete - Destroys an identity and all its associated machines and data\n"
@@ -529,25 +454,19 @@ risk_identity_delete_usage() {
   printf "  risk identity delete --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_flags
-    # :flag.usage
     printf "  %s\n" "--backup, -b"
     printf "    If a backup medium is mounted in vault, also delete the backup if it exists.\n"
     echo
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "IDENTITY")"
     printf "    Identity to delete along with machines\n"
     echo
@@ -555,7 +474,6 @@ risk_identity_delete_usage() {
   fi
 }
 
-# :command.usage
 risk_identity_nake_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk identity nake - Delete the VMs belonging to an identity, but not the identity in the vault.\n"
@@ -572,19 +490,15 @@ risk_identity_nake_usage() {
   printf "  risk identity nake --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "IDENTITY")"
     printf "    Identity for which to delete machines\n"
     echo
@@ -592,7 +506,6 @@ risk_identity_nake_usage() {
   fi
 }
 
-# :command.usage
 risk_identity_open_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk identity open - Simply open the identity store in the vault\n"
@@ -609,19 +522,15 @@ risk_identity_open_usage() {
   printf "  risk identity open --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "IDENTITY")"
     printf "    Identity to open in the vault\n"
     echo
@@ -629,7 +538,6 @@ risk_identity_open_usage() {
   fi
 }
 
-# :command.usage
 risk_identity_close_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk identity close - Simply close the identity store in the vault\n"
@@ -646,11 +554,9 @@ risk_identity_close_usage() {
   printf "  risk identity close --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
@@ -658,7 +564,6 @@ risk_identity_close_usage() {
   fi
 }
 
-# :command.usage
 risk_identity_start_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk identity start - Start the identity in the vault and all of its enabled VMs\n"
@@ -675,19 +580,15 @@ risk_identity_start_usage() {
   printf "  risk identity start --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "IDENTITY")"
     printf "    Identity to start\n"
     echo
@@ -695,7 +596,6 @@ risk_identity_start_usage() {
   fi
 }
 
-# :command.usage
 risk_identity_stop_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk identity stop - Stops all machines belonging to an identity, and close its vault if active.\n"
@@ -712,11 +612,9 @@ risk_identity_stop_usage() {
   printf "  risk identity stop --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
@@ -724,7 +622,6 @@ risk_identity_stop_usage() {
   fi
 }
 
-# :command.usage
 risk_identity_current_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk identity current - Prints the active identity as a raw string, to be used by prompts.\n"
@@ -741,11 +638,9 @@ risk_identity_current_usage() {
   printf "  risk identity current --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
@@ -753,7 +648,6 @@ risk_identity_current_usage() {
   fi
 }
 
-# :command.usage
 risk_slam_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk slam - Close identity, infrastructure and detach hush/backup at once\n"
@@ -770,11 +664,9 @@ risk_slam_usage() {
   printf "  risk slam --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
@@ -782,7 +674,6 @@ risk_slam_usage() {
   fi
 }
 
-# :command.usage
 risk_vpn_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk vpn - Create, configure, manage and use VPN gateways for an identity.\n"
@@ -798,7 +689,7 @@ risk_vpn_usage() {
   printf "  risk vpn COMMAND\n"
   printf "  risk vpn [COMMAND] --help | -h\n"
   echo
-  # :command.usage_commands
+
   printf "%s\n" "$(bold "Commands:")"
   printf "  %s   Create VPN gateway from a template, or by cloning an existing one.\n" "$(red "create") "
   printf "  %s   Add an existing qube as an identity VPN gateway.\n" "$(red "add")    "
@@ -810,11 +701,9 @@ risk_vpn_usage() {
   printf "  %s   Delete a VPN gateway\n" "$(red "delete") "
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
@@ -822,7 +711,6 @@ risk_vpn_usage() {
   fi
 }
 
-# :command.usage
 risk_vpn_create_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk vpn create - Create VPN gateway from a template, or by cloning an existing one.\n"
@@ -839,65 +727,51 @@ risk_vpn_create_usage() {
   printf "  risk vpn create --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_flags
-    # :flag.usage
     printf "  %s\n" "--label, -L COLOR"
     printf "    Specify a label color to be used for all VMs belonging to this identity\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--enable, -E"
     printf "    Autostart this VM when the identity is started\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--template, -T TEMPLATE"
     printf "    TemplateVM to use instead of the default VPN TemplateVM\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--clone, -c"
     printf "    Instead of creating the VPN gateway from a template, clone an existing VPN\n    AppVM\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--from, -f VPN_GW"
     printf "    VM to clone instead of the default VPN_VM configuration setting\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--config-in CONFIG_VM"
     printf "    VM in which to browse for VPN configuration(s)\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--choose"
     printf "    Choose an existing client config by running the setup wizard in the VPN VM\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--set-default"
     printf "    Set this VM as the default NetVM for all identity client VMs (browsers,\n    messaging, etc)\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--netvm, -n VM"
     printf "    NetVM to use for the gateway\n"
     echo
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VM")"
     printf "    (optional) name to use for this VM (=> identity-<name>-vpn)\n"
     echo
@@ -905,7 +779,6 @@ risk_vpn_create_usage() {
   fi
 }
 
-# :command.usage
 risk_vpn_add_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk vpn add - Add an existing qube as an identity VPN gateway.\n"
@@ -922,45 +795,35 @@ risk_vpn_add_usage() {
   printf "  risk vpn add --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_flags
-    # :flag.usage
     printf "  %s\n" "--enable, -E"
     printf "    Autostart this VM when the identity is started\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--set-default"
     printf "    Set this VM as the default NetVM for all identity client VMs (browsers,\n    messaging, etc)\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--netvm, -n VM"
     printf "    NetVM to use for the gateway\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--config-in CONFIG_VM"
     printf "    VM in which to browse for VPN configuration(s)\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--choose"
     printf "    Choose an existing client config by running the setup wizard in the VPN VM\n"
     echo
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VM")"
     printf "    Qube to add as VPN gateway\n"
     echo
@@ -968,7 +831,6 @@ risk_vpn_add_usage() {
   fi
 }
 
-# :command.usage
 risk_vpn_setup_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk vpn setup - Manage, import network configurations and run associated setup wizards\n"
@@ -985,40 +847,31 @@ risk_vpn_setup_usage() {
   printf "  risk vpn setup --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_flags
-    # :flag.usage
     printf "  %s\n" "--set-default"
     printf "    Set this VM as the default NetVM for all identity client VMs (browsers,\n    messaging, etc)\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--netvm, -n VM"
     printf "    NetVM to use for the gateway\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--config-in CONFIG_VM"
     printf "    VM in which to browse for VPN configuration(s)\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--choose"
     printf "    Choose an existing client config by running the setup wizard in the VPN VM\n"
     echo
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VM")"
     printf "    gateway VM to operate setup on\n"
     echo
@@ -1026,7 +879,6 @@ risk_vpn_setup_usage() {
   fi
 }
 
-# :command.usage
 risk_vpn_start_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk vpn start - Start a VPN gateway in the background\n"
@@ -1043,19 +895,15 @@ risk_vpn_start_usage() {
   printf "  risk vpn start --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VM")"
     printf "    gateway VM to start\n"
     echo
@@ -1063,7 +911,6 @@ risk_vpn_start_usage() {
   fi
 }
 
-# :command.usage
 risk_vpn_stop_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk vpn stop - Stop a VPN gateway\n"
@@ -1080,19 +927,15 @@ risk_vpn_stop_usage() {
   printf "  risk vpn stop --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VM")"
     printf "    gateway VM to stop\n"
     echo
@@ -1100,7 +943,6 @@ risk_vpn_stop_usage() {
   fi
 }
 
-# :command.usage
 risk_vpn_enable_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk vpn enable - Automatically start a VPN gateway when starting the identity.\n"
@@ -1117,19 +959,15 @@ risk_vpn_enable_usage() {
   printf "  risk vpn enable --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VM")"
     printf "    gateway VM to enable autostart for\n"
     echo
@@ -1137,7 +975,6 @@ risk_vpn_enable_usage() {
   fi
 }
 
-# :command.usage
 risk_vpn_disable_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk vpn disable - Do not autostart this VM when the identity is started\n"
@@ -1154,19 +991,15 @@ risk_vpn_disable_usage() {
   printf "  risk vpn disable --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VM")"
     printf "    gateway VM to disable autostart for\n"
     echo
@@ -1174,7 +1007,6 @@ risk_vpn_disable_usage() {
   fi
 }
 
-# :command.usage
 risk_vpn_delete_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk vpn delete - Delete a VPN gateway\n"
@@ -1191,19 +1023,15 @@ risk_vpn_delete_usage() {
   printf "  risk vpn delete --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VM")"
     printf "    gateway VM to delete\n"
     echo
@@ -1211,7 +1039,6 @@ risk_vpn_delete_usage() {
   fi
 }
 
-# :command.usage
 risk_qube_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk qube - Manage qubes (identity settings, update/enable/disable, etc)\n"
@@ -1227,7 +1054,7 @@ risk_qube_usage() {
   printf "  risk qube COMMAND\n"
   printf "  risk qube [COMMAND] --help | -h\n"
   echo
-  # :command.usage_commands
+
   printf "%s\n" "$(bold "Commands:")"
   printf "  %s   Tag an existing VM as belonging to the active identity, and change its netVM if one is already set\n" "$(red "add")         "
   printf "  %s   Delete a VM belonging to the current identity\n" "$(red "delete")      "
@@ -1238,11 +1065,9 @@ risk_qube_usage() {
   printf "  %s   Upgrade the distribution of a Qube template\n" "$(red "dist-upgrade")"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
@@ -1250,7 +1075,6 @@ risk_qube_usage() {
   fi
 }
 
-# :command.usage
 risk_qube_add_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk qube add - Tag an existing VM as belonging to the active identity, and change its netVM if one is already set\n"
@@ -1267,35 +1091,27 @@ risk_qube_add_usage() {
   printf "  risk qube add --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_flags
-    # :flag.usage
     printf "  %s\n" "--netvm, -n VM"
     printf "    NetVM to use for this VM\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--set-default"
     printf "    If VM provides network, set this VM as default NetVM for identity\n"
     echo
 
-    # :flag.usage
     printf "  %s\n" "--enable, -E"
     printf "    Autostart this VM when the identity is started\n"
     echo
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VM")"
     printf "    VM to tag with identity settings\n"
     echo
@@ -1303,7 +1119,6 @@ risk_qube_add_usage() {
   fi
 }
 
-# :command.usage
 risk_qube_delete_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk qube delete - Delete a VM belonging to the current identity\n"
@@ -1320,19 +1135,15 @@ risk_qube_delete_usage() {
   printf "  risk qube delete --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VM")"
     printf "    VM to delete\n"
     echo
@@ -1340,7 +1151,6 @@ risk_qube_delete_usage() {
   fi
 }
 
-# :command.usage
 risk_qube_enable_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk qube enable - Enable an identity VM to autostart\n"
@@ -1357,19 +1167,15 @@ risk_qube_enable_usage() {
   printf "  risk qube enable --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VM")"
     printf "    VM to enable for autostart\n"
     echo
@@ -1377,7 +1183,6 @@ risk_qube_enable_usage() {
   fi
 }
 
-# :command.usage
 risk_qube_disable_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk qube disable - Disable an identity VM to autostart\n"
@@ -1394,19 +1199,15 @@ risk_qube_disable_usage() {
   printf "  risk qube disable --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VM")"
     printf "    VM to disable from autostart\n"
     echo
@@ -1414,7 +1215,6 @@ risk_qube_disable_usage() {
   fi
 }
 
-# :command.usage
 risk_qube_list_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk qube list - Show all qubes belonging to the active identity\n"
@@ -1431,11 +1231,9 @@ risk_qube_list_usage() {
   printf "  risk qube list --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
@@ -1443,7 +1241,6 @@ risk_qube_list_usage() {
   fi
 }
 
-# :command.usage
 risk_qube_update_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk qube update - Update one or more VM templates, by name patterns or filters\n"
@@ -1460,25 +1257,19 @@ risk_qube_update_usage() {
   printf "  risk qube update --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_flags
-    # :flag.usage
     printf "  %s\n" "--identity, -I"
     printf "    Check for templates of all VMs belong to an identity\n"
     echo
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VMS")"
     printf "    An arbitrary list of VMs name patterns to update.\n"
     echo
@@ -1486,7 +1277,6 @@ risk_qube_update_usage() {
   fi
 }
 
-# :command.usage
 risk_qube_dist_upgrade_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk qube dist-upgrade - Upgrade the distribution of a Qube template\n"
@@ -1503,24 +1293,19 @@ risk_qube_dist_upgrade_usage() {
   printf "  risk qube dist-upgrade --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VM")"
     printf "    Name of VM or template to upgrade (if VM, risk will use its template)\n"
     echo
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VERSION")"
     printf "    Name or number of version to upgrade to (eg. 37 for Fedora, or bookworm for\n    Debian)\n"
     echo
@@ -1528,7 +1313,6 @@ risk_qube_dist_upgrade_usage() {
   fi
 }
 
-# :command.usage
 risk_use_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk use - Execute a command in a VM belong to an identity.\n"
@@ -1545,31 +1329,25 @@ risk_use_usage() {
   printf "  risk use --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VM")"
     printf "    VM in which to execute the command\n"
     echo
 
-    # :command.footer
     printf "The target VM does not mandatorily need to belong to the active identity, if there is one.\nIf it does not belongs to another non-active identity, risk will take care of:\n  - Closing the active identity in the vault\n  - Opening the new one\nAfter this, the target VM is launched with the command arguments.\n\n"
     echo
 
   fi
 }
 
-# :command.usage
 risk_url_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk url - Browse, bookmark, verify and manage URLS/links\n"
@@ -1585,17 +1363,15 @@ risk_url_usage() {
   printf "  risk url COMMAND\n"
   printf "  risk url [COMMAND] --help | -h\n"
   echo
-  # :command.usage_commands
+
   printf "%s\n" "$(bold "Commands:")"
   printf "  %s   Open a target URL into a target VM, or bookmarks with no arguments.\n" "$(red "open")    "
   printf "  %s   Add an onion to the user/system bookmarks without verifying it.\n" "$(red "bookmark")"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
@@ -1603,7 +1379,6 @@ risk_url_usage() {
   fi
 }
 
-# :command.usage
 risk_url_open_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk url open - Open a target URL into a target VM, or bookmarks with no arguments.\n"
@@ -1620,19 +1395,15 @@ risk_url_open_usage() {
   printf "  risk url open --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "URL")"
     printf "    URL to browse\n"
     echo
@@ -1640,7 +1411,6 @@ risk_url_open_usage() {
   fi
 }
 
-# :command.usage
 risk_url_bookmark_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk url bookmark - Add an onion to the user/system bookmarks without verifying it.\n"
@@ -1657,24 +1427,19 @@ risk_url_bookmark_usage() {
   printf "  risk url bookmark --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "URL")"
     printf "    URL to bookmark (optional, if empty the split-bookmarks file is opened, or\n    the user is prompted for URL/info)\n"
     echo
 
-    # :argument.usage
     printf "  %s\n" "$(blue "TITLE")"
     printf "    Title of URL page (optional)\n"
     echo
@@ -1682,7 +1447,6 @@ risk_url_bookmark_usage() {
   fi
 }
 
-# :command.usage
 risk_config_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk config - Manage the risk global configuration\n"
@@ -1698,7 +1462,7 @@ risk_config_usage() {
   printf "  risk config COMMAND\n"
   printf "  risk config [COMMAND] --help | -h\n"
   echo
-  # :command.usage_commands
+
   printf "%s\n" "$(bold "Commands:")"
   printf "  %s   Set a configuration variable to a value\n" "$(red "set")  "
   printf "  %s   Print the value of a configuration variable\n" "$(red "get")  "
@@ -1706,11 +1470,9 @@ risk_config_usage() {
   printf "  %s   List all configuration variables\n" "$(red "list") "
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
@@ -1718,7 +1480,6 @@ risk_config_usage() {
   fi
 }
 
-# :command.usage
 risk_config_set_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk config set - Set a configuration variable to a value\n"
@@ -1735,24 +1496,19 @@ risk_config_set_usage() {
   printf "  risk config set --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "KEY")"
     printf "    Name of of key to set\n"
     echo
 
-    # :argument.usage
     printf "  %s\n" "$(blue "VALUE")"
     printf "    Value to assign to the key\n"
     echo
@@ -1760,7 +1516,6 @@ risk_config_set_usage() {
   fi
 }
 
-# :command.usage
 risk_config_get_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk config get - Print the value of a configuration variable\n"
@@ -1777,19 +1532,15 @@ risk_config_get_usage() {
   printf "  risk config get --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "KEY")"
     printf "    Name of of key to show\n"
     echo
@@ -1797,7 +1548,6 @@ risk_config_get_usage() {
   fi
 }
 
-# :command.usage
 risk_config_unset_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk config unset - Delete the value of a configuration variable\n"
@@ -1814,19 +1564,15 @@ risk_config_unset_usage() {
   printf "  risk config unset --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "KEY")"
     printf "    Name of of key to delete/unset\n"
     echo
@@ -1834,7 +1580,6 @@ risk_config_unset_usage() {
   fi
 }
 
-# :command.usage
 risk_config_list_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk config list - List all configuration variables\n"
@@ -1851,11 +1596,9 @@ risk_config_list_usage() {
   printf "  risk config list --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
@@ -1863,7 +1606,6 @@ risk_config_list_usage() {
   fi
 }
 
-# :command.usage
 risk_config_keys_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk config keys - List all configuration variables as an array (for completions)\n"
@@ -1880,11 +1622,9 @@ risk_config_keys_usage() {
   printf "  risk config keys --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
@@ -1892,7 +1632,6 @@ risk_config_keys_usage() {
   fi
 }
 
-# :command.usage
 risk_help_usage() {
   if [[ -n $long_usage ]]; then
     printf "risk help - Show help about a command\n"
@@ -1909,19 +1648,15 @@ risk_help_usage() {
   printf "  risk help --help | -h\n"
   echo
 
-  # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "Options:")"
 
-    # :command.usage_fixed_flags
     printf "  %s\n" "--help, -h"
     printf "    Show this help\n"
     echo
 
-    # :command.usage_args
     printf "%s\n" "$(bold "Arguments:")"
 
-    # :argument.usage
     printf "  %s\n" "$(blue "COMMAND")"
     printf "    Help subject\n"
     echo
@@ -1929,7 +1664,6 @@ risk_help_usage() {
   fi
 }
 
-# :command.normalize_input
 normalize_input() {
   local arg flags
 
@@ -1953,10 +1687,10 @@ normalize_input() {
     shift
   done
 }
-# :command.inspect_args
+
 inspect_args() {
-  readarray -t sorted_keys < <(printf '%s\n' "${!args[@]}" | sort)
   if ((${#args[@]})); then
+    readarray -t sorted_keys < <(printf '%s\n' "${!args[@]}" | sort)
     echo args:
     for k in "${sorted_keys[@]}"; do echo "- \${args[$k]} = ${args[$k]}"; done
   else
@@ -1971,10 +1705,16 @@ inspect_args() {
       echo "- \${other_args[$i]} = ${other_args[$i]}"
     done
   fi
+
+  if ((${#deps[@]})); then
+    readarray -t sorted_keys < <(printf '%s\n' "${!deps[@]}" | sort)
+    echo
+    echo deps:
+    for k in "${sorted_keys[@]}"; do echo "- \${deps[$k]} = ${deps[$k]}"; done
+  fi
+
 }
 
-# :command.user_lib
-# src/lib/colors.sh
 print_in_color() {
   local color="$1"
   shift
@@ -2006,7 +1746,6 @@ blue_underlined() { print_in_color "\e[4;34m" "$*"; }
 magenta_underlined() { print_in_color "\e[4;35m" "$*"; }
 cyan_underlined() { print_in_color "\e[4;36m" "$*"; }
 
-# src/lib/config.sh
 config_init() {
   RISK_CONFIG_FILE=${RISK_CONFIG_FILE-${RISK_DIR}/config.ini}
   [[ -f "$RISK_CONFIG_FILE" ]] || {
@@ -2194,8 +1933,6 @@ config_has_key() {
   [[ $(config_get "$1") ]]
 }
 
-# src/lib/crypt.sh
-
 # crypt.filename takes a filename as input, and uses the currently
 # set identity to produce an random name to use as a file/directory name.
 function crypt.filename ()
@@ -2213,8 +1950,6 @@ function crypt.filename ()
     # -u ${user}    User for which to produce the password/name
     print "$(qvm-run --pass-io "$VAULT_VM" "$encrypted_identity_command")"
 }
-
-# src/lib/device.sh
 
 # device.fail_not_attached_to exits the program if a given block device
 # (in QubesOS notation, ex. sys-usb:sda2) is not attached to a given VM.
@@ -2244,8 +1979,6 @@ function device.backup_mounted_on ()
         return 1
     fi
 }
-
-# src/lib/identity.sh
 
 # ========================================================================================
 # Identity setup / script values
@@ -2739,8 +2472,6 @@ function identity.delete_qubes ()
     done
 }
 
-# src/lib/log.sh
-
 
 # If the user wants to log command output to a file.
 risk_log_file=""
@@ -2968,8 +2699,6 @@ function _print ()
 	return 0
 }
 
-# src/lib/network.sh
-
 #
 
 # checkqube.owner verifies that the VM is owned by the current identity.
@@ -3040,8 +2769,6 @@ function network.fail_networked_qube ()
 
     [[ ${#connected_vms} -gt 0 ]] && _failure "VM $vm is NetVM for [ ${connected_vms[*]} ] VMs"
 }
-
-# src/lib/qube.sh
 
 #
 # ========================================================================================
@@ -3478,8 +3205,6 @@ function qubes.list_all_updateable ()
     echo "${templates[@]}"
 }
 
-# src/lib/run.sh
-
 COMMAND_STDOUT=''           # Stores a command's stdout output.
 COMMAND_STDERR=''           # Stores a command's stderr output.
 
@@ -3595,8 +3320,6 @@ function _catch ()
     fi
 }
 
-# src/lib/tor.sh
-
 # proxy.tor_create creates a new TOR Whonix gateway AppVM.
 # $1 - Name to use for new VM
 # $2 - Netvm for this gateway
@@ -3693,8 +3416,6 @@ function proxy.skip_tor_create ()
     return 1
 }
 
-# src/lib/utils.sh
-
 # Return 0 if is set, 1 otherwise
 option_is_set() {
 	local -i r	 # the return code (0 = set, 1 = unset)
@@ -3787,8 +3508,6 @@ print_cloned_qube ()
     _info "Cloned from:   ${fg_bold[white]} $clone ${reset_color}"
 }
 
-# src/lib/validations/validate_devices.sh
-
 validate_device () {
     local block="$1"
 
@@ -3802,27 +3521,21 @@ validate_device () {
     fi
 }
 
-# src/lib/validations/validate_dir_exists.sh
 validate_dir_exists() {
   [[ -d "$1" ]] || echo "must be an existing directory"
 }
 
-# src/lib/validations/validate_file_exists.sh
 validate_file_exists() {
   [[ -f "$1" ]] || echo "must be an existing file"
 }
 
-# src/lib/validations/validate_integer.sh
 validate_integer() {
   [[ "$1" =~ ^[0-9]+$ ]] || echo "must be an integer"
 }
 
-# src/lib/validations/validate_not_empty.sh
 validate_not_empty() {
   [[ -z "$1" ]] && echo "must not be empty"
 }
-
-# src/lib/validations/validate_vm.sh
 
 # does the vm exist?
 validate_vm_exists () {
@@ -3869,8 +3582,6 @@ validate_netvm ()
         echo "Qube ${netvm} is specified as netvm, but does not provide network."
     fi
 }
-
-# src/lib/vpn.sh
 
 # proxy.vpn_create creates a new VPN gateway from a TemplateVM
 function proxy.vpn_create ()
@@ -4042,7 +3753,6 @@ function proxy.fail_not_identity_proxy ()
     fi
 }
 
-# src/lib/web.sh
 # ========================================================================================
 # Client browser qubes
 
@@ -4574,11 +4284,7 @@ function web.no_split_backend ()
     echo -n
 }
 
-# :command.command_functions
-
-# :command.function
 risk_hush_attach_command() {
-  # src/hush_attach_command.sh
 
   local block vm
   local error_invalid_vm error_device
@@ -4637,9 +4343,7 @@ risk_hush_attach_command() {
 
 }
 
-# :command.function
 risk_hush_detach_command() {
-  # src/hush_detach_command.sh
 
   local block vm
 
@@ -4660,9 +4364,7 @@ risk_hush_detach_command() {
 
 }
 
-# :command.function
 risk_backup_attach_command() {
-  # src/backup_attach_command.sh
 
   local block vm
 
@@ -4703,9 +4405,7 @@ risk_backup_attach_command() {
 
 }
 
-# :command.function
 risk_backup_detach_command() {
-  # src/backup_detach_command.sh
   local block vm
 
   block="${args['device']:-$(config_get BACKUP_BLOCK)}"
@@ -4725,9 +4425,7 @@ risk_backup_detach_command() {
 
 }
 
-# :command.function
 risk_identity_create_command() {
-  # src/identity_create_command.sh
 
   name="${args['identity']}"
   name="$(identity.get_args_name "${name}")"
@@ -4769,9 +4467,7 @@ risk_identity_create_command() {
 
 }
 
-# :command.function
 risk_identity_equip_command() {
-  # src/identity_equip_command.sh
 
   local name="${args['identity']}"
 
@@ -4837,9 +4533,7 @@ risk_identity_equip_command() {
 
 }
 
-# :command.function
 risk_identity_delete_command() {
-  # src/identity_delete_command.sh
 
   local delete_vault_cmd sdcard_block
 
@@ -4877,9 +4571,7 @@ risk_identity_delete_command() {
 
 }
 
-# :command.function
 risk_identity_nake_command() {
-  # src/identity_nake_command.sh
 
   # First check the identity is valid
   identity.set "${args['identity']}"
@@ -4906,9 +4598,7 @@ risk_identity_nake_command() {
 
 }
 
-# :command.function
 risk_identity_open_command() {
-  # src/identity_open_command.sh
 
   device.fail_not_attached_to "$(config_get SDCARD_BLOCK)" "${VAULT_VM}"
 
@@ -4928,9 +4618,7 @@ risk_identity_open_command() {
 
 }
 
-# :command.function
 risk_identity_close_command() {
-  # src/identity_close_command.sh
 
   local active_identity
 
@@ -4956,9 +4644,7 @@ risk_identity_close_command() {
 
 }
 
-# :command.function
 risk_identity_start_command() {
-  # src/identity_start_command.sh
 
   local active_identity enabled_vms
 
@@ -4981,9 +4667,7 @@ risk_identity_start_command() {
 
 }
 
-# :command.function
 risk_identity_stop_command() {
-  # src/identity_stop_command.sh
 
   identity.set
 
@@ -4998,17 +4682,13 @@ risk_identity_stop_command() {
 
 }
 
-# :command.function
 risk_identity_current_command() {
-  # src/identity_current_command.sh
   # Simply print the active identity in the vault
   identity.active_or_specified
 
 }
 
-# :command.function
 risk_slam_command() {
-  # src/slam_command.sh
 
   # If no active identity to slam, nothing to do except umounting the hush device
   if ! _identity_active ; then
@@ -5048,9 +4728,7 @@ risk_slam_command() {
 
 }
 
-# :command.function
 risk_vpn_create_command() {
-  # src/vpn_create_command.sh
 
   identity.set
 
@@ -5106,9 +4784,7 @@ risk_vpn_create_command() {
 
 }
 
-# :command.function
 risk_vpn_add_command() {
-  # src/vpn_add_command.sh
 
   # Prepare some settings for this new VM
   local vm netvm
@@ -5189,9 +4865,7 @@ risk_vpn_add_command() {
 
 }
 
-# :command.function
 risk_vpn_setup_command() {
-  # src/vpn_setup_command.sh
 
   identity.set
 
@@ -5235,9 +4909,7 @@ risk_vpn_setup_command() {
 
 }
 
-# :command.function
 risk_vpn_start_command() {
-  # src/vpn_start_command.sh
 
   local name="${args['vm']}"
 
@@ -5255,9 +4927,7 @@ risk_vpn_start_command() {
 
 }
 
-# :command.function
 risk_vpn_stop_command() {
-  # src/vpn_stop_command.sh
 
   local name="${args['vm']}"
 
@@ -5268,27 +4938,21 @@ risk_vpn_stop_command() {
 
 }
 
-# :command.function
 risk_vpn_enable_command() {
-  # src/vpn_enable_command.sh
 
   # Same parameters for this command, just use it and its checks.
   risk_qube_enable_command
 
 }
 
-# :command.function
 risk_vpn_disable_command() {
-  # src/vpn_disable_command.sh
 
   # Same parameters for this command, just use it and its checks.
   risk_qube_disable_command
 
 }
 
-# :command.function
 risk_vpn_delete_command() {
-  # src/vpn_delete_command.sh
 
   local vm
   local tor_gw
@@ -5332,9 +4996,7 @@ risk_vpn_delete_command() {
 
 }
 
-# :command.function
 risk_qube_add_command() {
-  # src/qube_add_command.sh
 
   local vm owner               # Variables for the target VM
   local netvm netvm_owner      # Variables for any netvm found/used.
@@ -5406,9 +5068,7 @@ risk_qube_add_command() {
 
 }
 
-# :command.function
 risk_qube_delete_command() {
-  # src/qube_delete_command.sh
   local vm
 
   vm="${args['vm']}"
@@ -5445,9 +5105,7 @@ risk_qube_delete_command() {
 
 }
 
-# :command.function
 risk_qube_enable_command() {
-  # src/qube_enable_command.sh
   local vm
 
   vm="${args['vm']}"
@@ -5467,9 +5125,7 @@ risk_qube_enable_command() {
 
 }
 
-# :command.function
 risk_qube_disable_command() {
-  # src/qube_disable_command.sh
   local vm
 
   vm="${args['vm']}"
@@ -5483,9 +5139,7 @@ risk_qube_disable_command() {
 
 }
 
-# :command.function
 risk_qube_list_command() {
-  # src/qube_list_command.sh
 
   local clients proxies
 
@@ -5517,9 +5171,7 @@ risk_qube_list_command() {
 
 }
 
-# :command.function
 risk_qube_update_command() {
-  # src/qube_update_command.sh
   # Analyze the arguments and extract all VMs
   # corresponding to those names/groups.
   read -rA vms < <(qube.command_args "${args['vms']}" "${other_args[@]}")
@@ -5552,9 +5204,7 @@ risk_qube_update_command() {
 
 }
 
-# :command.function
 risk_qube_dist_upgrade_command() {
-  # src/qube_dist_upgrade_command.sh
 
   local vm version
   local template dist running
@@ -5597,9 +5247,7 @@ risk_qube_dist_upgrade_command() {
 
 }
 
-# :command.function
 risk_use_command() {
-  # src/use_command.sh
 
   local vm arguments
 
@@ -5634,9 +5282,7 @@ risk_use_command() {
 
 }
 
-# :command.function
 risk_url_open_command() {
-  # src/url_open_command.sh
 
   local url               # URL link to open
   local split_vm          # The split-browser backend qube.
@@ -5674,9 +5320,7 @@ risk_url_open_command() {
 
 }
 
-# :command.function
 risk_url_bookmark_command() {
-  # src/url_bookmark_command.sh
 
   local bookmark_entry    # Complete entry (date/url/title)
   local url               # The URL to bookmark
@@ -5720,9 +5364,7 @@ risk_url_bookmark_command() {
 
 }
 
-# :command.function
 risk_config_set_command() {
-  # src/config_set_command.sh
 
   local key value
 
@@ -5733,9 +5375,7 @@ risk_config_set_command() {
 
 }
 
-# :command.function
 risk_config_get_command() {
-  # src/config_get_command.sh
 
   local key
 
@@ -5745,9 +5385,7 @@ risk_config_get_command() {
 
 }
 
-# :command.function
 risk_config_unset_command() {
-  # src/config_unset_command.sh
 
   local key
 
@@ -5757,23 +5395,17 @@ risk_config_unset_command() {
 
 }
 
-# :command.function
 risk_config_list_command() {
-  # src/config_list_command.sh
   config_show
 
 }
 
-# :command.function
 risk_config_keys_command() {
-  # src/config_keys_command.sh
   config_keys
 
 }
 
-# :command.function
 risk_help_command() {
-  # src/help_command.sh
   command="${args[command]}"
   long_usage=yes
 
@@ -5795,9 +5427,8 @@ risk_help_command() {
 
 }
 
-# :command.parse_requirements
 parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --version)
@@ -5811,18 +5442,14 @@ parse_requirements() {
         exit
         ;;
 
-      # :flag.case
       --verbose | -v)
 
-        # :flag.case_no_arg
         args['--verbose']=1
         shift
         ;;
 
-      # :flag.case
       --log-file | -l)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--log-file']="$2"
@@ -5841,7 +5468,6 @@ parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action=${1:-}
 
   case $action in
@@ -5917,7 +5543,6 @@ parse_requirements() {
       shift $#
       ;;
 
-    # :command.command_fallback
     "")
       risk_usage >&2
       exit 1
@@ -5930,7 +5555,6 @@ parse_requirements() {
 
   esac
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -5941,8 +5565,7 @@ parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         printf "invalid argument: %s\n" "$key" >&2
         exit 1
 
@@ -5953,9 +5576,8 @@ parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_hush_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -5971,7 +5593,6 @@ risk_hush_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action=${1:-}
 
   case $action in
@@ -5991,7 +5612,6 @@ risk_hush_parse_requirements() {
       shift $#
       ;;
 
-    # :command.command_fallback
     "")
       risk_hush_usage >&2
       exit 1
@@ -6004,7 +5624,6 @@ risk_hush_parse_requirements() {
 
   esac
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -6015,8 +5634,7 @@ risk_hush_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         printf "invalid argument: %s\n" "$key" >&2
         exit 1
 
@@ -6027,9 +5645,8 @@ risk_hush_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_hush_attach_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -6045,17 +5662,14 @@ risk_hush_attach_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="hush attach"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
-      # :flag.case
+
       --mount | -m)
 
-        # :flag.case_no_arg
         args['--mount']=1
         shift
         ;;
@@ -6066,10 +5680,9 @@ risk_hush_attach_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['device']+x} ]]; then
-          # :argument.validations
+
           if [[ -n $(validate_device "$1") ]]; then
             printf "validation error in %s:\n%s\n" "DEVICE" "$(validate_device "$1")" >&2
             exit 1
@@ -6078,7 +5691,7 @@ risk_hush_attach_parse_requirements() {
           args['device']=$1
           shift
         elif [[ -z ${args['vault_vm']+x} ]]; then
-          # :argument.validations
+
           if [[ -n $(validate_valid_vaultvm "$1") ]]; then
             printf "validation error in %s:\n%s\n" "VAULT_VM" "$(validate_valid_vaultvm "$1")" >&2
             exit 1
@@ -6098,9 +5711,8 @@ risk_hush_attach_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_hush_detach_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -6116,10 +5728,8 @@ risk_hush_detach_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="hush detach"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -6130,14 +5740,13 @@ risk_hush_detach_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['device']+x} ]]; then
 
           args['device']=$1
           shift
         elif [[ -z ${args['vault_vm']+x} ]]; then
-          # :argument.validations
+
           if [[ -n $(validate_valid_vaultvm "$1") ]]; then
             printf "validation error in %s:\n%s\n" "VAULT_VM" "$(validate_valid_vaultvm "$1")" >&2
             exit 1
@@ -6157,9 +5766,8 @@ risk_hush_detach_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_backup_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -6175,7 +5783,6 @@ risk_backup_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action=${1:-}
 
   case $action in
@@ -6195,7 +5802,6 @@ risk_backup_parse_requirements() {
       shift $#
       ;;
 
-    # :command.command_fallback
     "")
       risk_backup_usage >&2
       exit 1
@@ -6208,7 +5814,6 @@ risk_backup_parse_requirements() {
 
   esac
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -6219,8 +5824,7 @@ risk_backup_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         printf "invalid argument: %s\n" "$key" >&2
         exit 1
 
@@ -6231,9 +5835,8 @@ risk_backup_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_backup_attach_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -6249,10 +5852,8 @@ risk_backup_attach_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="backup attach"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -6263,10 +5864,9 @@ risk_backup_attach_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['device']+x} ]]; then
-          # :argument.validations
+
           if [[ -n $(validate_device "$1") ]]; then
             printf "validation error in %s:\n%s\n" "DEVICE" "$(validate_device "$1")" >&2
             exit 1
@@ -6275,7 +5875,7 @@ risk_backup_attach_parse_requirements() {
           args['device']=$1
           shift
         elif [[ -z ${args['vault_vm']+x} ]]; then
-          # :argument.validations
+
           if [[ -n $(validate_valid_vaultvm "$1") ]]; then
             printf "validation error in %s:\n%s\n" "VAULT_VM" "$(validate_valid_vaultvm "$1")" >&2
             exit 1
@@ -6295,9 +5895,8 @@ risk_backup_attach_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_backup_detach_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -6313,10 +5912,8 @@ risk_backup_detach_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="backup detach"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -6327,14 +5924,13 @@ risk_backup_detach_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['device']+x} ]]; then
 
           args['device']=$1
           shift
         elif [[ -z ${args['vault_vm']+x} ]]; then
-          # :argument.validations
+
           if [[ -n $(validate_valid_vaultvm "$1") ]]; then
             printf "validation error in %s:\n%s\n" "VAULT_VM" "$(validate_valid_vaultvm "$1")" >&2
             exit 1
@@ -6354,9 +5950,8 @@ risk_backup_detach_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_identity_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -6372,7 +5967,6 @@ risk_identity_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action=${1:-}
 
   case $action in
@@ -6441,7 +6035,6 @@ risk_identity_parse_requirements() {
       shift $#
       ;;
 
-    # :command.command_fallback
     "")
       risk_identity_usage >&2
       exit 1
@@ -6454,7 +6047,6 @@ risk_identity_parse_requirements() {
 
   esac
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -6465,8 +6057,7 @@ risk_identity_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         printf "invalid argument: %s\n" "$key" >&2
         exit 1
 
@@ -6477,9 +6068,8 @@ risk_identity_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_identity_create_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -6495,49 +6085,38 @@ risk_identity_create_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="identity create"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
-      # :flag.case
+
       --backup | -b)
 
-        # :flag.case_no_arg
         args['--backup']=1
         shift
         ;;
 
-      # :flag.case
       --burner | -B)
 
-        # :flag.case_no_arg
         args['--burner']=1
         shift
         ;;
 
-      # :flag.case
       --vault-only)
 
-        # :flag.case_no_arg
         args['--vault-only']=1
         shift
         ;;
 
-      # :flag.case
       --mail | -m)
 
-        # :flag.case_no_arg
         args['--mail']=1
         shift
         ;;
 
-      # :flag.case
       --prefix | -P)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--prefix']="$2"
@@ -6549,10 +6128,8 @@ risk_identity_create_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --label | -L)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--label']="$2"
@@ -6564,28 +6141,24 @@ risk_identity_create_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --no-tor | -T)
-        # :flag.conflicts
+
         if [[ -n "${args['--clone-tor-from']:-}" ]]; then
           printf "conflicting options: %s cannot be used with %s\n" "$key" "--clone-tor-from" >&2
           exit 1
         fi
 
-        # :flag.case_no_arg
         args['--no-tor']=1
         shift
         ;;
 
-      # :flag.case
       --clone-tor-from)
-        # :flag.conflicts
+
         if [[ -n "${args['--no-gw']:-}" ]]; then
           printf "conflicting options: %s cannot be used with %s\n" "$key" "--no-gw" >&2
           exit 1
         fi
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--clone-tor-from']="$2"
@@ -6597,10 +6170,8 @@ risk_identity_create_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --clone-web-from)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--clone-web-from']="$2"
@@ -6612,10 +6183,8 @@ risk_identity_create_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --clone-split-from)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--clone-split-from']="$2"
@@ -6633,8 +6202,7 @@ risk_identity_create_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['identity']+x} ]]; then
 
           args['identity']=$1
@@ -6659,9 +6227,8 @@ risk_identity_create_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_identity_equip_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -6677,17 +6244,14 @@ risk_identity_equip_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="identity equip"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
-      # :flag.case
+
       --prefix | -P)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--prefix']="$2"
@@ -6699,10 +6263,8 @@ risk_identity_equip_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --label | -L)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--label']="$2"
@@ -6714,28 +6276,24 @@ risk_identity_equip_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --no-tor | -T)
-        # :flag.conflicts
+
         if [[ -n "${args['--clone-tor-from']:-}" ]]; then
           printf "conflicting options: %s cannot be used with %s\n" "$key" "--clone-tor-from" >&2
           exit 1
         fi
 
-        # :flag.case_no_arg
         args['--no-tor']=1
         shift
         ;;
 
-      # :flag.case
       --clone-tor-from)
-        # :flag.conflicts
+
         if [[ -n "${args['--no-gw']:-}" ]]; then
           printf "conflicting options: %s cannot be used with %s\n" "$key" "--no-gw" >&2
           exit 1
         fi
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--clone-tor-from']="$2"
@@ -6747,10 +6305,8 @@ risk_identity_equip_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --clone-web-from)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--clone-web-from']="$2"
@@ -6762,10 +6318,8 @@ risk_identity_equip_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --clone-split-from)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--clone-split-from']="$2"
@@ -6783,8 +6337,7 @@ risk_identity_equip_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['identity']+x} ]]; then
 
           args['identity']=$1
@@ -6799,7 +6352,6 @@ risk_identity_equip_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['identity']+x} ]]; then
     printf "missing required argument: IDENTITY\nusage: risk identity equip IDENTITY [OPTIONS]\n" >&2
     exit 1
@@ -6807,9 +6359,8 @@ risk_identity_equip_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_identity_delete_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -6825,17 +6376,14 @@ risk_identity_delete_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="identity delete"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
-      # :flag.case
+
       --backup | -b)
 
-        # :flag.case_no_arg
         args['--backup']=1
         shift
         ;;
@@ -6846,8 +6394,7 @@ risk_identity_delete_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['identity']+x} ]]; then
 
           args['identity']=$1
@@ -6862,7 +6409,6 @@ risk_identity_delete_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['identity']+x} ]]; then
     printf "missing required argument: IDENTITY\nusage: risk identity delete IDENTITY [OPTIONS]\n" >&2
     exit 1
@@ -6870,9 +6416,8 @@ risk_identity_delete_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_identity_nake_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -6888,10 +6433,8 @@ risk_identity_nake_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="identity nake"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -6902,8 +6445,7 @@ risk_identity_nake_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['identity']+x} ]]; then
 
           args['identity']=$1
@@ -6918,7 +6460,6 @@ risk_identity_nake_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['identity']+x} ]]; then
     printf "missing required argument: IDENTITY\nusage: risk identity nake IDENTITY\n" >&2
     exit 1
@@ -6926,9 +6467,8 @@ risk_identity_nake_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_identity_open_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -6944,10 +6484,8 @@ risk_identity_open_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="identity open"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -6958,8 +6496,7 @@ risk_identity_open_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['identity']+x} ]]; then
 
           args['identity']=$1
@@ -6974,7 +6511,6 @@ risk_identity_open_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['identity']+x} ]]; then
     printf "missing required argument: IDENTITY\nusage: risk identity open IDENTITY\n" >&2
     exit 1
@@ -6982,9 +6518,8 @@ risk_identity_open_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_identity_close_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -7000,10 +6535,8 @@ risk_identity_close_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="identity close"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -7014,8 +6547,7 @@ risk_identity_close_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         printf "invalid argument: %s\n" "$key" >&2
         exit 1
 
@@ -7026,9 +6558,8 @@ risk_identity_close_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_identity_start_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -7044,10 +6575,8 @@ risk_identity_start_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="identity start"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -7058,8 +6587,7 @@ risk_identity_start_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['identity']+x} ]]; then
 
           args['identity']=$1
@@ -7074,7 +6602,6 @@ risk_identity_start_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['identity']+x} ]]; then
     printf "missing required argument: IDENTITY\nusage: risk identity start IDENTITY\n" >&2
     exit 1
@@ -7082,9 +6609,8 @@ risk_identity_start_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_identity_stop_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -7100,10 +6626,8 @@ risk_identity_stop_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="identity stop"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -7114,8 +6638,7 @@ risk_identity_stop_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         printf "invalid argument: %s\n" "$key" >&2
         exit 1
 
@@ -7126,9 +6649,8 @@ risk_identity_stop_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_identity_current_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -7144,10 +6666,8 @@ risk_identity_current_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="identity current"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -7158,8 +6678,7 @@ risk_identity_current_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         printf "invalid argument: %s\n" "$key" >&2
         exit 1
 
@@ -7170,9 +6689,8 @@ risk_identity_current_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_slam_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -7188,10 +6706,8 @@ risk_slam_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="slam"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -7202,8 +6718,7 @@ risk_slam_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         printf "invalid argument: %s\n" "$key" >&2
         exit 1
 
@@ -7214,9 +6729,8 @@ risk_slam_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_vpn_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -7232,7 +6746,6 @@ risk_vpn_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action=${1:-}
 
   case $action in
@@ -7294,7 +6807,6 @@ risk_vpn_parse_requirements() {
       shift $#
       ;;
 
-    # :command.command_fallback
     "")
       risk_vpn_usage >&2
       exit 1
@@ -7307,7 +6819,6 @@ risk_vpn_parse_requirements() {
 
   esac
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -7318,8 +6829,7 @@ risk_vpn_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         printf "invalid argument: %s\n" "$key" >&2
         exit 1
 
@@ -7330,9 +6840,8 @@ risk_vpn_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_vpn_create_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -7348,17 +6857,14 @@ risk_vpn_create_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="vpn create"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
-      # :flag.case
+
       --label | -L)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--label']="$2"
@@ -7370,18 +6876,14 @@ risk_vpn_create_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --enable | -E)
 
-        # :flag.case_no_arg
         args['--enable']=1
         shift
         ;;
 
-      # :flag.case
       --template | -T)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--template']="$2"
@@ -7393,18 +6895,14 @@ risk_vpn_create_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --clone | -c)
 
-        # :flag.case_no_arg
         args['--clone']=1
         shift
         ;;
 
-      # :flag.case
       --from | -f)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--from']="$2"
@@ -7416,15 +6914,13 @@ risk_vpn_create_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --config-in)
-        # :flag.conflicts
+
         if [[ -n "${args['--choose']:-}" ]]; then
           printf "conflicting options: %s cannot be used with %s\n" "$key" "--choose" >&2
           exit 1
         fi
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--config-in']="$2"
@@ -7436,33 +6932,27 @@ risk_vpn_create_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --choose)
-        # :flag.conflicts
+
         if [[ -n "${args['--config-in']:-}" ]]; then
           printf "conflicting options: %s cannot be used with %s\n" "$key" "--config-in" >&2
           exit 1
         fi
 
-        # :flag.case_no_arg
         args['--choose']=1
         shift
         ;;
 
-      # :flag.case
       --set-default)
 
-        # :flag.case_no_arg
         args['--set-default']=1
         shift
         ;;
 
-      # :flag.case
       --netvm | -n)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
-          # :flag.validations
+
           if [[ -n $(validate_netvm "$2") ]]; then
             printf "validation error in %s:\n%s\n" "--netvm, -n VM" "$(validate_netvm "$2")" >&2
             exit 1
@@ -7483,8 +6973,7 @@ risk_vpn_create_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['vm']+x} ]]; then
 
           args['vm']=$1
@@ -7501,9 +6990,8 @@ risk_vpn_create_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_vpn_add_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -7519,35 +7007,28 @@ risk_vpn_add_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="vpn add"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
-      # :flag.case
+
       --enable | -E)
 
-        # :flag.case_no_arg
         args['--enable']=1
         shift
         ;;
 
-      # :flag.case
       --set-default)
 
-        # :flag.case_no_arg
         args['--set-default']=1
         shift
         ;;
 
-      # :flag.case
       --netvm | -n)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
-          # :flag.validations
+
           if [[ -n $(validate_netvm "$2") ]]; then
             printf "validation error in %s:\n%s\n" "--netvm, -n VM" "$(validate_netvm "$2")" >&2
             exit 1
@@ -7562,15 +7043,13 @@ risk_vpn_add_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --config-in)
-        # :flag.conflicts
+
         if [[ -n "${args['--choose']:-}" ]]; then
           printf "conflicting options: %s cannot be used with %s\n" "$key" "--choose" >&2
           exit 1
         fi
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--config-in']="$2"
@@ -7582,15 +7061,13 @@ risk_vpn_add_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --choose)
-        # :flag.conflicts
+
         if [[ -n "${args['--config-in']:-}" ]]; then
           printf "conflicting options: %s cannot be used with %s\n" "$key" "--config-in" >&2
           exit 1
         fi
 
-        # :flag.case_no_arg
         args['--choose']=1
         shift
         ;;
@@ -7601,10 +7078,9 @@ risk_vpn_add_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['vm']+x} ]]; then
-          # :argument.validations
+
           if [[ -n $(validate_vm_exists "$1") ]]; then
             printf "validation error in %s:\n%s\n" "VM" "$(validate_vm_exists "$1")" >&2
             exit 1
@@ -7622,7 +7098,6 @@ risk_vpn_add_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['vm']+x} ]]; then
     printf "missing required argument: VM\nusage: risk vpn add VM [OPTIONS]\n" >&2
     exit 1
@@ -7630,9 +7105,8 @@ risk_vpn_add_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_vpn_setup_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -7648,27 +7122,22 @@ risk_vpn_setup_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="vpn setup"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
-      # :flag.case
+
       --set-default)
 
-        # :flag.case_no_arg
         args['--set-default']=1
         shift
         ;;
 
-      # :flag.case
       --netvm | -n)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
-          # :flag.validations
+
           if [[ -n $(validate_netvm "$2") ]]; then
             printf "validation error in %s:\n%s\n" "--netvm, -n VM" "$(validate_netvm "$2")" >&2
             exit 1
@@ -7683,15 +7152,13 @@ risk_vpn_setup_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --config-in)
-        # :flag.conflicts
+
         if [[ -n "${args['--choose']:-}" ]]; then
           printf "conflicting options: %s cannot be used with %s\n" "$key" "--choose" >&2
           exit 1
         fi
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--config-in']="$2"
@@ -7703,15 +7170,13 @@ risk_vpn_setup_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --choose)
-        # :flag.conflicts
+
         if [[ -n "${args['--config-in']:-}" ]]; then
           printf "conflicting options: %s cannot be used with %s\n" "$key" "--config-in" >&2
           exit 1
         fi
 
-        # :flag.case_no_arg
         args['--choose']=1
         shift
         ;;
@@ -7722,10 +7187,9 @@ risk_vpn_setup_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['vm']+x} ]]; then
-          # :argument.validations
+
           if [[ -n $(validate_vm_exists "$1") ]]; then
             printf "validation error in %s:\n%s\n" "VM" "$(validate_vm_exists "$1")" >&2
             exit 1
@@ -7743,7 +7207,6 @@ risk_vpn_setup_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['vm']+x} ]]; then
     printf "missing required argument: VM\nusage: risk vpn setup VM [OPTIONS]\n" >&2
     exit 1
@@ -7751,9 +7214,8 @@ risk_vpn_setup_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_vpn_start_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -7769,10 +7231,8 @@ risk_vpn_start_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="vpn start"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -7783,10 +7243,9 @@ risk_vpn_start_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['vm']+x} ]]; then
-          # :argument.validations
+
           if [[ -n $(validate_vm_exists "$1") ]]; then
             printf "validation error in %s:\n%s\n" "VM" "$(validate_vm_exists "$1")" >&2
             exit 1
@@ -7804,7 +7263,6 @@ risk_vpn_start_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['vm']+x} ]]; then
     printf "missing required argument: VM\nusage: risk vpn start VM\n" >&2
     exit 1
@@ -7812,9 +7270,8 @@ risk_vpn_start_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_vpn_stop_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -7830,10 +7287,8 @@ risk_vpn_stop_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="vpn stop"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -7844,10 +7299,9 @@ risk_vpn_stop_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['vm']+x} ]]; then
-          # :argument.validations
+
           if [[ -n $(validate_vm_exists "$1") ]]; then
             printf "validation error in %s:\n%s\n" "VM" "$(validate_vm_exists "$1")" >&2
             exit 1
@@ -7865,7 +7319,6 @@ risk_vpn_stop_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['vm']+x} ]]; then
     printf "missing required argument: VM\nusage: risk vpn stop VM\n" >&2
     exit 1
@@ -7873,9 +7326,8 @@ risk_vpn_stop_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_vpn_enable_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -7891,10 +7343,8 @@ risk_vpn_enable_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="vpn enable"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -7905,10 +7355,9 @@ risk_vpn_enable_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['vm']+x} ]]; then
-          # :argument.validations
+
           if [[ -n $(validate_vm_exists "$1") ]]; then
             printf "validation error in %s:\n%s\n" "VM" "$(validate_vm_exists "$1")" >&2
             exit 1
@@ -7926,7 +7375,6 @@ risk_vpn_enable_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['vm']+x} ]]; then
     printf "missing required argument: VM\nusage: risk vpn enable VM\n" >&2
     exit 1
@@ -7934,9 +7382,8 @@ risk_vpn_enable_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_vpn_disable_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -7952,10 +7399,8 @@ risk_vpn_disable_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="vpn disable"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -7966,10 +7411,9 @@ risk_vpn_disable_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['vm']+x} ]]; then
-          # :argument.validations
+
           if [[ -n $(validate_vm_exists "$1") ]]; then
             printf "validation error in %s:\n%s\n" "VM" "$(validate_vm_exists "$1")" >&2
             exit 1
@@ -7987,7 +7431,6 @@ risk_vpn_disable_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['vm']+x} ]]; then
     printf "missing required argument: VM\nusage: risk vpn disable VM\n" >&2
     exit 1
@@ -7995,9 +7438,8 @@ risk_vpn_disable_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_vpn_delete_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -8013,10 +7455,8 @@ risk_vpn_delete_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="vpn delete"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -8027,10 +7467,9 @@ risk_vpn_delete_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['vm']+x} ]]; then
-          # :argument.validations
+
           if [[ -n $(validate_vm_exists "$1") ]]; then
             printf "validation error in %s:\n%s\n" "VM" "$(validate_vm_exists "$1")" >&2
             exit 1
@@ -8048,7 +7487,6 @@ risk_vpn_delete_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['vm']+x} ]]; then
     printf "missing required argument: VM\nusage: risk vpn delete VM\n" >&2
     exit 1
@@ -8056,9 +7494,8 @@ risk_vpn_delete_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_qube_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -8074,7 +7511,6 @@ risk_qube_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action=${1:-}
 
   case $action in
@@ -8129,7 +7565,6 @@ risk_qube_parse_requirements() {
       shift $#
       ;;
 
-    # :command.command_fallback
     "")
       risk_qube_usage >&2
       exit 1
@@ -8142,7 +7577,6 @@ risk_qube_parse_requirements() {
 
   esac
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -8153,8 +7587,7 @@ risk_qube_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         printf "invalid argument: %s\n" "$key" >&2
         exit 1
 
@@ -8165,9 +7598,8 @@ risk_qube_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_qube_add_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -8183,17 +7615,14 @@ risk_qube_add_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="qube add"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
-      # :flag.case
+
       --netvm | -n)
 
-        # :flag.case_arg
         if [[ -n ${2+x} ]]; then
 
           args['--netvm']="$2"
@@ -8205,18 +7634,14 @@ risk_qube_add_parse_requirements() {
         fi
         ;;
 
-      # :flag.case
       --set-default)
 
-        # :flag.case_no_arg
         args['--set-default']=1
         shift
         ;;
 
-      # :flag.case
       --enable | -E)
 
-        # :flag.case_no_arg
         args['--enable']=1
         shift
         ;;
@@ -8227,8 +7652,7 @@ risk_qube_add_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['vm']+x} ]]; then
 
           args['vm']=$1
@@ -8243,7 +7667,6 @@ risk_qube_add_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['vm']+x} ]]; then
     printf "missing required argument: VM\nusage: risk qube add VM [OPTIONS]\n" >&2
     exit 1
@@ -8251,9 +7674,8 @@ risk_qube_add_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_qube_delete_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -8269,10 +7691,8 @@ risk_qube_delete_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="qube delete"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -8283,8 +7703,7 @@ risk_qube_delete_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['vm']+x} ]]; then
 
           args['vm']=$1
@@ -8299,7 +7718,6 @@ risk_qube_delete_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['vm']+x} ]]; then
     printf "missing required argument: VM\nusage: risk qube delete VM\n" >&2
     exit 1
@@ -8307,9 +7725,8 @@ risk_qube_delete_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_qube_enable_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -8325,10 +7742,8 @@ risk_qube_enable_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="qube enable"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -8339,8 +7754,7 @@ risk_qube_enable_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['vm']+x} ]]; then
 
           args['vm']=$1
@@ -8355,7 +7769,6 @@ risk_qube_enable_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['vm']+x} ]]; then
     printf "missing required argument: VM\nusage: risk qube enable VM\n" >&2
     exit 1
@@ -8363,9 +7776,8 @@ risk_qube_enable_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_qube_disable_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -8381,10 +7793,8 @@ risk_qube_disable_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="qube disable"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -8395,8 +7805,7 @@ risk_qube_disable_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['vm']+x} ]]; then
 
           args['vm']=$1
@@ -8411,7 +7820,6 @@ risk_qube_disable_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['vm']+x} ]]; then
     printf "missing required argument: VM\nusage: risk qube disable VM\n" >&2
     exit 1
@@ -8419,9 +7827,8 @@ risk_qube_disable_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_qube_list_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -8437,10 +7844,8 @@ risk_qube_list_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="qube list"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -8451,8 +7856,7 @@ risk_qube_list_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         printf "invalid argument: %s\n" "$key" >&2
         exit 1
 
@@ -8463,9 +7867,8 @@ risk_qube_list_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_qube_update_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -8481,17 +7884,14 @@ risk_qube_update_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="qube update"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
-      # :flag.case
+
       --identity | -I)
 
-        # :flag.case_no_arg
         args['--identity']=1
         shift
         ;;
@@ -8508,8 +7908,7 @@ risk_qube_update_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_catch_all
+
         if [[ -z ${args['vms']+x} ]]; then
 
           args['vms']=$1
@@ -8526,9 +7925,8 @@ risk_qube_update_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_qube_dist_upgrade_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -8544,10 +7942,8 @@ risk_qube_dist_upgrade_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="qube dist-upgrade"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -8558,8 +7954,7 @@ risk_qube_dist_upgrade_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['vm']+x} ]]; then
 
           args['vm']=$1
@@ -8578,7 +7973,6 @@ risk_qube_dist_upgrade_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['vm']+x} ]]; then
     printf "missing required argument: VM\nusage: risk qube dist-upgrade VM VERSION\n" >&2
     exit 1
@@ -8590,9 +7984,8 @@ risk_qube_dist_upgrade_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_use_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -8608,10 +8001,8 @@ risk_use_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="use"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -8628,8 +8019,7 @@ risk_use_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_catch_all
+
         if [[ -z ${args['vm']+x} ]]; then
 
           args['vm']=$1
@@ -8644,7 +8034,6 @@ risk_use_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['vm']+x} ]]; then
     printf "missing required argument: VM\nusage: risk use VM [...]\n" >&2
     exit 1
@@ -8652,9 +8041,8 @@ risk_use_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_url_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -8670,7 +8058,6 @@ risk_url_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action=${1:-}
 
   case $action in
@@ -8690,7 +8077,6 @@ risk_url_parse_requirements() {
       shift $#
       ;;
 
-    # :command.command_fallback
     "")
       risk_url_usage >&2
       exit 1
@@ -8703,7 +8089,6 @@ risk_url_parse_requirements() {
 
   esac
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -8714,8 +8099,7 @@ risk_url_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         printf "invalid argument: %s\n" "$key" >&2
         exit 1
 
@@ -8726,9 +8110,8 @@ risk_url_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_url_open_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -8744,10 +8127,8 @@ risk_url_open_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="url open"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -8758,8 +8139,7 @@ risk_url_open_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['url']+x} ]]; then
 
           args['url']=$1
@@ -8776,9 +8156,8 @@ risk_url_open_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_url_bookmark_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -8794,10 +8173,8 @@ risk_url_bookmark_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="url bookmark"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -8808,8 +8185,7 @@ risk_url_bookmark_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['url']+x} ]]; then
 
           args['url']=$1
@@ -8830,9 +8206,8 @@ risk_url_bookmark_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_config_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -8848,7 +8223,6 @@ risk_config_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action=${1:-}
 
   case $action in
@@ -8889,7 +8263,6 @@ risk_config_parse_requirements() {
       shift $#
       ;;
 
-    # :command.command_fallback
     "")
       risk_config_usage >&2
       exit 1
@@ -8902,7 +8275,6 @@ risk_config_parse_requirements() {
 
   esac
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -8913,8 +8285,7 @@ risk_config_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         printf "invalid argument: %s\n" "$key" >&2
         exit 1
 
@@ -8925,9 +8296,8 @@ risk_config_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_config_set_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -8943,10 +8313,8 @@ risk_config_set_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="config set"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -8957,8 +8325,7 @@ risk_config_set_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['key']+x} ]]; then
 
           args['key']=$1
@@ -8977,7 +8344,6 @@ risk_config_set_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['key']+x} ]]; then
     printf "missing required argument: KEY\nusage: risk config set KEY VALUE\n" >&2
     exit 1
@@ -8989,9 +8355,8 @@ risk_config_set_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_config_get_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -9007,10 +8372,8 @@ risk_config_get_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="config get"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -9021,8 +8384,7 @@ risk_config_get_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['key']+x} ]]; then
 
           args['key']=$1
@@ -9037,7 +8399,6 @@ risk_config_get_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['key']+x} ]]; then
     printf "missing required argument: KEY\nusage: risk config get KEY\n" >&2
     exit 1
@@ -9045,9 +8406,8 @@ risk_config_get_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_config_unset_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -9063,10 +8423,8 @@ risk_config_unset_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="config unset"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -9077,8 +8435,7 @@ risk_config_unset_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['key']+x} ]]; then
 
           args['key']=$1
@@ -9093,7 +8450,6 @@ risk_config_unset_parse_requirements() {
     esac
   done
 
-  # :command.required_args_filter
   if [[ -z ${args['key']+x} ]]; then
     printf "missing required argument: KEY\nusage: risk config unset KEY\n" >&2
     exit 1
@@ -9101,9 +8457,8 @@ risk_config_unset_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_config_list_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -9119,10 +8474,8 @@ risk_config_list_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="config list"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -9133,8 +8486,7 @@ risk_config_list_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         printf "invalid argument: %s\n" "$key" >&2
         exit 1
 
@@ -9145,9 +8497,8 @@ risk_config_list_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_config_keys_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -9163,10 +8514,8 @@ risk_config_keys_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="config keys"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -9177,8 +8526,7 @@ risk_config_keys_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         printf "invalid argument: %s\n" "$key" >&2
         exit 1
 
@@ -9189,9 +8537,8 @@ risk_config_keys_parse_requirements() {
 
 }
 
-# :command.parse_requirements
 risk_help_parse_requirements() {
-  # :command.fixed_flags_filter
+
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
@@ -9207,10 +8554,8 @@ risk_help_parse_requirements() {
     esac
   done
 
-  # :command.command_filter
   action="help"
 
-  # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
@@ -9221,8 +8566,7 @@ risk_help_parse_requirements() {
         ;;
 
       *)
-        # :command.parse_requirements_case
-        # :command.parse_requirements_case_simple
+
         if [[ -z ${args['command']+x} ]]; then
 
           args['command']=$1
@@ -9239,13 +8583,10 @@ risk_help_parse_requirements() {
 
 }
 
-# :command.initialize
 initialize() {
-  version="0.1.0"
+  version="8efd5b7a13c85983587ff4e9bb4e34e6cdfa8411"
   long_usage=''
   
-
-  # src/initialize.sh
 
   # Connected terminal
   typeset -H _TTY
@@ -9294,423 +8635,62 @@ initialize() {
 
 }
 
-# :command.run
 run() {
   declare -A args=()
+  declare -A deps=()
   declare -a other_args=()
   declare -a input=()
   normalize_input "$@"
   parse_requirements "${input[@]}"
-  _init_log_file
+  initialize
 
   case "$action" in
-    "hush")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_hush_usage
-      else
-        risk_hush_command
-      fi
-      ;;
-
-    "hush attach")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_hush_attach_usage
-      else
-        risk_hush_attach_command
-      fi
-      ;;
-
-    "hush detach")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_hush_detach_usage
-      else
-        risk_hush_detach_command
-      fi
-      ;;
-
-    "backup")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_backup_usage
-      else
-        risk_backup_command
-      fi
-      ;;
-
-    "backup attach")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_backup_attach_usage
-      else
-        risk_backup_attach_command
-      fi
-      ;;
-
-    "backup detach")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_backup_detach_usage
-      else
-        risk_backup_detach_command
-      fi
-      ;;
-
-    "identity")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_identity_usage
-      else
-        risk_identity_command
-      fi
-      ;;
-
-    "identity create")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_identity_create_usage
-      else
-        risk_identity_create_command
-      fi
-      ;;
-
-    "identity equip")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_identity_equip_usage
-      else
-        risk_identity_equip_command
-      fi
-      ;;
-
-    "identity delete")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_identity_delete_usage
-      else
-        risk_identity_delete_command
-      fi
-      ;;
-
-    "identity nake")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_identity_nake_usage
-      else
-        risk_identity_nake_command
-      fi
-      ;;
-
-    "identity open")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_identity_open_usage
-      else
-        risk_identity_open_command
-      fi
-      ;;
-
-    "identity close")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_identity_close_usage
-      else
-        risk_identity_close_command
-      fi
-      ;;
-
-    "identity start")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_identity_start_usage
-      else
-        risk_identity_start_command
-      fi
-      ;;
-
-    "identity stop")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_identity_stop_usage
-      else
-        risk_identity_stop_command
-      fi
-      ;;
-
-    "identity current")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_identity_current_usage
-      else
-        risk_identity_current_command
-      fi
-      ;;
-
-    "slam")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_slam_usage
-      else
-        risk_slam_command
-      fi
-      ;;
-
-    "vpn")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_vpn_usage
-      else
-        risk_vpn_command
-      fi
-      ;;
-
-    "vpn create")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_vpn_create_usage
-      else
-        risk_vpn_create_command
-      fi
-      ;;
-
-    "vpn add")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_vpn_add_usage
-      else
-        risk_vpn_add_command
-      fi
-      ;;
-
-    "vpn setup")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_vpn_setup_usage
-      else
-        risk_vpn_setup_command
-      fi
-      ;;
-
-    "vpn start")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_vpn_start_usage
-      else
-        risk_vpn_start_command
-      fi
-      ;;
-
-    "vpn stop")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_vpn_stop_usage
-      else
-        risk_vpn_stop_command
-      fi
-      ;;
-
-    "vpn enable")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_vpn_enable_usage
-      else
-        risk_vpn_enable_command
-      fi
-      ;;
-
-    "vpn disable")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_vpn_disable_usage
-      else
-        risk_vpn_disable_command
-      fi
-      ;;
-
-    "vpn delete")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_vpn_delete_usage
-      else
-        risk_vpn_delete_command
-      fi
-      ;;
-
-    "qube")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_qube_usage
-      else
-        risk_qube_command
-      fi
-      ;;
-
-    "qube add")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_qube_add_usage
-      else
-        risk_qube_add_command
-      fi
-      ;;
-
-    "qube delete")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_qube_delete_usage
-      else
-        risk_qube_delete_command
-      fi
-      ;;
-
-    "qube enable")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_qube_enable_usage
-      else
-        risk_qube_enable_command
-      fi
-      ;;
-
-    "qube disable")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_qube_disable_usage
-      else
-        risk_qube_disable_command
-      fi
-      ;;
-
-    "qube list")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_qube_list_usage
-      else
-        risk_qube_list_command
-      fi
-      ;;
-
-    "qube update")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_qube_update_usage
-      else
-        risk_qube_update_command
-      fi
-      ;;
-
-    "qube dist-upgrade")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_qube_dist_upgrade_usage
-      else
-        risk_qube_dist_upgrade_command
-      fi
-      ;;
-
-    "use")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_use_usage
-      else
-        risk_use_command
-      fi
-      ;;
-
-    "url")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_url_usage
-      else
-        risk_url_command
-      fi
-      ;;
-
-    "url open")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_url_open_usage
-      else
-        risk_url_open_command
-      fi
-      ;;
-
-    "url bookmark")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_url_bookmark_usage
-      else
-        risk_url_bookmark_command
-      fi
-      ;;
-
-    "config")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_config_usage
-      else
-        risk_config_command
-      fi
-      ;;
-
-    "config set")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_config_set_usage
-      else
-        risk_config_set_command
-      fi
-      ;;
-
-    "config get")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_config_get_usage
-      else
-        risk_config_get_command
-      fi
-      ;;
-
-    "config unset")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_config_unset_usage
-      else
-        risk_config_unset_command
-      fi
-      ;;
-
-    "config list")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_config_list_usage
-      else
-        risk_config_list_command
-      fi
-      ;;
-
-    "config keys")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_config_keys_usage
-      else
-        risk_config_keys_command
-      fi
-      ;;
-
-    "help")
-      if [[ ${args['--help']:-} ]]; then
-        long_usage=yes
-        risk_help_usage
-      else
-        risk_help_command
-      fi
-      ;;
-
+    "hush") risk_hush_command ;;
+    "hush attach") risk_hush_attach_command ;;
+    "hush detach") risk_hush_detach_command ;;
+    "backup") risk_backup_command ;;
+    "backup attach") risk_backup_attach_command ;;
+    "backup detach") risk_backup_detach_command ;;
+    "identity") risk_identity_command ;;
+    "identity create") risk_identity_create_command ;;
+    "identity equip") risk_identity_equip_command ;;
+    "identity delete") risk_identity_delete_command ;;
+    "identity nake") risk_identity_nake_command ;;
+    "identity open") risk_identity_open_command ;;
+    "identity close") risk_identity_close_command ;;
+    "identity start") risk_identity_start_command ;;
+    "identity stop") risk_identity_stop_command ;;
+    "identity current") risk_identity_current_command ;;
+    "slam") risk_slam_command ;;
+    "vpn") risk_vpn_command ;;
+    "vpn create") risk_vpn_create_command ;;
+    "vpn add") risk_vpn_add_command ;;
+    "vpn setup") risk_vpn_setup_command ;;
+    "vpn start") risk_vpn_start_command ;;
+    "vpn stop") risk_vpn_stop_command ;;
+    "vpn enable") risk_vpn_enable_command ;;
+    "vpn disable") risk_vpn_disable_command ;;
+    "vpn delete") risk_vpn_delete_command ;;
+    "qube") risk_qube_command ;;
+    "qube add") risk_qube_add_command ;;
+    "qube delete") risk_qube_delete_command ;;
+    "qube enable") risk_qube_enable_command ;;
+    "qube disable") risk_qube_disable_command ;;
+    "qube list") risk_qube_list_command ;;
+    "qube update") risk_qube_update_command ;;
+    "qube dist-upgrade") risk_qube_dist_upgrade_command ;;
+    "use") risk_use_command ;;
+    "url") risk_url_command ;;
+    "url open") risk_url_open_command ;;
+    "url bookmark") risk_url_bookmark_command ;;
+    "config") risk_config_command ;;
+    "config set") risk_config_set_command ;;
+    "config get") risk_config_get_command ;;
+    "config unset") risk_config_unset_command ;;
+    "config list") risk_config_list_command ;;
+    "config keys") risk_config_keys_command ;;
+    "help") risk_help_command ;;
   esac
 }
 
-initialize
 run "$@"

@@ -1,6 +1,6 @@
 name: risk 
 help: RISKS Dom0 management application
-version: 0.1.0
+version: 8efd5b7a13c85983587ff4e9bb4e34e6cdfa8411
 
 flags:
   - long: --verbose

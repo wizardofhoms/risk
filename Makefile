@@ -37,15 +37,15 @@ release:
 
 	# Move the initialize call from its current position to within 
 	# the run function, so that flags are accessible immediately.
-	sed -i 'N;$$!P;D' risks
-	sed -i '/parse_requirements "$${/a \ \ initialize' risks
+	sed -i 'N;$$!P;D' risk
+	sed -i '/parse_requirements "$${/a \ \ initialize' risk
 
 	# And reset the settings from prod to dev
 	sed -i 's#^.*\benv\b.*$$#env: development#' settings.yml
 
 	# Signatures
-	qubes-gpg-client-wrapper --detach-sign risq > risq.gpg
-	sha256sum risq > risq.sha
+	qubes-gpg-client-wrapper --detach-sign risk > risk.gpg
+	sha256sum risk > risk.sha
 
 publish:
 	@bash scripts/release

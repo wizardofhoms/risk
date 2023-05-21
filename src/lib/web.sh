@@ -335,11 +335,12 @@ function web.backend.unset_client ()
 function web.backend.open_url ()
 {
     local url="$1"
-    local qube
+    local qube split_prefs
     qube="$(config_get SPLIT_BROWSER)"
+    split_prefs='lockPref("browser.security_level.security_slider", 2);'
 
     _info "Opening ${url} in ${qube}"
-    _run qvm-run "${qube}" "split-browser ${url}" &
+    _run qvm-run "${qube}" "split-browser" "--pref=${split_prefs}" "${url}" &
 }
 
 # web.backend.save_bookmarks asks the vault qube to make use of an RPC 

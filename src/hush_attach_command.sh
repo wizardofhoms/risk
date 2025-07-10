@@ -3,8 +3,9 @@ local block vm
 local error_invalid_vm error_device
 local must_mount
 
-block="${args['device']-$(config_get SDCARD_BLOCK)}"
 vm="${args['vault_vm']-$(config_get VAULT_VM)}"
+block="${args['device']-$(config_get SDCARD_BLOCK)}"
+device="$(device.get_block "${block}")"
 
 # If the validations were not performed because
 # we use a default environment variable for the
@@ -29,11 +30,11 @@ if [ "$?" != "0" ]; then
 fi
 
 # finally attach the sdcard encrypted partition to the qube
-qvm-block attach "${vm}" "${block}"
+qvm-block attach "${vm}" "${device}"
 if [[ $? -eq 0 ]]; then
-	_success "Block ${block} has been attached to ${vm}"
+	_success "Block ${device} has been attached to ${vm}"
 else
-	_failure "Block ${block} can not be attached to ${vm}"
+	_failure "Block ${device} can not be attached to ${vm}"
 fi
 
 # If user wants to mount it now, do it

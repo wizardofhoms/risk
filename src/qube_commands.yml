@@ -65,3 +65,7 @@ commands:
       - name: version 
         help: Name or number of version to upgrade to (eg. 37 for Fedora, or bookworm for Debian)
         required: true
+
+  - name: backup
+    help: "Manage Qubes backups with Wyng (wrapper around wyng-util-qubes)"
+    catch_all: true

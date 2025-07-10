@@ -295,13 +295,14 @@ function web.backend.setup_policy_dom0 ()
 # used by the split backend to use the active identity's one.
 function web.backend.set_client ()
 {
-    local browser_vm split_backend filename copy_command
+    local browser_vm split_backend copy_command
 
     # Set browser qubes
     split_backend="$(config_get SPLIT_BROWSER)"
     browser_vm=$(identity.config_get BROWSER_QUBE)
 
     [[ -z "${browser_vm}" ]] && return
+    [[ -z "${split_backend}" ]] && return
 
     # Use this browser as the split dispVM
     _info "Setting split-browser: $browser_vm"
@@ -321,6 +322,7 @@ function web.backend.unset_client ()
     split_backend="$(config_get SPLIT_BROWSER)"
 
     [[ -z "${browser_vm}" ]] && return
+    [[ -z "${split_backend}" ]] && return
 
     # Unset the browser as the split-backend dispVM
     if [[ "$(qvm-prefs "${split_backend}" default_dispvm)" == "${browser_vm}" ]]; then
@@ -369,6 +371,12 @@ function web.backend.save_bookmarks ()
 function web.backend.read_bookmarks ()
 {
     local split_backend="$1"
+
+    # If the user does not have a bookmark file, 
+    # or if the split-backend is none, just skip.
+    if [[ -z "${split_backend}" ]]; then
+        return
+    fi
 
     _info "Copying bookmarks"
     copy_command="cat ${IDENTITY_BOOKMARKS_FILE} | qrexec-client-vm ${split_backend} risk.SplitBookmark"

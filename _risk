@@ -350,6 +350,7 @@ _qube_commands ()
         'list:Show qubes belonging to the active identity, and related global settings'
         'update:Update one or more VM templates, by name patterns or filters'
         'dist-upgrade:Upgrade the distribution of a Qube template'
+        'backup:Manage Qubes backups with Wyng (wrapper around wyng-util-qubes)"'
 
     )
     _describe -t commands 'vm commands' subcmds && ret=0
@@ -397,6 +398,8 @@ _qube ()
                         '2:Name or number of distribution to upgrade to (eg. 37 for Fedora, or bookworm for Debian)' \
                         && ret=0
                     ;;
+                backup)
+                    _wyng-util-qubes
             esac
     esac
 }

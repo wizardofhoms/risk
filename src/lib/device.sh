@@ -27,3 +27,13 @@ function device.backup_mounted_on ()
         return 1
     fi
 }
+
+# device.get_block attempts to find the sys-usb:block naming format from an argument,
+# which might be either already a "sys-usb:block" string, or the name of a USB device.
+# $1 - Block or device name (defaults to SDCARD_BLOCK)
+function device.get_block ()
+{
+    local block="${1-$SDCARD_BLOCK}"
+    local device="$(qvm-block list | grep "${block}" | awk {'print $1'})"
+    echo "${device}"
+}
